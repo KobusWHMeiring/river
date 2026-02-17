@@ -30,10 +30,17 @@ class TaskTemplate(models.Model):
         ('litter_run', 'Litter Run'),
         ('weeding', 'Weeding'),
         ('planting', 'Planting'),
+        ('admin', 'Admin'),
+    ]
+    
+    ASSIGNEE_TYPE_CHOICES = [
+        ('team', 'Team'),
+        ('manager', 'Manager'),
     ]
     
     name = models.CharField(max_length=100)
     task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES)
+    assignee_type = models.CharField(max_length=10, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     default_instructions = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     
@@ -42,7 +49,7 @@ class TaskTemplate(models.Model):
         return f"{self.name} ({task_type_display})"
     
     class Meta:
-        ordering = ['name']
+        ordering = ['assignee_type', 'name']
 
 class Task(models.Model):
     ASSIGNEE_TYPE_CHOICES = [

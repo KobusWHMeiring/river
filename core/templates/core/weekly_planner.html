@@ -76,7 +76,7 @@
                 <div class="group relative bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-2 min-h-[200px] hover:border-primary/50 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all day-cell cursor-pointer" data-date="{{ day|date:'Y-m-d' }}" data-assignee="team">
                     {% for task in tasks %}
                         {% if task.date == day and task.assignee_type == 'team' %}
-                        <div class="bg-white dark:bg-slate-800 border-l-4 rounded-lg p-3 shadow-sm mb-2 hover:shadow-md transition-shadow task-card {% if task.is_completed %}opacity-60{% endif %}" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};">
+                        <a href="{% url 'visit_log_create' %}?task={{ task.id }}&next={{ request.path|urlencode }}" class="block bg-white dark:bg-slate-800 border-l-4 rounded-lg p-3 shadow-sm mb-2 hover:shadow-md transition-shadow task-card {% if task.is_completed %}opacity-60{% endif %}" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};" onclick="event.stopPropagation();">
                             <div class="flex justify-between items-start mb-2">
                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" style="background-color: {% if task.section %}{{ task.section.color_code }}20{% else %}#f1f5f9{% endif %}; color: {% if task.section %}{{ task.section.color_code }}{% else %}#64748b{% endif %};">
                                     {% if task.section %}{{ task.section.name }}{% else %}General{% endif %}
@@ -91,7 +91,7 @@
                                 {{ task.template.name|default:"Custom Task" }}
                             </h4>
                             <p class="text-[11px] text-slate-500 {% if task.is_completed %}text-slate-400{% endif %}">{{ task.instructions|truncatechars:60 }}</p>
-                        </div>
+                        </a>
                         {% endif %}
                     {% endfor %}
                     
@@ -128,7 +128,7 @@
                 <div class="group relative bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-2 min-h-[160px] hover:border-primary/50 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all day-cell cursor-pointer" data-date="{{ day|date:'Y-m-d' }}" data-assignee="manager">
                     {% for task in tasks %}
                         {% if task.date == day and task.assignee_type == 'manager' %}
-                        <div class="bg-white dark:bg-slate-800 border-l-4 rounded-lg p-3 shadow-sm mb-2 hover:shadow-md transition-shadow task-card {% if task.is_completed %}opacity-60{% endif %}" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};">
+                        <a href="{% url 'visit_log_create' %}?task={{ task.id }}&next={{ request.path|urlencode }}" class="block bg-white dark:bg-slate-800 border-l-4 rounded-lg p-3 shadow-sm mb-2 hover:shadow-md transition-shadow task-card {% if task.is_completed %}opacity-60{% endif %}" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};" onclick="event.stopPropagation();">
                             <div class="flex justify-between items-start mb-2">
                                 <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" style="background-color: {% if task.section %}{{ task.section.color_code }}20{% else %}#f1f5f9{% endif %}; color: {% if task.section %}{{ task.section.color_code }}{% else %}#64748b{% endif %};">
                                     {% if task.section %}{{ task.section.name }}{% else %}Admin{% endif %}
@@ -143,7 +143,7 @@
                                 {{ task.template.name|default:"Custom Task" }}
                             </h4>
                             <p class="text-[11px] text-slate-500 {% if task.is_completed %}text-slate-400{% endif %}">{{ task.instructions|truncatechars:60 }}</p>
-                        </div>
+                        </a>
                         {% endif %}
                     {% endfor %}
 
@@ -220,15 +220,26 @@
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">assignment</span>
                         <select name="template" id="templateSelect" class="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                             <option value="">No template</option>
-                            {% for template in task_templates %}
-                            <option value="{{ template.id }}" data-instructions="{{ template.default_instructions }}">
-                                {{ template.name }} ({{ template.get_task_type_display }})
-                            </option>
-                            {% endfor %}
                         </select>
                         <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                     </div>
                 </div>
+                
+                <!-- Hidden data stores for templates -->
+                <script id="teamTemplatesData" type="application/json">
+                [
+                    {% for template in team_task_templates %}
+                    {"id": {{ template.id }}, "name": "{{ template.name|escapejs }}", "task_type": "{{ template.get_task_type_display|escapejs }}", "instructions": "{{ template.default_instructions|escapejs }}"}{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ]
+                </script>
+                <script id="managerTemplatesData" type="application/json">
+                [
+                    {% for template in manager_task_templates %}
+                    {"id": {{ template.id }}, "name": "{{ template.name|escapejs }}", "task_type": "{{ template.get_task_type_display|escapejs }}", "instructions": "{{ template.default_instructions|escapejs }}"}{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ]
+                </script>
 
                 <div class="space-y-1.5">
                     <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Instructions & Notes</label>
@@ -265,6 +276,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalDateDisplay = document.getElementById('modalDateDisplay');
     const modalAssigneeDisplay = document.getElementById('modalAssigneeDisplay');
     const modalTitle = document.getElementById('modalTitle');
+    const templateSelect = document.getElementById('templateSelect');
+    const instructionsText = document.getElementById('instructionsText');
+    
+    // Load template data
+    const teamTemplates = JSON.parse(document.getElementById('teamTemplatesData').textContent);
+    const managerTemplates = JSON.parse(document.getElementById('managerTemplatesData').textContent);
+    
+    // Function to update template dropdown based on assignee type
+    const updateTemplateDropdown = (assigneeType) => {
+        const templates = assigneeType === 'manager' ? managerTemplates : teamTemplates;
+        templateSelect.innerHTML = '<option value="">No template</option>';
+        templates.forEach(template => {
+            const option = document.createElement('option');
+            option.value = template.id;
+            option.textContent = `${template.name} (${template.task_type})`;
+            option.setAttribute('data-instructions', template.instructions);
+            templateSelect.appendChild(option);
+        });
+    };
     
     const openModal = (date, assignee) => {
         const d = date || new Date().toISOString().split('T')[0];
@@ -274,6 +304,9 @@ document.addEventListener('DOMContentLoaded', function() {
         modalDateDisplay.value = d;
         modalAssigneeInput.value = a;
         modalAssigneeDisplay.value = a;
+        
+        // Update template dropdown based on assignee type
+        updateTemplateDropdown(a);
         
         modalTitle.textContent = date ? `Add Task for ${date}` : 'Create New Task';
         modal.classList.remove('hidden');
@@ -289,6 +322,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     modalAssigneeDisplay.addEventListener('change', (e) => {
         modalAssigneeInput.value = e.target.value;
+        // Update template dropdown when assignee type changes
+        updateTemplateDropdown(e.target.value);
+        // Clear instructions when template changes
+        instructionsText.value = '';
     });
     
     // Open modal buttons
@@ -312,9 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Template selection handler
-    const templateSelect = document.getElementById('templateSelect');
-    const instructionsText = document.getElementById('instructionsText');
-    
     templateSelect.addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         const instructions = selectedOption.getAttribute('data-instructions');

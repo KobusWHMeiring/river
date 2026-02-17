@@ -51,13 +51,9 @@
                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ task.assignee_type|title }}</span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <a href="{% url 'task_complete' task.pk %}" class="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-opacity-90 transition-all">
-                                <span class="material-symbols-outlined text-lg">check</span>
-                                Complete Task
-                            </a>
-                            <a href="{% url 'visit_log_create' %}?task={{ task.pk }}&next={{ request.get_full_path|urlencode }}" class="flex items-center gap-1.5 text-primary text-xs font-semibold px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 rounded-lg transition-colors">
-                                <span class="material-symbols-outlined text-sm">edit_note</span>
-                                Log Details
+                            <a href="{% url 'visit_log_create' %}?task={{ task.pk }}&next={{ request.get_full_path|urlencode }}" class="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-opacity-90 transition-all">
+                                <span class="material-symbols-outlined text-lg">edit_note</span>
+                                Log and Complete
                             </a>
                         </div>
                     </div>
@@ -105,6 +101,10 @@
         {% endif %}
 
         <div class="pt-6 space-y-3">
+            <a href="{% url 'task_create' %}?date={{ today|date:'Y-m-d' }}&next={{ request.get_full_path|urlencode }}" class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-primary/20 hover:border-primary/40 text-primary rounded-xl text-sm font-bold transition-all bg-white dark:bg-slate-900">
+                <span class="material-symbols-outlined text-lg">add_task</span>
+                Add Planned Task
+            </a>
             <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-primary/20 hover:border-primary/40 text-primary rounded-xl text-sm font-bold transition-all bg-white dark:bg-slate-900">
                 <span class="material-symbols-outlined text-lg">add_circle</span>
                 Log Unplanned Activity

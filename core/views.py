@@ -105,7 +105,8 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
         context['week_days'] = week_days
         context['sections'] = Section.objects.all()
         context['task_form'] = TaskForm()
-        context['task_templates'] = TaskTemplate.objects.all()
+        context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team')
+        context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager')
         return context
 
 class DailyAgendaView(LoginRequiredMixin, ListView):
@@ -139,21 +140,45 @@ class DailyAgendaView(LoginRequiredMixin, ListView):
         context['today'] = target_date
         return context
 
-class TaskCreateView(LoginRequiredMixin, CreateView):
+class TaskCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Task
     form_class = TaskForm
     template_name = 'core/task_form.html'
     success_url = reverse_lazy('weekly_planner')
+    success_message = "Task created successfully!"
     
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        return response
+    def get_initial(self):
+        initial = super().get_initial()
+        date_str = self.request.GET.get('date')
+        if date_str:
+            try:
+                target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                initial['date'] = target_date
+            except (ValueError, TypeError):
+                pass
+        return initial
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['task_templates'] = TaskTemplate.objects.all()
+        return context
+
+    def get_success_url(self):
+        next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+            return next_url
+        return reverse_lazy('weekly_planner')
 
 class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
     form_class = TaskForm
     template_name = 'core/task_form.html'
     success_url = reverse_lazy('weekly_planner')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['task_templates'] = TaskTemplate.objects.all()
+        return context
 
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
     model = Task
