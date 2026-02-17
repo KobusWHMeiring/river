@@ -46,15 +46,7 @@ class Migration(migrations.Migration):
     operations = [
         # Add missing assignee_type field to TaskTemplate
         # Migration 0006 should have added this but may have failed
-        migrations.AddField(
-            model_name='tasktemplate',
-            name='assignee_type',
-            field=models.CharField(
-                choices=[('team', 'Team'), ('manager', 'Manager')],
-                default='team',
-                max_length=10
-            ),
-        ),
+
         # Temporary model ordering fixes (remove assignee_type from ordering)
         migrations.AlterModelOptions(
             name='tasktemplate',
