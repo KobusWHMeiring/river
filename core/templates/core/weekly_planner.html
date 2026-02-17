@@ -168,7 +168,7 @@
                     <p class="text-sm text-slate-500 dark:text-slate-400">Plan and assign a task for the Liesbeek project.</p>
                 </div>
                 <button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors close-modal-btn">
-                    <span class="material-icons-round">close</span>
+                    <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
             
@@ -181,19 +181,19 @@
                     <div class="space-y-1.5">
                         <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Task Date</label>
                         <div class="relative">
-                            <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_today</span>
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_today</span>
                             <input type="date" name="date_proxy" id="modalDateDisplay" required class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                         </div>
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Assignee Type</label>
                         <div class="relative">
-                            <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">groups</span>
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">groups</span>
                             <select name="assignee_type_proxy" id="modalAssigneeDisplay" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                                 <option value="team">Team</option>
                                 <option value="manager">Manager</option>
                             </select>
-                            <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                         </div>
                     </div>
                 </div>
@@ -201,7 +201,7 @@
                 <div class="space-y-1.5">
                     <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">River Section</label>
                     <div class="relative">
-                        <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">map</span>
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">map</span>
                         <select name="section" id="sectionSelect" class="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                             <option value="">No Section</option>
                             {% for section in sections %}
@@ -210,14 +210,14 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                     </div>
                 </div>
 
                 <div class="space-y-1.5">
                     <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Task Template</label>
                     <div class="relative">
-                        <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">assignment</span>
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">assignment</span>
                         <select name="template" id="templateSelect" class="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                             <option value="">No template</option>
                             {% for template in task_templates %}
@@ -226,7 +226,7 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                     </div>
                 </div>
 
@@ -235,7 +235,7 @@
                     <div class="relative">
                         <textarea name="instructions" id="instructionsText" rows="4" class="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed" placeholder="Add specific details for the task..."></textarea>
                         <div class="absolute bottom-3 right-3 opacity-20 dark:opacity-10 pointer-events-none">
-                            <span class="material-icons-round text-2xl">edit_note</span>
+                            <span class="material-symbols-outlined text-2xl">edit_note</span>
                         </div>
                     </div>
                 </div>
@@ -245,7 +245,7 @@
                         Cancel
                     </button>
                     <button type="submit" class="bg-primary hover:bg-opacity-90 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
-                        <span class="material-icons-round text-lg">add_task</span>
+                        <span class="material-symbols-outlined text-lg">add_task</span>
                         Create Task
                     </button>
                 </div>

@@ -73,13 +73,6 @@
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Litter Bags</span>
                     <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ total_bags_general|add:total_bags_recyclable }}</div>
                     <span class="text-[10px] text-slate-400 font-medium">{{ total_bags_general }} General / {{ total_bags_recyclable }} Recyclable</span>
-                    <!-- DEBUG INFO -->
-                    <div style="margin-top: 10px; padding: 5px; background: #f0f0f0; border: 1px solid #ccc; font-size: 10px; color: #333; text-align: left;">
-                        <strong>DEBUG:</strong><br>
-                        General: {{ total_bags_general }}<br>
-                        Recyclable: {{ total_bags_recyclable }}<br>
-                        Total: {{ total_bags_general|add:total_bags_recyclable }}
-                    </div>
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Plants</span>
@@ -166,11 +159,9 @@
                             
                             <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed mb-4 italic">"{{ visit.notes|linebreaksbr }}"</p>
                             
-                            <!-- DEBUG: Metrics count for visit {{ visit.id }}: {{ visit.metrics.all|length }} -->
                             {% if visit.metrics.all %}
                             <div class="flex flex-wrap gap-2 mb-4">
                                 {% for metric in visit.metrics.all %}
-                                <!-- DEBUG: Rendering metric - type: {{ metric.metric_type }}, value: {{ metric.value }}, label: {{ metric.label }} -->
                                 <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold rounded-lg border border-slate-100 dark:border-slate-700 uppercase">
                                     <span class="material-symbols-outlined text-xs">
                                         {% if metric.metric_type == 'litter_general' or metric.metric_type == 'litter_recyclable' %}delete{% else %}park{% endif %}
@@ -179,8 +170,6 @@
                                 </span>
                                 {% endfor %}
                             </div>
-                            {% else %}
-                            <!-- DEBUG: No metrics for this visit -->
                             {% endif %}
                             
                             {% if visit.photos.all %}

@@ -788,6 +788,23 @@ sudo systemctl restart {app_name}_web
 
 ---
 
+## Deployment & Environment Checklist
+
+Before declaring the deployment a success, verify these items:
+
+### 1. Environment Verification (.env loading)
+- [ ] **Verify `django-environ` installation**: Ensure `django-environ` is in `requirements.txt`.
+- [ ] **Verify `.env` placement**: The `.env` file must be in the same directory as `manage.py` (your `BASE_DIR`).
+- [ ] **Check `DATABASE_URL`**: Ensure the `.env` file contains a valid `DATABASE_URL` (e.g., `postgres://user:pass@localhost:5432/db_name`).
+- [ ] **Verify Settings consistency**: Ensure `settings.py` uses `env.db()` for the `DATABASES` setting.
+
+### 2. Service Verification
+- [ ] **Check Gunicorn Logs**: `sudo journalctl -u {app_name}_web -f` - ensure no "Database connection" errors on startup.
+- [ ] **Check Nginx Syntax**: `sudo nginx -t` - ensure no server name conflicts.
+- [ ] **Verify Static Files**: Visit `https://{domain}/static/admin/css/base.css` to ensure static files are served.
+
+---
+
 ## Security Checklist
 
 - [ ] Change default admin password

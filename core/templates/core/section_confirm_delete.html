@@ -16,7 +16,7 @@
             <div class="p-8">
                 <div class="flex items-start gap-4 mb-6">
                     <div class="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0">
-                        <span class="material-icons-round text-xl text-red-500">warning</span>
+                        <span class="material-symbols-outlined text-xl text-red-500">warning</span>
                     </div>
                     <div>
                         <h2 class="text-lg font-bold text-slate-800 dark:text-white mb-1">Are you sure you want to delete this section?</h2>
@@ -38,12 +38,12 @@
                     {% endif %}
                     <div class="flex items-center gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400">
                         <span class="flex items-center gap-1">
-                            <span class="material-icons-round text-xs">calendar_today</span>
+                            <span class="material-symbols-outlined text-xs">calendar_today</span>
                             Created {{ object.created_at|date:"M d, Y" }}
                         </span>
                         {% if object.tasks.exists %}
                         <span class="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                            <span class="material-icons-round text-xs">task</span>
+                            <span class="material-symbols-outlined text-xs">task</span>
                             {{ object.tasks.count }} task{{ object.tasks.count|pluralize }}
                         </span>
                         {% endif %}
@@ -58,7 +58,7 @@
                             Cancel
                         </a>
                         <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-8 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
-                            <span class="material-icons-round text-lg">delete_forever</span>
+                            <span class="material-symbols-outlined text-lg">delete_forever</span>
                             Delete Section
                         </button>
                     </div>
