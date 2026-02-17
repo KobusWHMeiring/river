@@ -55,7 +55,7 @@ chown -R $APP_USER:$APP_USER /var/log/gunicorn
 
 # 4. Setup PostgreSQL (if not already done)
 print_status "Setting up PostgreSQL..."
-sudo -u postgres psql -f psql_setup.sql || print_warning "Database may already exist"
+sudo -u postgres psql -f product/deploy_steps/psql_setup.sql || print_warning "Database may already exist"
 
 # 5. Setup application directory
 print_status "Setting up application directory..."
@@ -95,13 +95,13 @@ sudo -u $APP_USER $APP_DIR/venv/bin/python manage.py collectstatic --noinput
 
 # 10. Setup systemd service
 print_status "Setting up systemd service..."
-cp $APP_DIR/river/river_web.service /etc/systemd/system/
+cp $APP_DIR/product/deploy_steps/river_web.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable river_web
 
 # 11. Setup Nginx
 print_status "Setting up Nginx..."
-cp $APP_DIR/river/nginx_config /etc/nginx/sites-available/river
+cp $APP_DIR/product/deploy_steps/nginx_config /etc/nginx/sites-available/river
 ln -sf /etc/nginx/sites-available/river /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
