@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit Section{% else %}Create Section{% endif %} - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    .material-icons-round {
+        font-size: 1.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0 z-10">
+    <div class="flex flex-col">
+        <h1 class="text-xl font-bold dark:text-white leading-tight">{% if object %}Edit River Section{% else %}Create New River Section{% endif %}</h1>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Define section properties and lifecycle stage</p>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto custom-scrollbar bg-slate-50 dark:bg-slate-950/50">
+    <div class="max-w-2xl mx-auto p-8 lg:p-12">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <form method="post" class="p-8 space-y-6">
+                {% csrf_token %}
+                
+                <!-- Section Name -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.name.id_for_label }}">Section Name</label>
+                    <div class="relative">
+                        <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">location_on</span>
+                        <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" value="{{ form.name.value|default:'' }}" required maxlength="100" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none" placeholder="e.g., Black River Confluence">
+                    </div>
+                    {% if form.name.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Color Code -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.color_code.id_for_label }}">Color Code</label>
+                    <div class="flex items-center gap-4">
+                        <div class="relative flex-1">
+                            <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">palette</span>
+                            <input type="color" name="{{ form.color_code.name }}" id="{{ form.color_code.id_for_label }}" value="{{ form.color_code.value|default:'#808080' }}" class="w-full h-10 pl-10 pr-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer">
+                        </div>
+                        <div class="w-12 h-12 rounded-lg border border-slate-200 dark:border-slate-700" style="background-color: {{ form.color_code.value|default:'#808080' }};" id="colorPreview"></div>
+                    </div>
+                    {% if form.color_code.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.color_code.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Current Stage -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.current_stage.id_for_label }}">Lifecycle Stage</label>
+                    <div class="relative">
+                        <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">timeline</span>
+                        <select name="{{ form.current_stage.name }}" id="{{ form.current_stage.id_for_label }}" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                            {% for choice in form.current_stage.field.choices %}
+                                <option value="{{ choice.0 }}" {% if choice.0 == form.current_stage.value %}selected{% endif %}>{{ choice.1 }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+                    {% if form.current_stage.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.current_stage.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Position -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.position.id_for_label }}">Position (Order)</label>
+                    <div class="relative">
+                        <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">sort</span>
+                        <input type="number" name="{{ form.position.name }}" id="{{ form.position.id_for_label }}" value="{{ form.position.value|default:'0' }}" min="0" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none" placeholder="0 for upstream, higher numbers downstream">
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Lower numbers appear first (upstream to downstream)</p>
+                    {% if form.position.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.position.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Description -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.description.id_for_label }}">Description</label>
+                    <div class="relative">
+                        <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" rows="4" class="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed" placeholder="Add notes about this river section...">{{ form.description.value|default:'' }}</textarea>
+                        <div class="absolute bottom-3 right-3 opacity-20 dark:opacity-10 pointer-events-none">
+                            <span class="material-icons-round text-2xl">description</span>
+                        </div>
+                    </div>
+                    {% if form.description.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.description.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <a href="{% url 'section_list' %}" class="px-6 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="bg-primary hover:bg-opacity-90 text-white px-8 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
+                        <span class="material-icons-round text-lg">{% if object %}save{% else %}add_location_alt{% endif %}</span>
+                        {% if object %}Update{% else %}Create{% endif %} Section
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const colorInput = document.getElementById('{{ form.color_code.id_for_label }}');
+    const colorPreview = document.getElementById('colorPreview');
+    
+    if (colorInput && colorPreview) {
+        // Update preview when color changes
+        colorInput.addEventListener('input', function() {
+            colorPreview.style.backgroundColor = this.value;
+        });
+        
+        // Initial preview
+        colorPreview.style.backgroundColor = colorInput.value;
+    }
+});
+</script>
+{% endblock %}

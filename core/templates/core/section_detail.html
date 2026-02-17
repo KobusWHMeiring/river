@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ section.name }} - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    }
+    .timeline-marker {
+        @apply absolute left-0 top-0 w-3 h-3 rounded-full border-2 border-primary bg-white dark:bg-slate-900 z-10;
+    }
+    .timeline-line {
+        @apply absolute left-[5px] top-0 bottom-0 w-[2px] bg-slate-200 dark:bg-slate-800;
+    }
+    .thumbnail-img {
+        @apply w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:scale-105 transition-transform;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark overflow-hidden">
+    <!-- Header with Breadcrumbs -->
+    <header class="bg-white dark:bg-slate-900 px-8 pt-4 shrink-0">
+        <nav class="flex text-[11px] font-medium text-slate-400 uppercase tracking-widest gap-2 mb-4">
+            <a href="{% url 'weekly_planner' %}" class="hover:text-primary transition-colors">Home</a>
+            <span>/</span>
+            <a href="{% url 'section_list' %}" class="hover:text-primary transition-colors">Sections</a>
+            <span>/</span>
+            <span class="text-slate-900 dark:text-slate-200">{{ section.name }}</span>
+        </nav>
+    </header>
+
+    <div class="flex-1 overflow-auto custom-scrollbar p-8 pt-2">
+        <!-- Title and Actions -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm" style="background-color: {{ section.color_code }};">
+                    <span class="material-symbols-outlined text-2xl">location_on</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ section.name }}</h1>
+                        <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wide border border-emerald-200 dark:border-emerald-800">
+                            {{ section.get_current_stage_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <a href="{% url 'visit_log_create' %}?section={{ section.pk }}&next={{ request.get_full_path|urlencode }}" class="bg-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-forest transition-all shadow-sm text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">add_circle</span>
+                    Log Visit
+                </a>
+                <a href="{% url 'task_create' %}?section={{ section.pk }}" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-sm text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">calendar_add_on</span>
+                    Add Task
+                </a>
+                <a href="{% url 'section_edit' section.pk %}" class="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">edit_square</span>
+                    Edit
+                </a>
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-12 gap-6 mb-10">
+            <div class="col-span-12 lg:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Litter Bags</span>
+                    <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ total_bags_general|add:total_bags_recyclable }}</div>
+                    <span class="text-[10px] text-slate-400 font-medium">{{ total_bags_general }} General / {{ total_bags_recyclable }} Recyclable</span>
+                    <!-- DEBUG INFO -->
+                    <div style="margin-top: 10px; padding: 5px; background: #f0f0f0; border: 1px solid #ccc; font-size: 10px; color: #333; text-align: left;">
+                        <strong>DEBUG:</strong><br>
+                        General: {{ total_bags_general }}<br>
+                        Recyclable: {{ total_bags_recyclable }}<br>
+                        Total: {{ total_bags_general|add:total_bags_recyclable }}
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Plants</span>
+                    <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ total_plants }}</div>
+                    <span class="text-[10px] text-slate-400 font-medium">Species planted to date</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Days in Stage</span>
+                    <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ days_in_stage }}</div>
+                    <span class="text-[10px] text-slate-400 font-medium">Since last stage update</span>
+                </div>
+            </div>
+            <div class="col-span-12 lg:col-span-3">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 h-full shadow-sm relative overflow-hidden">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 relative z-10">Description</span>
+                    <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed relative z-10">
+                        {{ section.description|default:"No description provided for this section." }}
+                    </p>
+                    <div class="absolute -right-4 -bottom-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+                        <span class="material-symbols-outlined text-9xl">info</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Priorities -->
+        {% if today_tasks %}
+        <div class="mb-12">
+            <div class="flex items-center gap-3 mb-6">
+                <h2 class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-500">star</span>
+                    Today's Priorities
+                </h2>
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for task in today_tasks %}
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-200 dark:border-amber-900/30 p-5 shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase">
+                            {{ task.get_assignee_type_display }}
+                        </span>
+                        {% if task.is_completed %}
+                        <span class="flex items-center gap-1 text-emerald-600 font-bold text-[10px] uppercase">
+                            <span class="material-symbols-outlined text-xs">check_circle</span> Done
+                        </span>
+                        {% endif %}
+                    </div>
+                    <p class="text-sm text-slate-700 dark:text-slate-300 mb-4 font-medium">{{ task.instructions }}</p>
+                    <a href="{% url 'visit_log_create' %}?task={{ task.pk }}&next={{ request.get_full_path|urlencode }}" class="inline-flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs font-bold hover:underline">
+                        Log Progress <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <!-- Visit History -->
+            <div>
+                <div class="flex items-center gap-3 mb-8">
+                    <h2 class="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-lg">
+                        <span class="material-symbols-outlined text-primary">history</span>
+                        Visit History
+                    </h2>
+                    <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                </div>
+                
+                <div class="space-y-8 relative pl-6">
+                    <div class="timeline-line"></div>
+                    {% for visit in past_visits %}
+                    <div class="relative">
+                        <div class="timeline-marker" style="border-color: {{ section.color_code }};"></div>
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start mb-3">
+                                <h6 class="font-bold text-slate-900 dark:text-white text-sm">{{ visit.date|date:"l, F j, Y" }}</h6>
+                                {% if visit.task %}
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Planned</span>
+                                {% else %}
+                                <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Unplanned</span>
+                                {% endif %}
+                            </div>
+                            
+                            <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed mb-4 italic">"{{ visit.notes|linebreaksbr }}"</p>
+                            
+                            <!-- DEBUG: Metrics count for visit {{ visit.id }}: {{ visit.metrics.all|length }} -->
+                            {% if visit.metrics.all %}
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                {% for metric in visit.metrics.all %}
+                                <!-- DEBUG: Rendering metric - type: {{ metric.metric_type }}, value: {{ metric.value }}, label: {{ metric.label }} -->
+                                <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold rounded-lg border border-slate-100 dark:border-slate-700 uppercase">
+                                    <span class="material-symbols-outlined text-xs">
+                                        {% if metric.metric_type == 'litter_general' or metric.metric_type == 'litter_recyclable' %}delete{% else %}park{% endif %}
+                                    </span>
+                                    {{ metric.value }} {{ metric.label|default:metric.get_metric_type_display }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <!-- DEBUG: No metrics for this visit -->
+                            {% endif %}
+                            
+                            {% if visit.photos.all %}
+                            <div class="flex gap-3">
+                                {% for photo in visit.photos.all %}
+                                <img src="{{ photo.file.url }}" class="thumbnail-img" alt="{{ photo.description }}" 
+                                     data-bs-toggle="modal" data-bs-target="#photoModal" 
+                                     data-bs-src="{{ photo.file.url }}" data-bs-desc="{{ photo.description }}">
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-12 flex flex-col items-center justify-center text-center">
+                        <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-4">
+                            <span class="material-symbols-outlined text-3xl">history</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm italic font-medium">No past visits recorded.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Upcoming Work -->
+            <div>
+                <div class="flex items-center gap-3 mb-8">
+                    <h2 class="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-lg">
+                        <span class="material-symbols-outlined text-blue-500">event</span>
+                        Upcoming Work
+                    </h2>
+                    <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                </div>
+                
+                <div class="space-y-4">
+                    {% for task in future_tasks %}
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm group hover:border-primary/30 transition-all">
+                        <div class="flex justify-between items-start mb-3">
+                            <h6 class="font-bold text-slate-900 dark:text-white text-sm">{{ task.date|date:"D, M j" }}</h6>
+                            <span class="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-bold uppercase">
+                                {{ task.get_assignee_type_display }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">{{ task.instructions|truncatechars:120 }}</p>
+                        <a href="{% url 'task_edit' task.pk %}" class="inline-flex items-center gap-1 text-slate-400 hover:text-primary text-[10px] font-bold uppercase tracking-wider transition-colors">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                            Edit Task
+                        </a>
+                    </div>
+                    {% empty %}
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-12 flex flex-col items-center justify-center text-center">
+                        <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-4">
+                            <span class="material-symbols-outlined text-3xl">event_busy</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm italic font-medium">No future tasks planned.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-16 py-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center text-slate-400 text-[10px] uppercase font-bold tracking-widest gap-4">
+            <p>© 2026 Liesbeek Maintenance Management</p>
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-primary transition-colors">Data Export</a>
+                <a href="#" class="hover:text-primary transition-colors">GIS Viewer</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Photo Modal -->
+<div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-white dark:bg-slate-900 border-none rounded-2xl shadow-2xl overflow-hidden">
+      <div class="modal-body p-0 relative">
+        <button type="button" class="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors" data-bs-dismiss="modal">
+            <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+        <img src="" id="modalImg" class="w-100 object-contain max-h-[80vh]" alt="Full size photo">
+        <div class="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+            <p id="modalDesc" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const photoModal = document.getElementById('photoModal');
+    if (photoModal) {
+        photoModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const src = button.getAttribute('data-bs-src');
+            const desc = button.getAttribute('data-bs-desc');
+            
+            const modalImg = photoModal.querySelector('#modalImg');
+            const modalDesc = photoModal.querySelector('#modalDesc');
+            
+            modalImg.src = src;
+            modalDesc.textContent = desc;
+        });
+    }
+});
+</script>
+{% endblock %}

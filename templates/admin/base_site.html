@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {% trans "Liesbeek River Admin" %}{% endblock %}
+
+{% block extrahead %}
+    <link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
+    <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml" sizes="any">
+    <link rel="icon" href="{% static 'favicon.png' %}" type="image/png">
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{% trans "Liesbeek River Admin" %}</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

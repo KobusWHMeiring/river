@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create Task Modal - Liesbeek Master Plan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1b4332", // Forest Green
+                        "primary-light": "#2d6a4f",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#0f172a",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark textarea::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-200 dark:bg-slate-950 flex items-center justify-center min-h-screen p-4">
+<div class="w-full max-w-xl bg-surface-light dark:bg-surface-dark rounded-xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-300">
+<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+<div>
+<h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Create New Task</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Plan and assign a task for the Liesbeek project.</p>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+<span class="material-icons-round">close</span>
+</button>
+</div>
+<form class="p-6 space-y-5">
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1.5">
+<label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="date">Task Date</label>
+<div class="relative">
+<span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_today</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none" id="date" name="date" required="" type="date"/>
+</div>
+<p class="text-[11px] text-red-500 font-medium">This field is required.</p>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="assignee-type">Assignee Type</label>
+<div class="relative">
+<span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">groups</span>
+<select class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none" id="assignee-type" name="assignee-type">
+<option value="team">Team</option>
+<option value="individual">Individual</option>
+<option value="contractor">Contractor</option>
+</select>
+<span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="section">River Section</label>
+<div class="relative">
+<span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">map</span>
+<select class="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none" id="section" name="section">
+<option>Black River Confluence</option>
+<option>Upper Liesbeek Garden</option>
+<option>The Wetland Loop</option>
+<option>Wildflower Meadow</option>
+</select>
+<span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="template">Task Template</label>
+<div class="relative">
+<span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">assignment</span>
+<select class="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none" id="template" name="template">
+<option>Emergency Litter Cleanup (Litter Run)</option>
+<option>Invasive Species Removal</option>
+<option>Erosion Control Inspection</option>
+<option>Water Quality Testing</option>
+</select>
+<span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="instructions">Instructions &amp; Notes</label>
+<div class="relative">
+<textarea class="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed" id="instructions" name="instructions" placeholder="Add specific details for the task..." rows="4">Emergency cleanup after heavy rains or flooding. Focus on large debris, plastic waste, and hazardous materials. Use safety gear and coordinate with city waste removal if needed.</textarea>
+<div class="absolute bottom-3 right-3 opacity-20 dark:opacity-10 pointer-events-none">
+<span class="material-icons-round text-2xl">edit_note</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-end space-x-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+<button class="px-5 py-2 text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors" type="button">
+                    Cancel
+                </button>
+<button class="bg-primary hover:bg-primary-light text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2" type="submit">
+<span class="material-icons-round text-lg">add_task</span>
+                    Create Task
+                </button>
+</div>
+</form>
+</div>
+<div class="fixed bottom-0 left-0 p-8 opacity-10 pointer-events-none">
+<h1 class="text-4xl font-bold text-primary">Liesbeek Master Plan</h1>
+</div>
+
+</body></html>3

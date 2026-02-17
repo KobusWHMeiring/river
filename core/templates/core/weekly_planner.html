@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+
+{% block title %}Weekly Planner - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Add button visibility styles */
+    .add-task-btn {
+        transition: all 0.2s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-4">
+        <h1 class="text-xl font-semibold dark:text-white">Weekly Planner</h1>
+        <span class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-medium text-slate-500">
+            {{ week_days.0|date:"M j" }} – {{ week_days.6|date:"M j, Y" }}
+        </span>
+    </div>
+    <div class="flex items-center gap-3">
+        <div class="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+            <button class="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700">
+                <span class="material-symbols-outlined text-base align-middle leading-none">chevron_left</span>
+            </button>
+            <button class="px-4 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium border-r border-slate-200 dark:border-slate-700">
+                Current Week
+            </button>
+            <button class="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300">
+                <span class="material-symbols-outlined text-base align-middle leading-none">chevron_right</span>
+            </button>
+        </div>
+        <button class="flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-forest hover:shadow-md transition-all active:scale-95 open-modal-btn">
+            <span class="material-symbols-outlined text-lg">add_circle</span>
+            New Task
+        </button>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto p-8 custom-scrollbar">
+    <div class="min-w-[1200px]">
+        <!-- Grid Header -->
+        <div class="grid grid-cols-[180px_repeat(7,1fr)] mb-6">
+            <div class="text-sm font-semibold text-slate-400 uppercase tracking-wider self-center">Assignees</div>
+            {% for day in week_days %}
+            <div class="text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg py-1 transition-colors" onclick="window.location.href='{% url 'daily_agenda' %}?date={{ day|date:'Y-m-d' }}'">
+                <span class="block text-sm font-medium text-slate-500">{{ day|date:"D"|upper }}</span>
+                <span class="text-lg font-bold dark:text-white">{{ day|date:"j" }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Team Tasks Section -->
+        <div class="mb-10">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest px-2">Team Tasks</h2>
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+            </div>
+            
+            <div class="grid grid-cols-[180px_repeat(7,1fr)] gap-4">
+                <div class="flex items-start pt-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-slate-500">group</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold dark:text-white">Main Team</p>
+                            <p class="text-xs text-slate-500">Field Workers</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% for day in week_days %}
+                <div class="group relative bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-2 min-h-[200px] hover:border-primary/50 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all day-cell cursor-pointer" data-date="{{ day|date:'Y-m-d' }}" data-assignee="team">
+                    {% for task in tasks %}
+                        {% if task.date == day and task.assignee_type == 'team' %}
+                        <div class="bg-white dark:bg-slate-800 border-l-4 rounded-lg p-3 shadow-sm mb-2 hover:shadow-md transition-shadow task-card {% if task.is_completed %}opacity-60{% endif %}" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" style="background-color: {% if task.section %}{{ task.section.color_code }}20{% else %}#f1f5f9{% endif %}; color: {% if task.section %}{{ task.section.color_code }}{% else %}#64748b{% endif %};">
+                                    {% if task.section %}{{ task.section.name }}{% else %}General{% endif %}
+                                </span>
+                                {% if task.is_completed %}
+                                <span class="material-symbols-outlined text-xs text-emerald-500 font-bold">check_circle</span>
+                                {% else %}
+                                <span class="material-symbols-outlined text-xs text-slate-400">more_horiz</span>
+                                {% endif %}
+                            </div>
+                            <h4 class="text-xs font-bold mb-1 dark:text-slate-200 {% if task.is_completed %}line-through text-slate-400{% endif %}">
+                                {{ task.template.name|default:"Custom Task" }}
+                            </h4>
+                            <p class="text-[11px] text-slate-500 {% if task.is_completed %}text-slate-400{% endif %}">{{ task.instructions|truncatechars:60 }}</p>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <button class="absolute bottom-2 right-2 p-2.5 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm transition-all hover:text-primary hover:border-primary/50 hover:scale-110 active:scale-95 add-task-btn opacity-60 group-hover:opacity-100" data-date="{{ day|date:'Y-m-d' }}" data-assignee="team">
+                        <span class="material-symbols-outlined text-base font-bold">add</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Manager Tasks Section -->
+        <div>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest px-2">Manager Oversight</h2>
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+            </div>
+            
+            <div class="grid grid-cols-[180px_repeat(7,1fr)] gap-4">
+                <div class="flex items-start pt-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-primary">person</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold dark:text-white">Management</p>
+                            <p class="text-xs text-slate-500">Project Oversight</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% for day in week_days %}
+                <div class="group relative bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-2 min-h-[160px] hover:border-primary/50 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all day-cell cursor-pointer" data-date="{{ day|date:'Y-m-d' }}" data-assignee="manager">
+                    {% for task in tasks %}
+                        {% if task.date == day and task.assignee_type == 'manager' %}
+                        <div class="bg-white dark:bg-slate-800 border-l-4 rounded-lg p-3 shadow-sm mb-2 hover:shadow-md transition-shadow task-card {% if task.is_completed %}opacity-60{% endif %}" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" style="background-color: {% if task.section %}{{ task.section.color_code }}20{% else %}#f1f5f9{% endif %}; color: {% if task.section %}{{ task.section.color_code }}{% else %}#64748b{% endif %};">
+                                    {% if task.section %}{{ task.section.name }}{% else %}Admin{% endif %}
+                                </span>
+                                {% if task.is_completed %}
+                                <span class="material-symbols-outlined text-xs text-emerald-500 font-bold">check_circle</span>
+                                {% else %}
+                                <span class="material-symbols-outlined text-xs text-slate-400">more_horiz</span>
+                                {% endif %}
+                            </div>
+                            <h4 class="text-xs font-bold mb-1 dark:text-slate-200 {% if task.is_completed %}line-through text-slate-400{% endif %}">
+                                {{ task.template.name|default:"Custom Task" }}
+                            </h4>
+                            <p class="text-[11px] text-slate-500 {% if task.is_completed %}text-slate-400{% endif %}">{{ task.instructions|truncatechars:60 }}</p>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <button class="absolute bottom-2 right-2 p-2.5 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm transition-all hover:text-primary hover:border-primary/50 hover:scale-110 active:scale-95 add-task-btn opacity-60 group-hover:opacity-100" data-date="{{ day|date:'Y-m-d' }}" data-assignee="manager">
+                        <span class="material-symbols-outlined text-base font-bold">add</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="addTaskModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-300 relative">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100" id="modalTitle">Create New Task</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Plan and assign a task for the Liesbeek project.</p>
+                </div>
+                <button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors close-modal-btn">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            
+            <form method="post" action="{% url 'task_create' %}" class="p-6 space-y-5">
+                {% csrf_token %}
+                <input type="hidden" name="date" id="modalDate">
+                <input type="hidden" name="assignee_type" id="modalAssignee">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Task Date</label>
+                        <div class="relative">
+                            <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_today</span>
+                            <input type="date" name="date_proxy" id="modalDateDisplay" required class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Assignee Type</label>
+                        <div class="relative">
+                            <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">groups</span>
+                            <select name="assignee_type_proxy" id="modalAssigneeDisplay" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                                <option value="team">Team</option>
+                                <option value="manager">Manager</option>
+                            </select>
+                            <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">River Section</label>
+                    <div class="relative">
+                        <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">map</span>
+                        <select name="section" id="sectionSelect" class="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                            <option value="">No Section</option>
+                            {% for section in sections %}
+                            <option value="{{ section.id }}" data-color="{{ section.color_code }}">
+                                {{ section.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Task Template</label>
+                    <div class="relative">
+                        <span class="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">assignment</span>
+                        <select name="template" id="templateSelect" class="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                            <option value="">No template</option>
+                            {% for template in task_templates %}
+                            <option value="{{ template.id }}" data-instructions="{{ template.default_instructions }}">
+                                {{ template.name }} ({{ template.get_task_type_display }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <span class="material-icons-round absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Instructions & Notes</label>
+                    <div class="relative">
+                        <textarea name="instructions" id="instructionsText" rows="4" class="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed" placeholder="Add specific details for the task..."></textarea>
+                        <div class="absolute bottom-3 right-3 opacity-20 dark:opacity-10 pointer-events-none">
+                            <span class="material-icons-round text-2xl">edit_note</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" class="px-5 py-2 text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors close-modal-btn">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-primary hover:bg-opacity-90 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
+                        <span class="material-icons-round text-lg">add_task</span>
+                        Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('addTaskModal');
+    const modalDateInput = document.getElementById('modalDate');
+    const modalAssigneeInput = document.getElementById('modalAssignee');
+    const modalDateDisplay = document.getElementById('modalDateDisplay');
+    const modalAssigneeDisplay = document.getElementById('modalAssigneeDisplay');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    const openModal = (date, assignee) => {
+        const d = date || new Date().toISOString().split('T')[0];
+        const a = assignee || 'team';
+        
+        modalDateInput.value = d;
+        modalDateDisplay.value = d;
+        modalAssigneeInput.value = a;
+        modalAssigneeDisplay.value = a;
+        
+        modalTitle.textContent = date ? `Add Task for ${date}` : 'Create New Task';
+        modal.classList.remove('hidden');
+    };
+    
+    const closeModal = () => {
+        modal.classList.add('hidden');
+    };
+    
+    // Sync proxies back to hidden real inputs
+    modalDateDisplay.addEventListener('change', (e) => {
+        modalDateInput.value = e.target.value;
+    });
+    modalAssigneeDisplay.addEventListener('change', (e) => {
+        modalAssigneeInput.value = e.target.value;
+    });
+    
+    // Open modal buttons
+    document.querySelectorAll('.add-task-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openModal(btn.dataset.date, btn.dataset.assignee);
+        });
+    });
+    
+    document.querySelector('.open-modal-btn').addEventListener('click', () => openModal());
+    
+    // Close modal buttons
+    document.querySelectorAll('.close-modal-btn').forEach(btn => {
+        btn.addEventListener('click', closeModal);
+    });
+    
+    // Close on outside click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // Template selection handler
+    const templateSelect = document.getElementById('templateSelect');
+    const instructionsText = document.getElementById('instructionsText');
+    
+    templateSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const instructions = selectedOption.getAttribute('data-instructions');
+        if (instructions) {
+            instructionsText.value = instructions;
+        }
+    });
+    
+    // Section color preview
+    const sectionSelect = document.getElementById('sectionSelect');
+    sectionSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const color = selectedOption.getAttribute('data-color');
+        if (color) {
+            this.style.borderLeft = `4px solid ${color}`;
+        } else {
+            this.style.borderLeft = 'none';
+        }
+    });
+
+    // Day cell click navigation to daily agenda (prevent if clicking button)
+    document.querySelectorAll('.day-cell').forEach(cell => {
+        cell.addEventListener('click', function(e) {
+            if (!e.target.closest('button') && !e.target.closest('.task-card')) {
+                const date = this.dataset.date;
+                window.location.href = `{% url 'daily_agenda' %}?date=${date}`;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

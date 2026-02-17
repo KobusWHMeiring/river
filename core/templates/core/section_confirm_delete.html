@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Section - Liesbeek Master Plan{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0 z-10">
+    <div class="flex flex-col">
+        <h1 class="text-xl font-bold dark:text-white leading-tight">Delete River Section</h1>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Permanently remove section from database</p>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto custom-scrollbar bg-slate-50 dark:bg-slate-950/50">
+    <div class="max-w-2xl mx-auto p-8 lg:p-12">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="p-8">
+                <div class="flex items-start gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center shrink-0">
+                        <span class="material-icons-round text-xl text-red-500">warning</span>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 dark:text-white mb-1">Are you sure you want to delete this section?</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">This action cannot be undone. All tasks and visit logs associated with this section will be affected.</p>
+                    </div>
+                </div>
+
+                <!-- Section Details -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 mb-6 border border-slate-200 dark:border-slate-700">
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="w-10 h-10 rounded-lg" style="background-color: {{ object.color_code }};"></div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-white">{{ object.name }}</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">{{ object.get_current_stage_display }}</p>
+                        </div>
+                    </div>
+                    {% if object.description %}
+                    <p class="text-sm text-slate-600 dark:text-slate-300">{{ object.description|truncatechars:200 }}</p>
+                    {% endif %}
+                    <div class="flex items-center gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400">
+                        <span class="flex items-center gap-1">
+                            <span class="material-icons-round text-xs">calendar_today</span>
+                            Created {{ object.created_at|date:"M d, Y" }}
+                        </span>
+                        {% if object.tasks.exists %}
+                        <span class="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <span class="material-icons-round text-xs">task</span>
+                            {{ object.tasks.count }} task{{ object.tasks.count|pluralize }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div class="flex items-center justify-end space-x-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                        <a href="{% url 'section_detail' object.pk %}" class="px-6 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                            Cancel
+                        </a>
+                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-8 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
+                            <span class="material-icons-round text-lg">delete_forever</span>
+                            Delete Section
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

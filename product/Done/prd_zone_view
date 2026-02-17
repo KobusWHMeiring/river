@@ -1,0 +1,135 @@
+PRD: Section Visit History & Timeline View
+1. Problem Statement
+Managers and supervisors need to understand the historical context and future plans for each river section. Currently, the system shows sections in a list view with basic stage information, but there's no way to see what work has been done (past visits) or what's planned (future tasks) for a specific zone. This makes it difficult to assess progress, plan maintenance, and understand the complete story of each section.
+2. Strategic Goal
+Provide a comprehensive timeline view for each river section that shows both historical visits/logs and future planned tasks, supplemented by a high-level metrics dashboard, enabling data-driven decision making and continuity of care for river rehabilitation efforts.
+3. Proposed Scope (MVP)
+In-Scope
+1. Section Detail Enhancement: Transform the existing SectionDetailView into a comprehensive timeline/dashboard.
+2. Cumulative Metrics Dashboard: A summary at the top of the view showing total litter collected and plants planted for the section's lifetime.
+3. Past Visits Display: Show all VisitLog entries for the section, including both completed tasks and unplanned activities.
+4. Photo Journal Integration: Display thumbnails of photos taken during visits directly in the timeline.
+5. Today's Tasks: Highlight tasks scheduled for the current day in a separate, high-visibility section.
+6. Planned Tasks Display: Show all future Tasks assigned to the section (both team and manager assignments).
+7. Visual Timeline: Present past and future activities in a chronological timeline view.
+8. Quick Access: Add clickable section cards in the section list that navigate to the detail view.
+9. Mobile Responsive: Ensure the timeline view works on tablets used in the field.
+Out-of-Scope (Future Enhancements)
+1. Interactive timeline filters (by date range, activity type).
+2. Advanced graphical charts (line charts for trends).
+3. Bulk operations on timeline items.
+4. Export functionality for section history.
+4. User Journey
+Manager (Jess)
+- Navigates to Sections list from main navigation.
+- Clicks on "Mowbray" section card.
+- Sees a **Cumulative Summary**: "145 Bags of Litter collected, 350 Kniphofia planted."
+- Notes the section has been in "Clearing" stage for 4 months.
+- Sees a timeline showing:
+  - Past: 5 litter runs completed in February, 2 weeding sessions last week.
+  - Future: Planting scheduled for next Tuesday, community cleanup planned for month-end.
+- Uses this data to decide the section is ready for the "Planting" stage transition.
+Supervisor (Klaas)
+- Before heading to "San Souci" section, opens section detail view on tablet.
+- Sees "Today's Work" prominently at the top: "Invasive species removal."
+- Reviews photos from the previous visit 3 days ago to see exactly where the team left off.
+- Prepares team accordingly based on historical context.
+5. Technical Constraints & Considerations
+Backend Requirements
+- Extend existing SectionDetailView to include additional context data.
+- Use `annotate` and `Sum` for cumulative metric calculations.
+- Use `prefetch_related` for metrics and photos to avoid N+1 problems.
+Frontend Requirements
+- Build on existing Bootstrap 5 styling.
+- Use mobile-first responsive design.
+- Implement a simple lightbox or modal for expanding photos.
+Performance Considerations
+- Sections will have varying numbers of visits (10-100 typical).
+- Pagination for visits if history exceeds 50 entries.
+6. High-Level User Stories
+Story 1: Section Card Navigation to Detail View
+Value Proposition: As a Manager, I want to click on section cards to see detailed history, so that I can quickly access complete information about any river section.
+Acceptance Criteria (AC):
+- [ ] Each section card in the list view is clickable.
+- [ ] Clicking a section card navigates to /sections/<id>/.
+- [ ] Back navigation returns to section list via breadcrumbs.
+
+Story 2: Cumulative Metrics Dashboard
+Value Proposition: As a Manager, I want to see aggregated stats for a section at the top of the page, so that I can evaluate long-term impact without counting individual logs.
+Acceptance Criteria (AC):
+- [ ] Section detail shows a summary card with total bags (General + Recyclable).
+- [ ] Summary shows total plants recorded for this section.
+- [ ] Summary shows "Days in Current Stage" calculation.
+
+Story 3: Past Visits Timeline with Photos
+Value Proposition: As a Supervisor, I want to see all past visits including photos and metrics, so that I have a visual record of work progress.
+Acceptance Criteria (AC):
+- [ ] Past visits are displayed in reverse chronological order.
+- [ ] Each entry shows metrics (bags/plants) associated with that visit.
+- [ ] Entry includes thumbnails of photos taken during that visit.
+- [ ] Photos expand to full size on click.
+
+Story 4: "Today's Work" and Planned Tasks
+Value Proposition: As a User, I want to see what is happening today vs. what is planned for the future, so that I can focus on immediate priorities.
+Acceptance Criteria (AC):
+- [ ] Tasks scheduled for `today` are highlighted in a specific "Current Priorities" section.
+- [ ] Future planned tasks follow in a separate "Upcoming" section.
+- [ ] Incomplete future tasks are ordered by date (soonest first).
+
+Story 5: Quick Actions from Timeline
+Value Proposition: As a Supervisor, I want to take quick actions from the timeline view, so that I can log new visits or edit tasks without navigating away.
+Acceptance Criteria (AC):
+- [ ] "Log Visit" button pre-populates section field.
+- [ ] "Add Task" button pre-populates section.
+- [ ] All actions return to the section detail view upon completion.
+
+7. Technical Implementation Details
+Data Model Utilization
+# In SectionDetailView.get_context_data()
+def get_context_data(self, **kwargs):
+    context = super().get_context_data(**kwargs)
+    section = self.object
+    today = timezone.now().date()
+    
+    # Cumulative Metrics
+    metrics_summary = Metric.objects.filter(visit__section=section).values('metric_type').annotate(total=Sum('value'))
+    
+    # Timeline queries with prefetching
+    past_visits = VisitLog.objects.filter(section=section, date__lt=today).prefetch_related('metrics', 'photos').order_by('-date')
+    today_tasks = Task.objects.filter(section=section, date=today)
+    future_tasks = Task.objects.filter(section=section, date__gt=today, is_completed=False).order_by('date')
+    
+    context.update({
+        'metrics_summary': metrics_summary,
+        'past_visits': past_visits,
+        'today_tasks': today_tasks,
+        'future_tasks': future_tasks,
+        'days_in_stage': (timezone.now() - section.updated_at).days
+    })
+    return context
+Template Structure
+section_detail.html
+├── Breadcrumbs (Home > Sections > Name)
+├── Section Header (Name, Color, Stage Badge, Description)
+├── Summary Dashboard (Total Bags, Total Plants, Days in Stage)
+├── Current Priorities (Today's Tasks)
+├── Two-column layout (Desktop)
+│   ├── Left: Past Visits timeline (Metrics + Photo thumbnails)
+│   └── Right: Upcoming Work (Future Task cards)
+└── Action buttons (Log Visit, Add Task)
+8. Non-Functional Requirements
+- Page load time < 2 seconds for mobile field tablets.
+- Accessible color contrast for stage badges.
+- Standardized image aspect ratios for timeline thumbnails.
+9. Success Metrics
+- 100% of stage transitions are preceded by a visit to the section detail view.
+- 50% increase in photo uploads as supervisors see them appearing in history.
+---
+Document Status: Ready for Implementation  
+Priority: High  
+Estimated Effort: 4 developer weeks
+---
+Document Status: Ready for Technical Breakdown  
+Priority: High (complements existing planning/logging workflows)  
+Estimated Effort: 3-4 developer weeks  
+Business Value: Enables data-driven section management and continuity of care

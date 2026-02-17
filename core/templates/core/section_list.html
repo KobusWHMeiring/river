@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}River Sections - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0 z-10">
+    <div class="flex flex-col">
+        <h1 class="text-xl font-bold dark:text-white leading-tight">River Sections</h1>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Management & Inventory</p>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="relative hidden md:block">
+            <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                <span class="material-symbols-outlined text-xl">search</span>
+            </span>
+            <input type="text" id="sectionSearch" class="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm w-64 focus:ring-2 focus:ring-primary/20 dark:text-slate-200" placeholder="Find a section...">
+        </div>
+        <a href="{% url 'section_create' %}" class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-opacity-90 transition-all">
+            <span class="material-symbols-outlined text-lg">add_location_alt</span>
+            Add Section
+        </a>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto custom-scrollbar">
+    <div class="max-w-5xl mx-auto p-8 lg:p-12">
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h3 class="text-sm font-bold text-primary uppercase tracking-widest">Hydrological Flow</h3>
+                <div class="h-[1px] w-12 bg-primary/20"></div>
+                <span class="text-xs text-slate-400 font-medium italic">Ordered Upstream to Downstream</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="p-2 text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined">grid_view</span></button>
+                <button class="p-2 text-primary bg-emerald-50 dark:bg-emerald-900/20 rounded transition-colors"><span class="material-symbols-outlined">list</span></button>
+            </div>
+        </div>
+
+        <div class="space-y-4" id="sectionList">
+            {% for section in sections %}
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 hover:shadow-md transition-shadow group relative cursor-pointer" onclick="window.location='{% url 'section_detail' section.pk %}'">
+                <div class="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-primary shrink-0 border border-emerald-100 dark:border-emerald-800">
+                    <span class="text-lg font-bold">{{ forloop.counter|stringformat:"02d" }}</span>
+                </div>
+                
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-1">
+                        <h4 class="text-base font-semibold text-slate-900 dark:text-white truncate section-name">{{ section.name }}</h4>
+                        {% if section.current_stage == 'mitigation' %}
+                        <span class="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wide border border-amber-100 dark:border-amber-800">Priority</span>
+                        {% elif section.current_stage == 'clearing' %}
+                        <span class="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wide border border-blue-100 dark:border-blue-800">Active Care</span>
+                        {% elif section.current_stage == 'planting' %}
+                        <span class="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wide border border-emerald-100 dark:border-emerald-800">Planting</span>
+                        {% elif section.current_stage == 'follow_up' %}
+                        <span class="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wide border border-emerald-100 dark:border-emerald-800">Stable</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 text-[10px] font-bold uppercase tracking-wide border border-indigo-100 dark:border-indigo-800">Community</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">{% if section.description %}{{ section.description }}{% else %}No description provided for this section.{% endif %}</p>
+                </div>
+
+                <div class="flex items-center gap-6 px-4 border-l border-slate-100 dark:border-slate-800 hidden md:flex">
+                    <div class="text-center">
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Updated</span>
+                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">{{ section.updated_at|date:"d M" }}</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation();">
+                    <a href="{% url 'section_detail' section.pk %}" class="p-2 text-slate-400 hover:text-primary transition-colors" title="View Details">
+                        <span class="material-symbols-outlined text-xl">visibility</span>
+                    </a>
+                    <a href="{% url 'section_edit' section.pk %}" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Edit Section">
+                        <span class="material-symbols-outlined text-xl">edit_square</span>
+                    </a>
+                    <a href="{% url 'section_delete' section.pk %}" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Delete Section">
+                        <span class="material-symbols-outlined text-xl">delete</span>
+                    </a>
+                </div>
+                
+                <div class="absolute right-0 top-0 bottom-0 w-1 rounded-r-xl" style="background-color: {{ section.color_code }};"></div>
+            </div>
+            {% empty %}
+            <div class="py-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800">
+                <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-700 mb-4">map</span>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-1">No Sections Found</h3>
+                <p class="text-slate-500 text-sm">Create your first river section to begin tracking management activities.</p>
+                <a href="{% url 'section_create' %}" class="inline-flex items-center gap-2 mt-6 bg-primary text-white px-6 py-2 rounded-lg font-bold shadow-sm hover:bg-opacity-90 transition-all">
+                    <span class="material-symbols-outlined text-lg">add_location_alt</span>
+                    Add First Section
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-slate-400 text-xs text-center">
+            <p>© 2026 Liesbeek Maintenance Management System</p>
+            <div class="flex gap-4">
+                <a href="#" class="hover:text-primary transition-colors">Export Inventory</a>
+                <a href="#" class="hover:text-primary transition-colors">Mapping API</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('sectionSearch');
+    const sectionList = document.getElementById('sectionList');
+    const sections = sectionList.querySelectorAll('.group');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            sections.forEach(section => {
+                const name = section.querySelector('.section-name').textContent.toLowerCase();
+                if (name.includes(query)) {
+                    section.style.display = 'flex';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

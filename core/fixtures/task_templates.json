@@ -1,0 +1,32 @@
+[
+    {
+        "model": "core.tasktemplate",
+        "pk": 1,
+        "fields": {
+            "name": "Litter Run",
+            "task_type": "litter_run",
+            "default_instructions": "Collect litter along the river bank. Focus on plastic waste and debris. Wear gloves and use litter pickers. Separate recyclable materials if possible.",
+            "created_at": "2026-02-16T10:00:00Z"
+        }
+    },
+    {
+        "model": "core.tasktemplate",
+        "pk": 2,
+        "fields": {
+            "name": "Weeding",
+            "task_type": "weeding",
+            "default_instructions": "Remove invasive plant species. Focus on areas where native plants are being outcompeted. Bag and remove invasive plants to prevent regrowth.",
+            "created_at": "2026-02-16T10:00:00Z"
+        }
+    },
+    {
+        "model": "core.tasktemplate",
+        "pk": 3,
+        "fields": {
+            "name": "Planting",
+            "task_type": "planting",
+            "default_instructions": "Plant native species according to the rehabilitation plan. Ensure proper spacing and watering. Record species and quantities planted.",
+            "created_at": "2026-02-16T10:00:00Z"
+        }
+    }
+]
