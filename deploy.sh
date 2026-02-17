@@ -11,7 +11,7 @@ echo ""
 # Configuration
 APP_USER="carbonplanner"
 APP_DIR="/home/carbonplanner/apps/river"
-DOMAIN="market.plot.org.za"
+DOMAIN="river.plot.org.za"
 
 # Colors for output
 RED='\033[0;31m'
@@ -101,6 +101,8 @@ systemctl enable river_web
 
 # 11. Setup Nginx
 print_status "Setting up Nginx..."
+# Remove old conflicting config if it exists
+rm -f /etc/nginx/sites-enabled/market
 cp $APP_DIR/product/deploy_steps/nginx_config /etc/nginx/sites-available/river
 ln -sf /etc/nginx/sites-available/river /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
