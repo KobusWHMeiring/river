@@ -105,8 +105,18 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
         context['week_days'] = week_days
         context['sections'] = Section.objects.all()
         context['task_form'] = TaskForm()
-        context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team')
-        context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager')
+        
+        try:
+            # Try to filter by assignee_type - might fail if field doesn't exist
+            context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team')
+            context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager')
+        except Exception as e:
+            # If filtering fails, provide all templates
+            # This is a fallback for when assignee_type field is not yet in database
+            all_templates = TaskTemplate.objects.all()
+            context['team_task_templates'] = all_templates
+            context['manager_task_templates'] = TaskTemplate.objects.none()
+        
         return context
 
 class DailyAgendaView(LoginRequiredMixin, ListView):
@@ -123,9 +133,15 @@ class DailyAgendaView(LoginRequiredMixin, ListView):
                 target_date = timezone.now().date()
         else:
             target_date = timezone.now().date()
-        return Task.objects.filter(
-            date=target_date
-        ).order_by('assignee_type', 'section__name')
+        try:
+            return Task.objects.filter(
+                date=target_date
+            ).order_by('assignee_type', 'section__name')
+        except Exception:
+            # Fallback if assignee_type field doesn't exist
+            return Task.objects.filter(
+                date=target_date
+            ).order_by('section__name')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

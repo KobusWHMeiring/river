@@ -49,7 +49,7 @@ class TaskTemplate(models.Model):
         return f"{self.name} ({task_type_display})"
     
     class Meta:
-        ordering = ['assignee_type', 'name']
+        ordering = ['name']
 
 class Task(models.Model):
     ASSIGNEE_TYPE_CHOICES = [
@@ -72,9 +72,9 @@ class Task(models.Model):
         return f"{self.date} - {section_name} - {assignee_display}"
     
     class Meta:
-        ordering = ['date', 'assignee_type']
+        ordering = ['date']
         indexes = [
-            models.Index(fields=['date', 'assignee_type']),
+            models.Index(fields=['date']),
             models.Index(fields=['is_completed']),
         ]
 
