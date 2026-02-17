@@ -9,11 +9,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='tasktemplate',
-            name='assignee_type',
-            field=models.CharField(choices=[('team', 'Team'), ('manager', 'Manager')], default='team', max_length=10),
-        ),
+        # Note: assignee_type field already added in migration 0006
+        # Keeping only model options update for migration history consistency
         migrations.AlterModelOptions(
             name='tasktemplate',
             options={'ordering': ['assignee_type', 'name']},

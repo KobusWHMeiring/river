@@ -5,37 +5,17 @@ from django.db import migrations
 def update_task_assignee_types(apps, schema_editor):
     """
     Update existing task templates to have correct assignee_type.
-    Team tasks: Field work activities
-    Manager tasks: Administrative activities
+    Note: Migration 0006 already sets assignee_type correctly.
+    This function is kept for migration history consistency.
     """
-    TaskTemplate = apps.get_model('core', 'TaskTemplate')
-    
-    # Manager task names (admin activities)
-    manager_task_names = [
-        'River survey',
-        'Meeting',
-        'Workshop',
-        'Reporting',
-        'Fundraising',
-        'Planning',
-        'Team admin',
-        'Intern admin',
-        'Committee admin',
-        'Media',
-        'Outreach',
-    ]
-    
-    # Set manager tasks
-    TaskTemplate.objects.filter(name__in=manager_task_names).update(assignee_type='manager')
-    
-    # Set all others as team tasks (field work)
-    TaskTemplate.objects.exclude(name__in=manager_task_names).update(assignee_type='team')
+    pass
 
 
 def revert_task_assignee_types(apps, schema_editor):
-    """Revert all tasks to team type."""
-    TaskTemplate = apps.get_model('core', 'TaskTemplate')
-    TaskTemplate.objects.all().update(assignee_type='team')
+    """Revert all tasks to team type.
+    Note: Migration 0006's revert function already handles reversion.
+    """
+    pass
 
 
 class Migration(migrations.Migration):

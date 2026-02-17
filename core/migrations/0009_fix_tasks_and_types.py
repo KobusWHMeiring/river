@@ -176,7 +176,7 @@ def revert_fixes(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0008_update_task_assignee_types'),
+        ('core', '0010_add_admin_task_type'),
     ]
 
     operations = [
