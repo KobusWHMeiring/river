@@ -99,9 +99,9 @@
                     <span class="material-symbols-outlined">analytics</span>
                     <span class="text-sm font-medium">Impact Overview</span>
                 </a>
-                <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'weekly_planner' %}sidebar-item-active{% endif %}" href="{% url 'weekly_planner' %}">
+                <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'weekly_planner' or request.resolver_match.url_name == 'monthly_planner' %}sidebar-item-active{% endif %}" href="{% url 'weekly_planner' %}">
                     <span class="material-symbols-outlined">calendar_view_week</span>
-                    <span class="text-sm font-medium">Weekly Planner</span>
+                    <span class="text-sm font-medium">Planner</span>
                 </a>
                 <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'daily_agenda' %}sidebar-item-active{% endif %}" href="{% url 'daily_agenda' %}">
                     <span class="material-symbols-outlined">view_agenda</span>

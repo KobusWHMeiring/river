@@ -1,4 +1,4 @@
-**Generated on:** 2026-02-18 12:24:10
+**Generated on:** 2026-02-19 10:45:33
 
 ### File Structure
 ```
@@ -19,14 +19,25 @@
     └── templates
         └── core
             └── daily_agenda.html
+            └── dashboard.html
+            └── monthly_planner.html
             └── section_confirm_delete.html
             └── section_detail.html
             └── section_form.html
             └── section_list.html
             └── task_confirm_delete.html
             └── task_form.html
+            └── task_template_confirm_delete.html
+            └── task_template_form.html
+            └── task_template_list.html
             └── visit_log_form.html
             └── weekly_planner.html
+    └── templatetags
+        └── __init__.py
+        └── custom_filters.py
+    └── tests_dashboard.py
+    └── tests_monthly.py
+    └── tests_weeding.py
     └── urls.py
     └── views.py
 └── coremanagementcommands
@@ -41,28 +52,33 @@
 └── new-feature.sh
 └── Prep_Sheets_2026-02-18.pdf
 └── product
+    └── backlog.md
     └── context
         └── learnings.md
-        └── po.md
         └── stack.md
         └── ui_standards.md
     └── debug
         └── deploy.md
     └── Done
-        └── prd_zone_view
-        └── styling.md
-    └── investigation_handover.md
-    └── Ready
+        └── dashboard.md
         └── implemenation.md
+        └── investigation_handover.md
+        └── prd_zone_view
+        └── stage_tracking.md
+        └── styling.md
         └── task_template_data.md
-    └── redesign
-        └── calendar.html
-        └── daily_agenda.html
-        └── log_form.html
-        └── new_task.html
-        └── section_deest.html
-        └── zones.html
+        └── template_management.md
+        └── weeding_data.md
+    └── prompts
+        └── po.md
+    └── Ready
+        └── monthly_view.md
     └── refinement
+        └── all_logs_view.md
+        └── context_aware_logging.md
+        └── planner_interaction_update.md
+        └── section_mapping.md
+        └── weekly_planner_navigation.md
 └── requirements.txt
 └── river
     └── .env
@@ -75,7 +91,12 @@
         └── models.py
         └── tests.py
         └── views.py
+    └── deploy.sh
+    └── nginx_config
+    └── psql_setup.sql
+    └── river_web.service
     └── settings.py
+    └── STEPS.md
     └── urls.py
     └── wsgi.py
 └── summarise.py
@@ -91,6 +112,9 @@
 ### Summarized Key Files
 #### `SUMMARY: core/admin.py`
 ```python
+class SectionStageHistoryInline(admin.TabularInline):
+    # ... implementation hidden ...
+
 @admin.register(Section)
 class SectionAdmin(admin.ModelAdmin):
     # ... implementation hidden ...
@@ -142,6 +166,9 @@ class MetricForm(forms.ModelForm):  # Binds to model: Metric
 class PhotoForm(forms.ModelForm):  # Binds to model: Photo
     # ... implementation hidden ...
 
+class BaseMetricFormSet(forms.BaseInlineFormSet):
+    # ... implementation hidden ...
+
 class BasePhotoFormSet(forms.BaseInlineFormSet):
     # ... implementation hidden ...
 ```
@@ -165,6 +192,7 @@ class TaskTemplate(models.Model):
     task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES)
     assignee_type = models.CharField(max_length=10, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     default_instructions = models.TextField()
+    is_active = models.BooleanField(default=True, help_text='Inactive templates are hidden from task creation but preserved for existing tasks')
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Task(models.Model):
@@ -186,7 +214,7 @@ class VisitLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Metric(models.Model):
-    METRIC_TYPE_CHOICES = [('litter_general', 'Litter (General)'), ('litter_recyclable', 'Litter (Recyclable)'), ('plant', 'Plant')]
+    METRIC_TYPE_CHOICES = [('litter_general', 'Litter (General)'), ('litter_recyclable', 'Litter (Recyclable)'), ('plant', 'Plant'), ('weed', 'Weeding / Removal')]
     visit = models.ForeignKey(VisitLog, on_delete=models.CASCADE, related_name='metrics')
     metric_type = models.CharField(max_length=20, choices=METRIC_TYPE_CHOICES)
     label = models.CharField(max_length=100, blank=True)
@@ -198,10 +226,20 @@ class Photo(models.Model):
     visit = models.ForeignKey(VisitLog, on_delete=models.CASCADE, null=True, blank=True, related_name='photos')
     description = models.TextField(blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+
+class SectionStageHistory(models.Model):
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='stage_history')
+    stage = models.CharField(max_length=20, choices=Section.STAGE_CHOICES)
+    # Choices: STAGE_CHOICES, name, color_code, current_stage, description, position, created_at, updated_at
+    changed_at = models.DateTimeField()
+    notes = models.TextField(blank=True)
 ```
 
 #### `SUMMARY: core/views.py`
 ```python
+class GlobalDashboardView(LoginRequiredMixin, ListView):  # Renders: core/dashboard.html
+    # ... implementation hidden ...
+
 class SectionListView(LoginRequiredMixin, ListView):  # Renders: core/section_list.html
     # ... implementation hidden ...
 
@@ -220,6 +258,9 @@ class SectionDeleteView(LoginRequiredMixin, DeleteView):  # Renders: core/sectio
 class WeeklyPlannerView(LoginRequiredMixin, ListView):  # Renders: core/weekly_planner.html
     # ... implementation hidden ...
 
+class MonthlyPlannerView(LoginRequiredMixin, ListView):  # Renders: core/monthly_planner.html
+    # ... implementation hidden ...
+
 class DailyAgendaView(LoginRequiredMixin, ListView):  # Renders: core/daily_agenda.html
     # ... implementation hidden ...
 
@@ -236,6 +277,18 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):  
     # ... implementation hidden ...
 
 def task_complete_view(request, pk):
+    # ... implementation hidden ...
+
+class TaskTemplateListView(LoginRequiredMixin, ListView):  # Renders: core/task_template_list.html
+    # ... implementation hidden ...
+
+class TaskTemplateCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):  # Renders: core/task_template_form.html
+    # ... implementation hidden ...
+
+class TaskTemplateUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):  # Renders: core/task_template_form.html
+    # ... implementation hidden ...
+
+class TaskTemplateDeleteView(LoginRequiredMixin, DeleteView):  # Renders: core/task_template_confirm_delete.html
     # ... implementation hidden ...
 ```
 
@@ -280,6 +333,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Dashboard URL
+    path('dashboard/', views.GlobalDashboardView.as_view(), name='dashboard'),
+    
     # Section URLs
     path('sections/', views.SectionListView.as_view(), name='section_list'),
     path('sections/<int:pk>/', views.SectionDetailView.as_view(), name='section_detail'),
@@ -287,8 +343,10 @@ urlpatterns = [
     path('sections/<int:pk>/edit/', views.SectionUpdateView.as_view(), name='section_edit'),
     path('sections/<int:pk>/delete/', views.SectionDeleteView.as_view(), name='section_delete'),
     
-    # Weekly Planner URLs
-    path('weekly-planner/', views.WeeklyPlannerView.as_view(), name='weekly_planner'),
+    # Planner URLs (Weekly and Monthly)
+    path('planner/', views.WeeklyPlannerView.as_view(), name='weekly_planner'),
+    path('planner/weekly/', views.WeeklyPlannerView.as_view(), name='weekly_planner'),
+    path('planner/monthly/', views.MonthlyPlannerView.as_view(), name='monthly_planner'),
     path('tasks/create/', views.TaskCreateView.as_view(), name='task_create'),
     path('tasks/<int:pk>/edit/', views.TaskUpdateView.as_view(), name='task_edit'),
     path('tasks/<int:pk>/delete/', views.TaskDeleteView.as_view(), name='task_delete'),
@@ -299,6 +357,12 @@ urlpatterns = [
     
     # Visit Log URLs
     path('visit-logs/create/', views.VisitLogCreateView.as_view(), name='visit_log_create'),
+
+    # Task Template Management URLs
+    path('templates/', views.TaskTemplateListView.as_view(), name='task_template_list'),
+    path('templates/create/', views.TaskTemplateCreateView.as_view(), name='task_template_create'),
+    path('templates/<int:pk>/edit/', views.TaskTemplateUpdateView.as_view(), name='task_template_edit'),
+    path('templates/<int:pk>/delete/', views.TaskTemplateDeleteView.as_view(), name='task_template_delete'),
 ]
 
 ```

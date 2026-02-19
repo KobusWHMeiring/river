@@ -12,8 +12,10 @@ urlpatterns = [
     path('sections/<int:pk>/edit/', views.SectionUpdateView.as_view(), name='section_edit'),
     path('sections/<int:pk>/delete/', views.SectionDeleteView.as_view(), name='section_delete'),
     
-    # Weekly Planner URLs
-    path('weekly-planner/', views.WeeklyPlannerView.as_view(), name='weekly_planner'),
+    # Planner URLs (Weekly and Monthly)
+    path('planner/', views.WeeklyPlannerView.as_view(), name='weekly_planner'),
+    path('planner/weekly/', views.WeeklyPlannerView.as_view(), name='weekly_planner'),
+    path('planner/monthly/', views.MonthlyPlannerView.as_view(), name='monthly_planner'),
     path('tasks/create/', views.TaskCreateView.as_view(), name='task_create'),
     path('tasks/<int:pk>/edit/', views.TaskUpdateView.as_view(), name='task_edit'),
     path('tasks/<int:pk>/delete/', views.TaskDeleteView.as_view(), name='task_delete'),

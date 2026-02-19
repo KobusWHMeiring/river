@@ -9,8 +9,12 @@ To complement the Weekly Planner with a Monthly View that provides a high-level 
 ## 3. Proposed Scope
 - **Month View Grid:** A traditional calendar grid (4-5 weeks) showing scheduled tasks.
 - **Task Representation:** Tasks in the month view will be summarized (icon + section color) to fit the smaller cell size.
+### Interactivity: Context-Aware Navigation
+- **Cell Click Logic:**
+  - **If tasks exist:** Clicking anywhere in the day cell (on a badge or the background) navigates to the `DailyAgendaView` for that date.
+  - **If no tasks exist:** Clicking the day cell opens the `TaskCreate` modal/form with the date pre-filled.
+- **Visual Feedback:** All cells show a pointer cursor and a subtle "lift" or highlight on hover to indicate they are interactive.
 - **Navigation:** Simple buttons to toggle between Month and Week views, and Previous/Next month controls.
-- **Interactivity:** Clicking a day in the Month View navigates to that day's Daily Agenda or opens a creation modal.
 
 ## 4. Technical Constraints
 - Must use Python's `calendar` module to generate the grid structure.
@@ -24,10 +28,11 @@ To complement the Weekly Planner with a Monthly View that provides a high-level 
 - URLs use query params: `/planner/?view=monthly&month=2026-02` or `/planner/?view=weekly&week=2026-02-15`
 
 ### Task Display Layout
-- **Split-cell layout** (consistent with weekly planner): Top half for Team tasks, bottom half for Manager tasks
-- Show all tasks (not summarized) - if 3 tasks for same section, show 3 separate entries
-- Each task displays with section's `color_code` as background/border
-- Completed tasks shown with strikethrough styling
+- **Split-cell layout** (consistent with weekly planner): Top half for Team tasks, bottom half for Manager tasks.
+- **High-Density Representation:** Tasks are shown as small color-coded section badges (e.g., "[Mowbray]").
+- **Overflow Handling:** If a cell exceeds 4 tasks (2 per split), show a "+X more" indicator that links to the Daily Agenda.
+- Each task badge uses the section's `color_code` as a subtle left-border or background.
+- Completed tasks shown with a checkmark icon and 50% opacity.
 
 ### Calendar Grid Specifications
 - Week starts on **Monday**

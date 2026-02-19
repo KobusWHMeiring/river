@@ -6,6 +6,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.utils import timezone
 from datetime import datetime, timedelta
+import calendar
+from collections import defaultdict
 from .models import Section, Task, TaskTemplate, VisitLog, Metric, Photo, SectionStageHistory
 from .forms import SectionForm, TaskForm, TaskTemplateForm, VisitLogForm, MetricFormSet, PhotoFormSet
 
@@ -59,6 +61,28 @@ class SectionListView(LoginRequiredMixin, ListView):
     model = Section
     template_name = 'core/section_list.html'
     context_object_name = 'sections'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Prepare GeoJSON data for sections with boundaries
+        sections_geojson = []
+        for section in context['sections']:
+            section_data = {
+                'id': section.id,
+                'name': section.name,
+                'color_code': section.color_code,
+                'current_stage': section.current_stage,
+                'stage_display': section.get_current_stage_display(),
+                'description': section.description or '',
+                'boundary_data': section.boundary_data if section.boundary_data else {},
+                'center_point': section.center_point if section.center_point else {},
+                'detail_url': reverse_lazy('section_detail', kwargs={'pk': section.pk}),
+            }
+            sections_geojson.append(section_data)
+        
+        context['sections_geojson'] = sections_geojson
+        return context
 
 class SectionDetailView(LoginRequiredMixin, DetailView):
     model = Section
@@ -167,20 +191,43 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
     model = Task
     template_name = 'core/weekly_planner.html'
     context_object_name = 'tasks'
-    
+
     def get_queryset(self):
-        # Get current week's tasks
-        today = timezone.now().date()
-        start_of_week = today - timedelta(days=today.weekday() + 1)  # Sunday start
+        # Get week from query param or default to current week
+        week_str = self.request.GET.get('week')
+        if week_str:
+            try:
+                week_date = datetime.strptime(week_str, '%Y-%m-%d').date()
+                # Start from Monday of that week
+                start_of_week = week_date - timedelta(days=week_date.weekday())
+            except (ValueError, TypeError):
+                today = timezone.now().date()
+                start_of_week = today - timedelta(days=today.weekday())
+        else:
+            today = timezone.now().date()
+            start_of_week = today - timedelta(days=today.weekday())
+
         end_of_week = start_of_week + timedelta(days=6)
         return Task.objects.filter(date__range=[start_of_week, end_of_week])
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        today = timezone.now().date()
-        start_of_week = today - timedelta(days=today.weekday() + 1)
 
-        # Create week days list
+        # Get week from query param or default to current week
+        week_str = self.request.GET.get('week')
+        if week_str:
+            try:
+                week_date = datetime.strptime(week_str, '%Y-%m-%d').date()
+                # Start from Monday of that week
+                start_of_week = week_date - timedelta(days=week_date.weekday())
+            except (ValueError, TypeError):
+                today = timezone.now().date()
+                start_of_week = today - timedelta(days=today.weekday())
+        else:
+            today = timezone.now().date()
+            start_of_week = today - timedelta(days=today.weekday())
+
+        # Create week days list (Monday start)
         week_days = []
         for i in range(7):
             day = start_of_week + timedelta(days=i)
@@ -191,6 +238,110 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
         context['task_form'] = TaskForm()
 
         # Only show active templates
+        context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team', is_active=True)
+        context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager', is_active=True)
+
+        # Navigation dates for prev/next week
+        context['prev_week'] = start_of_week - timedelta(days=7)
+        context['next_week'] = start_of_week + timedelta(days=7)
+
+        return context
+
+
+class MonthlyPlannerView(LoginRequiredMixin, ListView):
+    model = Task
+    template_name = 'core/monthly_planner.html'
+    context_object_name = 'tasks'
+
+    def get_queryset(self):
+        # Get year and month from query params or default to current
+        year_str = self.request.GET.get('year')
+        month_str = self.request.GET.get('month')
+
+        if year_str and month_str:
+            try:
+                year = int(year_str)
+                month = int(month_str)
+            except (ValueError, TypeError):
+                today = timezone.now().date()
+                year = today.year
+                month = today.month
+        else:
+            today = timezone.now().date()
+            year = today.year
+            month = today.month
+
+        # Get first and last day of month
+        cal = calendar.Calendar(firstweekday=0)  # Monday start
+        month_days = cal.monthdatescalendar(year, month)
+
+        # Get date range including padding days
+        first_day = month_days[0][0]
+        last_day = month_days[-1][-1]
+
+        return Task.objects.filter(
+            date__range=[first_day, last_day]
+        ).select_related('section')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get year and month from query params or default to current
+        year_str = self.request.GET.get('year')
+        month_str = self.request.GET.get('month')
+
+        if year_str and month_str:
+            try:
+                year = int(year_str)
+                month = int(month_str)
+            except (ValueError, TypeError):
+                today = timezone.now().date()
+                year = today.year
+                month = today.month
+        else:
+            today = timezone.now().date()
+            year = today.year
+            month = today.month
+
+        context['year'] = year
+        context['month'] = month
+        context['month_name'] = calendar.month_name[month]
+
+        # Generate calendar grid (Monday start)
+        cal = calendar.Calendar(firstweekday=0)
+        month_weeks = cal.monthdatescalendar(year, month)
+        context['month_weeks'] = month_weeks
+
+        # Group tasks by date for efficient template rendering
+        tasks_by_date = defaultdict(list)
+        for task in context['tasks']:
+            tasks_by_date[task.date].append(task)
+        context['tasks_by_date'] = dict(tasks_by_date)
+
+        # Navigation dates
+        # Previous month
+        if month == 1:
+            context['prev_year'] = year - 1
+            context['prev_month'] = 12
+        else:
+            context['prev_year'] = year
+            context['prev_month'] = month - 1
+
+        # Next month
+        if month == 12:
+            context['next_year'] = year + 1
+            context['next_month'] = 1
+        else:
+            context['next_year'] = year
+            context['next_month'] = month + 1
+
+        # Current month flag
+        today = timezone.now().date()
+        context['is_current_month'] = (today.year == year and today.month == month)
+        context['today'] = today
+
+        # For task creation modal
+        context['sections'] = Section.objects.all()
         context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team', is_active=True)
         context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager', is_active=True)
 
@@ -297,6 +448,8 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
             initial['task'] = task
             initial['section'] = task.section
             initial['date'] = task.date
+            # Pre-fill notes with task instructions for context-aware logging
+            initial['notes'] = task.instructions
         else:
             initial['date'] = timezone.now().date()
             
@@ -306,6 +459,29 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         context = super().get_context_data(**kwargs)
         next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
         context['next'] = next_url
+        
+        # Get task from initial data or GET params for context-aware logging
+        task_id = self.request.GET.get('task')
+        task = None
+        if task_id:
+            try:
+                task = Task.objects.get(pk=task_id)
+            except Task.DoesNotExist:
+                pass
+        elif 'task' in context['form'].initial:
+            task = context['form'].initial.get('task')
+        
+        # Determine task_type for UI adaptation
+        if task and task.template:
+            context['task_type'] = task.template.task_type
+            context['task_template_name'] = task.template.name
+        else:
+            # Default to 'unplanned' if no task or template
+            context['task_type'] = 'unplanned'
+            context['task_template_name'] = None
+        
+        context['related_task'] = task
+        
         print(f"[DEBUG] VisitLogCreateView.get_context_data called - method: {self.request.method}")
         if self.request.method == 'POST':
             print(f"[DEBUG] POST data keys: {list(self.request.POST.keys())}")

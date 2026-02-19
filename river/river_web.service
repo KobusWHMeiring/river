@@ -1,0 +1,46 @@
+[Unit]
+Description=Gunicorn for river
+After=network.target
+
+[Service]
+User=carbonplanner
+Group=www-data
+WorkingDirectory=/home/carbonplanner/apps/river
+
+# Load environment variables from .env file
+EnvironmentFile=/home/carbonplanner/apps/river/.env
+
+# Create directories if they don't exist
+ExecStartPre=/bin/mkdir -p /home/carbonplanner/apps/river/media
+ExecStartPre=/bin/chown -R carbonplanner:www-data /home/carbonplanner/apps/river/media
+ExecStartPre=/bin/mkdir -p /var/log/gunicorn
+ExecStartPre=/bin/chown -R carbonplanner:www-data /var/log/gunicorn
+
+# Gunicorn process with optimized settings
+ExecStart=/home/carbonplanner/apps/river/venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/home/carbonplanner/apps/river/river.sock \
+    --access-logfile /var/log/gunicorn/river_access.log \
+    --error-logfile /var/log/gunicorn/river_error.log \
+    --capture-output \
+    --enable-stdio-inheritance \
+    --worker-class sync \
+    --worker-connections 1000 \
+    --max-requests 1000 \
+    --max-requests-jitter 50 \
+    --timeout 60 \
+    --keep-alive 2 \
+    river.wsgi:application
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=60s
+StartLimitBurst=3
+
+# Security
+NoNewPrivileges=true
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

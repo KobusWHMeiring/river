@@ -17,6 +17,8 @@ class Section(models.Model):
     current_stage = models.CharField(max_length=20, choices=STAGE_CHOICES, default='mitigation')
     description = models.TextField(blank=True)
     position = models.PositiveIntegerField(default=0, help_text="Order of the section (upstream to downstream)")
+    boundary_data = models.JSONField(default=dict, blank=True, help_text="GeoJSON-style polygon coordinates for section boundaries")
+    center_point = models.JSONField(default=dict, blank=True, help_text="GeoJSON-style center point coordinates [lng, lat]")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

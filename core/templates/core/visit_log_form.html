@@ -20,6 +20,15 @@
         top: 0;
         width: auto;
     }
+    .section-collapsed .section-content {
+        display: none;
+    }
+    .section-collapsed .section-toggle-icon {
+        transform: rotate(-90deg);
+    }
+    .section-toggle-icon {
+        transition: transform 0.2s ease;
+    }
 </style>
 {% endblock %}
 
@@ -51,6 +60,39 @@
                 {{ metric_formset.management_form }}
                 {{ photo_formset.management_form }}
                 <input type="hidden" name="next" value="{{ next }}">
+
+                <!-- Task Context Header -->
+                {% if related_task %}
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-3">
+                        <span class="material-symbols-outlined text-lg">assignment</span>
+                        Planned Task
+                    </h4>
+                    <div class="flex items-start gap-4">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg">{{ related_task.template.name|default:"Unnamed Task" }}</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ related_task.instructions|truncatewords:30 }}</p>
+                            <div class="flex items-center gap-4 mt-3 text-xs text-slate-500">
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">calendar_today</span>
+                                    {{ related_task.date|date:"M d, Y" }}
+                                </span>
+                                {% if related_task.section %}
+                                <span class="flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">location_on</span>
+                                    {{ related_task.section.name }}
+                                </span>
+                                {% endif %}
+                                {% if task_type %}
+                                <span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                                    {{ task_type|title }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- Core Details Section -->
                 <div class="space-y-6">
@@ -89,7 +131,7 @@
                         </div>
 
                         <!-- Task/Activity -->
-                        <div class="space-y-2">
+                        <div class="space-y-2 md:col-span-2">
                             <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 tracking-tight" for="{{ form.task.id_for_label }}">Related Task (Optional)</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 pointer-events-none">
@@ -111,93 +153,121 @@
                     </div>
                 </div>
 
+                {% if task_type != 'admin' %}
                 <!-- Metrics Section -->
-                <div class="space-y-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <div class="space-y-6 pt-6 border-t border-slate-100 dark:border-slate-800" id="metricsSection">
                     <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
                         <span class="material-symbols-outlined text-lg">analytics</span>
                         Metrics & Collection
                     </h4>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- General Litter -->
-                        <div class="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
-                            <span class="material-symbols-outlined text-2xl text-slate-400 mb-2">delete</span>
-                            <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">General Litter Bags</h5>
-                            <div class="flex items-center justify-center gap-6">
-                                <button type="button" onclick="updateCounter('litter_general', -1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                                    <span class="material-symbols-outlined">remove</span>
-                                </button>
-                                <span class="text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_general_value">0</span>
-                                <button type="button" onclick="updateCounter('litter_general', 1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                                    <span class="material-symbols-outlined">add</span>
-                                </button>
+                    <!-- Litter Section -->
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden" id="litterSection" data-section="litter">
+                        <button type="button" onclick="toggleSection('litter')" class="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-slate-500">delete</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Litter Collection</span>
                             </div>
-                            <input type="hidden" name="metrics-0-metric_type" value="litter_general">
-                            <input type="hidden" name="metrics-0-label" value="General Litter">
-                            <input type="hidden" name="metrics-0-value" id="litter_general_input" value="0">
-                        </div>
-
-                        <!-- Recyclable Litter -->
-                        <div class="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
-                            <span class="material-symbols-outlined text-2xl text-emerald-500 mb-2">recycling</span>
-                            <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Recyclable Bags</h5>
-                            <div class="flex items-center justify-center gap-6">
-                                <button type="button" onclick="updateCounter('litter_recyclable', -1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                                    <span class="material-symbols-outlined">remove</span>
-                                </button>
-                                <span class="text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_recyclable_value">0</span>
-                                <button type="button" onclick="updateCounter('litter_recyclable', 1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
-                                    <span class="material-symbols-outlined">add</span>
-                                </button>
-                            </div>
-                            <input type="hidden" name="metrics-1-metric_type" value="litter_recyclable">
-                            <input type="hidden" name="metrics-1-label" value="Recyclable Litter">
-                            <input type="hidden" name="metrics-1-value" id="litter_recyclable_input" value="0">
-                        </div>
-                    </div>
-
-                    <!-- Planting Section -->
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Planting Data</h5>
-                            <button type="button" onclick="addMetric('plant')" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
-                                <span class="material-symbols-outlined text-sm">add_circle</span>
-                                Add Species
-                            </button>
-                        </div>
-                        
-                        <div id="plantMetrics" class="space-y-4">
-                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700 items-end">
-                                <div class="sm:col-span-7 space-y-1.5">
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Plant Species</label>
-                                    <input type="text" name="metrics-2-label" placeholder="e.g., Kniphofia" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary/20 dark:text-slate-200">
+                            <span class="material-symbols-outlined text-slate-400 section-toggle-icon" id="litterToggleIcon">expand_more</span>
+                        </button>
+                        <div class="section-content p-6 space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- General Litter -->
+                                <div class="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
+                                    <span class="material-symbols-outlined text-2xl text-slate-400 mb-2">delete</span>
+                                    <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">General Litter Bags</h5>
+                                    <div class="flex items-center justify-center gap-6">
+                                        <button type="button" onclick="updateCounter('litter_general', -1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                                            <span class="material-symbols-outlined">remove</span>
+                                        </button>
+                                        <span class="text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_general_value">0</span>
+                                        <button type="button" onclick="updateCounter('litter_general', 1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                                            <span class="material-symbols-outlined">add</span>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="metrics-0-metric_type" value="litter_general">
+                                    <input type="hidden" name="metrics-0-label" value="General Litter">
+                                    <input type="hidden" name="metrics-0-value" id="litter_general_input" value="0">
                                 </div>
-                                <div class="sm:col-span-5 flex items-center justify-between bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                                    <button type="button" onclick="updateCounter('metric_2', -1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">remove</span></button>
-                                    <span class="font-bold text-sm dark:text-white" id="metric_2_value">0</span>
-                                    <button type="button" onclick="updateCounter('metric_2', 1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">add</span></button>
-                                    <input type="hidden" name="metrics-2-metric_type" value="plant">
-                                    <input type="hidden" name="metrics-2-value" id="metric_2_input" value="0">
+
+                                <!-- Recyclable Litter -->
+                                <div class="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
+                                    <span class="material-symbols-outlined text-2xl text-emerald-500 mb-2">recycling</span>
+                                    <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Recyclable Bags</h5>
+                                    <div class="flex items-center justify-center gap-6">
+                                        <button type="button" onclick="updateCounter('litter_recyclable', -1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                                            <span class="material-symbols-outlined">remove</span>
+                                        </button>
+                                        <span class="text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_recyclable_value">0</span>
+                                        <button type="button" onclick="updateCounter('litter_recyclable', 1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                                            <span class="material-symbols-outlined">add</span>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="metrics-1-metric_type" value="litter_recyclable">
+                                    <input type="hidden" name="metrics-1-label" value="Recyclable Litter">
+                                    <input type="hidden" name="metrics-1-value" id="litter_recyclable_input" value="0">
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Weeding Section -->
-                    <div class="space-y-4 pt-4">
-                        <div class="flex items-center justify-between">
-                            <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Weeding Data (Removal)</h5>
-                            <button type="button" onclick="addMetric('weed')" class="text-orange-500 text-xs font-bold flex items-center gap-1 hover:underline">
-                                <span class="material-symbols-outlined text-sm">delete_forever</span>
-                                Add Weed Species
-                            </button>
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden" id="weedingSection" data-section="weeding">
+                        <button type="button" onclick="toggleSection('weeding')" class="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-slate-500">grass</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Weeding Data</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="event.stopPropagation(); addMetric('weed')" class="text-orange-500 text-xs font-bold flex items-center gap-1 hover:underline px-2 py-1 rounded hover:bg-orange-50">
+                                    <span class="material-symbols-outlined text-sm">add</span>
+                                    Add
+                                </button>
+                                <span class="material-symbols-outlined text-slate-400 section-toggle-icon" id="weedingToggleIcon">expand_more</span>
+                            </div>
+                        </button>
+                        <div class="section-content p-6">
+                            <div id="weedMetrics" class="space-y-4">
+                                <!-- Weeding metrics will be added here dynamically -->
+                            </div>
                         </div>
-                        
-                        <div id="weedMetrics" class="space-y-4">
-                            <!-- Weeding metrics will be added here dynamically -->
+                    </div>
+
+                    <!-- Planting Section -->
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden" id="plantingSection" data-section="planting">
+                        <button type="button" onclick="toggleSection('planting')" class="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-slate-500">forest</span>
+                                <span class="font-bold text-slate-700 dark:text-slate-300">Planting Data</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="event.stopPropagation(); addMetric('plant')" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline px-2 py-1 rounded hover:bg-primary/10">
+                                    <span class="material-symbols-outlined text-sm">add</span>
+                                    Add
+                                </button>
+                                <span class="material-symbols-outlined text-slate-400 section-toggle-icon" id="plantingToggleIcon">expand_more</span>
+                            </div>
+                        </button>
+                        <div class="section-content p-6">
+                            <div id="plantMetrics" class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700 items-end">
+                                    <div class="sm:col-span-7 space-y-1.5">
+                                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Plant Species</label>
+                                        <input type="text" name="metrics-2-label" placeholder="e.g., Kniphofia" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary/20 dark:text-slate-200">
+                                    </div>
+                                    <div class="sm:col-span-5 flex items-center justify-between bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                                        <button type="button" onclick="updateCounter('metric_2', -1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">remove</span></button>
+                                        <span class="font-bold text-sm dark:text-white" id="metric_2_value">0</span>
+                                        <button type="button" onclick="updateCounter('metric_2', 1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">add</span></button>
+                                        <input type="hidden" name="metrics-2-metric_type" value="plant">
+                                        <input type="hidden" name="metrics-2-value" id="metric_2_input" value="0">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% endif %}
 
                 <!-- Photos Section -->
                 <div class="space-y-6 pt-6 border-t border-slate-100 dark:border-slate-800">
@@ -262,6 +332,9 @@
 
 {% block extra_js %}
 <script>
+// Task type from Django context
+const taskType = '{{ task_type|default:"unplanned" }}';
+
 // totalMetrics tracks the next available index in the formset
 // Initial state: 0=litter_general, 1=litter_recyclable, 2=first_plant
 let totalMetrics = 3; 
@@ -271,6 +344,72 @@ const counters = {
     litter_recyclable: 0,
     metric_2: 0 // First plant
 };
+
+// Section state management
+const sectionStates = {
+    litter: true,     // expanded by default
+    weeding: true,    // expanded by default
+    planting: true    // expanded by default
+};
+
+// Initialize sections based on task type
+function initializeSections() {
+    console.log('[DEBUG] Initializing sections for task type:', taskType);
+    
+    switch(taskType) {
+        case 'litter_run':
+            // Litter expanded, others collapsed
+            sectionStates.litter = true;
+            sectionStates.weeding = false;
+            sectionStates.planting = false;
+            break;
+        case 'weeding':
+            // Weeding expanded, others collapsed
+            sectionStates.litter = false;
+            sectionStates.weeding = true;
+            sectionStates.planting = false;
+            break;
+        case 'planting':
+            // Planting expanded, others collapsed
+            sectionStates.litter = false;
+            sectionStates.weeding = false;
+            sectionStates.planting = true;
+            break;
+        case 'admin':
+            // All hidden - handled by template logic
+            break;
+        case 'unplanned':
+        default:
+            // All expanded
+            sectionStates.litter = true;
+            sectionStates.weeding = true;
+            sectionStates.planting = true;
+            break;
+    }
+    
+    // Apply initial states
+    Object.keys(sectionStates).forEach(section => {
+        updateSectionVisibility(section);
+    });
+}
+
+function toggleSection(section) {
+    sectionStates[section] = !sectionStates[section];
+    updateSectionVisibility(section);
+}
+
+function updateSectionVisibility(section) {
+    const sectionEl = document.getElementById(section + 'Section');
+    if (!sectionEl) return;
+    
+    const isExpanded = sectionStates[section];
+    
+    if (isExpanded) {
+        sectionEl.classList.remove('section-collapsed');
+    } else {
+        sectionEl.classList.add('section-collapsed');
+    }
+}
 
 function updateCounter(counterId, delta) {
     console.log(`[DEBUG] updateCounter called: counterId=${counterId}, delta=${delta}`);
@@ -349,6 +488,7 @@ function previewPhoto(input) {
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[DEBUG] Page loaded, initializing form...');
+    console.log('[DEBUG] Task type:', taskType);
     
     // Set today's date if empty
     const dateField = document.querySelector('input[type="date"]');
@@ -380,6 +520,9 @@ document.addEventListener('DOMContentLoaded', function() {
         photoTotalForms.value = 1;
         console.log(`[DEBUG] Set photos TOTAL_FORMS to: ${photoTotalForms.value}`);
     }
+    
+    // Initialize section visibility based on task type
+    initializeSections();
     
     // Add form submit listener
     const form = document.getElementById('visitLogForm');
