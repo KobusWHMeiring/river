@@ -68,7 +68,7 @@
 
         <!-- Metrics Grid -->
         <div class="grid grid-cols-12 gap-6 mb-10">
-            <div class="col-span-12 lg:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="col-span-12 lg:col-span-12 grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Litter Bags</span>
                     <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ total_bags_general|add:total_bags_recyclable }}</div>
@@ -80,20 +80,27 @@
                     <span class="text-[10px] text-slate-400 font-medium">Species planted to date</span>
                 </div>
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Weeds Removed</span>
+                    <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ total_weeds }}</div>
+                    <span class="text-[10px] text-slate-400 font-medium line-clamp-1" title="{{ weeding_summary }}">{{ weeding_summary }}</span>
+                </div>
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Days in Stage</span>
                     <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ days_in_stage }}</div>
                     <span class="text-[10px] text-slate-400 font-medium">Since last stage update</span>
                 </div>
             </div>
-            <div class="col-span-12 lg:col-span-3">
-                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 h-full shadow-sm relative overflow-hidden">
-                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 relative z-10">Description</span>
-                    <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed relative z-10">
-                        {{ section.description|default:"No description provided for this section." }}
-                    </p>
-                    <div class="absolute -right-4 -bottom-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
-                        <span class="material-symbols-outlined text-9xl">info</span>
-                    </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-10">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm relative overflow-hidden">
+                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 relative z-10">Description</span>
+                <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed relative z-10">
+                    {{ section.description|default:"No description provided for this section." }}
+                </p>
+                <div class="absolute -right-4 -bottom-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+                    <span class="material-symbols-outlined text-9xl">info</span>
                 </div>
             </div>
         </div>
@@ -132,63 +139,86 @@
         {% endif %}
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <!-- Visit History -->
+            <!-- Timeline: Visits & Stage Changes -->
             <div>
                 <div class="flex items-center gap-3 mb-8">
                     <h2 class="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-lg">
                         <span class="material-symbols-outlined text-primary">history</span>
-                        Visit History
+                        Section Timeline
                     </h2>
                     <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
                 </div>
-                
+
                 <div class="space-y-8 relative pl-6">
                     <div class="timeline-line"></div>
-                    {% for visit in past_visits %}
+                    {% for item in timeline_items %}
                     <div class="relative">
+                        {% if item.type == 'stage_change' %}
+                        <!-- Stage Change Marker -->
+                        <div class="timeline-marker" style="border-color: {{ section.color_code }}; background-color: {{ section.color_code }};"></div>
+                        <div class="bg-gradient-to-r from-{{ section.color_code }}-50 to-white dark:from-slate-800 dark:to-slate-900 rounded-2xl border-l-4 p-5 shadow-sm hover:shadow-md transition-shadow" style="border-left-color: {{ section.color_code }};">
+                            <div class="flex justify-between items-start mb-2">
+                                <h6 class="font-bold text-slate-900 dark:text-white text-sm">{{ item.object.changed_at|date:"l, F j, Y" }}</h6>
+                                <span class="text-[10px] font-bold text-white uppercase tracking-widest px-2 py-0.5 rounded-full" style="background-color: {{ section.color_code }};">
+                                    Stage Change
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                                <span class="material-symbols-outlined text-lg" style="color: {{ section.color_code }};">trending_up</span>
+                                <span>Section entered <strong>{{ item.object.get_stage_display }}</strong> stage</span>
+                            </div>
+                            {% if item.object.notes %}
+                            <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed mt-2 italic">"{{ item.object.notes }}"</p>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <!-- Visit Log Marker -->
                         <div class="timeline-marker" style="border-color: {{ section.color_code }};"></div>
                         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
                             <div class="flex justify-between items-start mb-3">
-                                <h6 class="font-bold text-slate-900 dark:text-white text-sm">{{ visit.date|date:"l, F j, Y" }}</h6>
-                                {% if visit.task %}
+                                <h6 class="font-bold text-slate-900 dark:text-white text-sm">{{ item.object.date|date:"l, F j, Y" }}</h6>
+                                {% if item.object.task %}
                                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Planned</span>
                                 {% else %}
                                 <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Unplanned</span>
                                 {% endif %}
                             </div>
-                            
-                            <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed mb-4 italic">"{{ visit.notes|linebreaksbr }}"</p>
-                            
-                            {% if visit.metrics.all %}
+
+                            <p class="text-slate-600 dark:text-slate-400 text-xs leading-relaxed mb-4 italic">"{{ item.object.notes|linebreaksbr }}"</p>
+
+                            {% if item.object.metrics.all %}
                             <div class="flex flex-wrap gap-2 mb-4">
-                                {% for metric in visit.metrics.all %}
+                                {% for metric in item.object.metrics.all %}
                                 <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold rounded-lg border border-slate-100 dark:border-slate-700 uppercase">
                                     <span class="material-symbols-outlined text-xs">
-                                        {% if metric.metric_type == 'litter_general' or metric.metric_type == 'litter_recyclable' %}delete{% else %}park{% endif %}
+                                        {% if metric.metric_type == 'litter_general' or metric.metric_type == 'litter_recyclable' %}delete
+                                        {% elif metric.metric_type == 'weed' %}delete_forever
+                                        {% else %}park{% endif %}
                                     </span>
                                     {{ metric.value }} {{ metric.label|default:metric.get_metric_type_display }}
                                 </span>
                                 {% endfor %}
                             </div>
                             {% endif %}
-                            
-                            {% if visit.photos.all %}
+
+                            {% if item.object.photos.all %}
                             <div class="flex gap-3">
-                                {% for photo in visit.photos.all %}
-                                <img src="{{ photo.file.url }}" class="thumbnail-img" alt="{{ photo.description }}" 
-                                     data-bs-toggle="modal" data-bs-target="#photoModal" 
+                                {% for photo in item.object.photos.all %}
+                                <img src="{{ photo.file.url }}" class="thumbnail-img" alt="{{ photo.description }}"
+                                     data-bs-toggle="modal" data-bs-target="#photoModal"
                                      data-bs-src="{{ photo.file.url }}" data-bs-desc="{{ photo.description }}">
                                 {% endfor %}
                             </div>
                             {% endif %}
                         </div>
+                        {% endif %}
                     </div>
                     {% empty %}
                     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-12 flex flex-col items-center justify-center text-center">
                         <div class="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300 mb-4">
                             <span class="material-symbols-outlined text-3xl">history</span>
                         </div>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm italic font-medium">No past visits recorded.</p>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm italic font-medium">No activity recorded yet.</p>
                     </div>
                     {% endfor %}
                 </div>

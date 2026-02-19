@@ -36,6 +36,16 @@ python manage.py runserver
 - **Default Admin:** username="admin" (password set during creation)
 - **Application URL:** http://127.0.0.1:8000/core/weekly-planner/
 
+## Product Context & AI-Ready Documentation
+
+The `product/context/` directory contains high-level documentation designed for both human developers and AI assistants (like Gemini CLI).
+
+- **`CURRENT_STATE.md`**: An automatically generated summary of the codebase. Run `python summarise.py` to update it.
+- **`learnings.md`**: A log of technical "gotchas" and their solutions discovered during development.
+- **`stack.md`**: Detailed overview of the technical stack and architectural choices.
+- **`ui_standards.md`**: Documentation of the visual aesthetic and UX patterns.
+- **`po.md`**: Defines the role and protocol for the Technical Product Owner (used for story generation).
+
 ## Architecture Overview
 
 ### Tech Stack

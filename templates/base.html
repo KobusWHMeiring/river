@@ -95,6 +95,10 @@
         
         <nav class="flex-1 px-3 space-y-1">
             {% if user.is_authenticated %}
+                <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'dashboard' %}sidebar-item-active{% endif %}" href="{% url 'dashboard' %}">
+                    <span class="material-symbols-outlined">analytics</span>
+                    <span class="text-sm font-medium">Impact Overview</span>
+                </a>
                 <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'weekly_planner' %}sidebar-item-active{% endif %}" href="{% url 'weekly_planner' %}">
                     <span class="material-symbols-outlined">calendar_view_week</span>
                     <span class="text-sm font-medium">Weekly Planner</span>
@@ -112,10 +116,14 @@
 
         <div class="p-4 border-t border-slate-200 dark:border-slate-800 space-y-1">
             {% if user.is_authenticated %}
+                <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'task_template_list' %}sidebar-item-active{% endif %}" href="{% url 'task_template_list' %}">
+                    <span class="material-symbols-outlined">assignment</span>
+                    <span class="text-sm font-medium">Task Templates</span>
+                </a>
                 {% if user.is_staff %}
                 <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="{% url 'admin:index' %}">
-                    <span class="material-symbols-outlined">settings</span>
-                    <span class="text-sm font-medium">Admin Settings</span>
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                    <span class="text-sm font-medium">Admin</span>
                 </a>
                 {% endif %}
                 <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" href="{% url 'admin:logout' %}">

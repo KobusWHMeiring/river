@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Impact Dashboard - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    }
+    .stat-card {
+        @apply bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-all;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0 z-10">
+    <div class="flex flex-col">
+        <h1 class="text-xl font-bold dark:text-white leading-tight">Impact Dashboard</h1>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Liesbeek River Rehabilitation Global Overview</p>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="text-right hidden sm:block">
+            <p class="text-xs font-bold text-slate-900 dark:text-white leading-none mb-1">{% now "l, j F Y" %}</p>
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest">Real-time stats</p>
+        </div>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto custom-scrollbar bg-slate-50 dark:bg-slate-950/50 p-8">
+    <div class="max-w-7xl mx-auto space-y-8">
+        
+        <!-- Impact Counters -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="stat-card border-t-4 border-t-blue-500">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                        <span class="material-symbols-outlined">delete</span>
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Litter Removed</span>
+                </div>
+                <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_bags }} <span class="text-sm font-medium text-slate-400 uppercase">Bags</span></div>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">
+                    {{ total_bags_general }} General / {{ total_bags_recyclable }} Recyclable
+                </p>
+            </div>
+
+            <div class="stat-card border-t-4 border-t-emerald-500">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
+                        <span class="material-symbols-outlined">park</span>
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Re-Planting</span>
+                </div>
+                <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_plants }} <span class="text-sm font-medium text-slate-400 uppercase">Plants</span></div>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Indigenous species added</p>
+            </div>
+
+            <div class="stat-card border-t-4 border-t-orange-500">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
+                        <span class="material-symbols-outlined">delete_forever</span>
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invasives Removed</span>
+                </div>
+                <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_weeds }} <span class="text-sm font-medium text-slate-400 uppercase">Units</span></div>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Alien species managed</p>
+            </div>
+
+            <div class="stat-card border-t-4 border-t-primary">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-primary">
+                        <span class="material-symbols-outlined">analytics</span>
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Success Metrics</span>
+                </div>
+                <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">100%</div>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">All section data validated</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-8">
+            <!-- Stage Distribution -->
+            <div class="col-span-12 lg:col-span-4 space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                    <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2 mb-6">
+                        <span class="material-symbols-outlined text-lg text-primary">leaderboard</span>
+                        Lifecycle Progress
+                    </h2>
+                    
+                    <div class="space-y-5">
+                        {% for stage in stage_distribution %}
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-xs font-bold uppercase tracking-wider">
+                                <span class="text-slate-500">{{ stage.label }}</span>
+                                <span class="text-slate-900 dark:text-white">{{ stage.count }} Sections</span>
+                            </div>
+                            <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-primary" style="width: {% if stage.count > 0 %}{{ stage.count|add:"0"|divisibleby:"1" }}%{% else %}0%{% endif %};"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Feed -->
+            <div class="col-span-12 lg:col-span-8">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                    <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg text-primary">history</span>
+                            Recent River Activity
+                        </h2>
+                        <a href="#" class="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">View All Logs</a>
+                    </div>
+                    
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for visit in recent_visits %}
+                        <div class="p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <div class="flex gap-6">
+                                <!-- Date Column -->
+                                <div class="flex flex-col items-center shrink-0 w-12 pt-1">
+                                    <span class="text-xs font-bold text-slate-900 dark:text-white leading-none">{{ visit.date|date:"d" }}</span>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{{ visit.date|date:"M" }}</span>
+                                </div>
+                                
+                                <div class="flex-1 space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <a href="{% url 'section_detail' visit.section.pk %}" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border transition-all" style="background-color: {{ visit.section.color_code }}10; border-color: {{ visit.section.color_code }}30; color: {{ visit.section.color_code }};">
+                                                {{ visit.section.name }}
+                                            </a>
+                                            {% if visit.task %}
+                                            <span class="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
+                                                <span class="material-symbols-outlined text-xs">assignment_turned_in</span> Planned
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 font-medium">{{ visit.created_at|timesince }} ago</span>
+                                    </div>
+                                    
+                                    <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic">"{{ visit.notes|truncatechars:180 }}"</p>
+                                    
+                                    <div class="flex items-center justify-between pt-1">
+                                        <div class="flex flex-wrap gap-2">
+                                            {% for metric in visit.metrics.all %}
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-tighter px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">
+                                                {{ metric.value }} {{ metric.label|default:metric.get_metric_type_display }}
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        {% if visit.photos.all %}
+                                        <div class="flex -space-x-3">
+                                            {% for photo in visit.photos.all %}
+                                            <img src="{{ photo.file.url }}" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 object-cover" alt="Activity">
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="p-12 text-center">
+                            <span class="material-symbols-outlined text-4xl text-slate-200 mb-2">inbox</span>
+                            <p class="text-sm text-slate-400 font-medium italic">No recent activity found.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

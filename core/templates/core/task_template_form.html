@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit Template{% else %}Create Template{% endif %} - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    .material-symbols-outlined {
+        font-size: 1.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0 z-10">
+    <div class="flex flex-col">
+        <h1 class="text-xl font-bold dark:text-white leading-tight">{% if object %}Edit Task Template{% else %}Create New Task Template{% endif %}</h1>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Define standard operating procedure</p>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto custom-scrollbar bg-slate-50 dark:bg-slate-950/50">
+    <div class="max-w-2xl mx-auto p-8 lg:p-12">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <form method="post" class="p-8 space-y-6">
+                {% csrf_token %}
+
+                <!-- Template Name -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.name.id_for_label }}">Template Name</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">assignment</span>
+                        {{ form.name }}
+                    </div>
+                    {% if form.name.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Task Type -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.task_type.id_for_label }}">Task Type</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                            {% if form.task_type.value == 'litter_run' %}delete_sweep
+                            {% elif form.task_type.value == 'weeding' %}grass
+                            {% elif form.task_type.value == 'planting' %}forest
+                            {% else %}description{% endif %}
+                        </span>
+                        {{ form.task_type }}
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+                    {% if form.task_type.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.task_type.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Assignee Type -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.assignee_type.id_for_label }}">Assignee Type</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">people</span>
+                        {{ form.assignee_type }}
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Determines who this task is typically assigned to</p>
+                    {% if form.assignee_type.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.assignee_type.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Default Instructions -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.default_instructions.id_for_label }}">Default Instructions</label>
+                    <div class="relative">
+                        {{ form.default_instructions }}
+                        <div class="absolute bottom-3 right-3 opacity-20 dark:opacity-10 pointer-events-none">
+                            <span class="material-symbols-outlined text-2xl">format_align_left</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">These instructions will be auto-populated when creating tasks from this template</p>
+                    {% if form.default_instructions.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.default_instructions.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Active Status (for editing) -->
+                {% if object %}
+                <div class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        {{ form.is_active }}
+                        <div class="flex flex-col">
+                            <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">Active Template</span>
+                            <span class="text-xs text-slate-400">Inactive templates are hidden from task creation but preserved for existing tasks</span>
+                        </div>
+                    </label>
+                    {% if form.is_active.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.is_active.errors.0 }}</p>{% endif %}
+                </div>
+                {% else %}
+                <!-- Hidden is_active field for new templates -->
+                    {{ form.is_active.as_hidden }}
+                {% endif %}
+
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <a href="{% url 'task_template_list' %}" class="px-6 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="bg-primary hover:bg-opacity-90 text-white px-8 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">{% if object %}save{% else %}add{% endif %}</span>
+                        {% if object %}Update{% else %}Create{% endif %} Template
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const taskTypeSelect = document.getElementById('{{ form.task_type.id_for_label }}');
+    const iconSpan = taskTypeSelect ? taskTypeSelect.parentElement.querySelector('.material-symbols-outlined') : null;
+
+    if (taskTypeSelect && iconSpan) {
+        const iconMap = {
+            'litter_run': 'delete_sweep',
+            'weeding': 'grass',
+            'planting': 'forest',
+            'admin': 'description'
+        };
+
+        taskTypeSelect.addEventListener('change', function() {
+            const selectedType = this.value;
+            if (iconMap[selectedType]) {
+                iconSpan.textContent = iconMap[selectedType];
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

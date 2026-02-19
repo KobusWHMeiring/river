@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
+from django.utils import timezone
 
 class Section(models.Model):
     STAGE_CHOICES = [
@@ -21,7 +22,31 @@ class Section(models.Model):
     
     def __str__(self):
         return str(self.name)
-    
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            try:
+                old_instance = Section.objects.get(pk=self.pk)
+                if old_instance.current_stage != self.current_stage:
+                    super().save(*args, **kwargs)
+                    SectionStageHistory.objects.create(
+                        section=self,
+                        stage=self.current_stage,
+                        changed_at=timezone.now()
+                    )
+                    return
+            except Section.DoesNotExist:
+                pass
+        else:
+            super().save(*args, **kwargs)
+            SectionStageHistory.objects.create(
+                section=self,
+                stage=self.current_stage,
+                changed_at=timezone.now()
+            )
+            return
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ['position', 'name']
 
@@ -32,22 +57,24 @@ class TaskTemplate(models.Model):
         ('planting', 'Planting'),
         ('admin', 'Admin'),
     ]
-    
+
     ASSIGNEE_TYPE_CHOICES = [
         ('team', 'Team'),
         ('manager', 'Manager'),
     ]
-    
+
     name = models.CharField(max_length=100)
     task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES)
     assignee_type = models.CharField(max_length=10, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     default_instructions = models.TextField()
+    is_active = models.BooleanField(default=True, help_text="Inactive templates are hidden from task creation but preserved for existing tasks")
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         task_type_display = dict(self.TASK_TYPE_CHOICES).get(str(self.task_type), str(self.task_type))
-        return f"{self.name} ({task_type_display})"
-    
+        status = "Active" if self.is_active else "Retired"
+        return f"{self.name} ({task_type_display}) - {status}"
+
     class Meta:
         ordering = ['name']
 
@@ -98,6 +125,7 @@ class Metric(models.Model):
         ('litter_general', 'Litter (General)'),
         ('litter_recyclable', 'Litter (Recyclable)'),
         ('plant', 'Plant'),
+        ('weed', 'Weeding / Removal'),
     ]
     
     visit = models.ForeignKey(VisitLog, on_delete=models.CASCADE, related_name='metrics')
@@ -124,3 +152,21 @@ class Photo(models.Model):
     
     class Meta:
         ordering = ['-timestamp']
+
+class SectionStageHistory(models.Model):
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='stage_history')
+    stage = models.CharField(max_length=20, choices=Section.STAGE_CHOICES)
+    changed_at = models.DateTimeField()
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        stage_display = dict(Section.STAGE_CHOICES).get(self.stage, self.stage)
+        return f"{self.section.name} → {stage_display} at {self.changed_at}"
+
+    class Meta:
+        ordering = ['-changed_at']
+        verbose_name = 'Stage History'
+        verbose_name_plural = 'Stage History'
+        indexes = [
+            models.Index(fields=['section', 'changed_at']),
+        ]

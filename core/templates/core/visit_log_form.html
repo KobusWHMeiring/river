@@ -160,7 +160,7 @@
                     <div class="space-y-4">
                         <div class="flex items-center justify-between">
                             <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Planting Data</h5>
-                            <button type="button" onclick="addPlantMetric()" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+                            <button type="button" onclick="addMetric('plant')" class="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
                                 <span class="material-symbols-outlined text-sm">add_circle</span>
                                 Add Species
                             </button>
@@ -173,13 +173,28 @@
                                     <input type="text" name="metrics-2-label" placeholder="e.g., Kniphofia" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary/20 dark:text-slate-200">
                                 </div>
                                 <div class="sm:col-span-5 flex items-center justify-between bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                                    <button type="button" onclick="updateCounter('plant_0', -1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">remove</span></button>
-                                    <span class="font-bold text-sm dark:text-white" id="plant_0_value">0</span>
-                                    <button type="button" onclick="updateCounter('plant_0', 1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">add</span></button>
+                                    <button type="button" onclick="updateCounter('metric_2', -1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">remove</span></button>
+                                    <span class="font-bold text-sm dark:text-white" id="metric_2_value">0</span>
+                                    <button type="button" onclick="updateCounter('metric_2', 1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">add</span></button>
                                     <input type="hidden" name="metrics-2-metric_type" value="plant">
-                                    <input type="hidden" name="metrics-2-value" id="plant_0_input" value="0">
+                                    <input type="hidden" name="metrics-2-value" id="metric_2_input" value="0">
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Weeding Section -->
+                    <div class="space-y-4 pt-4">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Weeding Data (Removal)</h5>
+                            <button type="button" onclick="addMetric('weed')" class="text-orange-500 text-xs font-bold flex items-center gap-1 hover:underline">
+                                <span class="material-symbols-outlined text-sm">delete_forever</span>
+                                Add Weed Species
+                            </button>
+                        </div>
+                        
+                        <div id="weedMetrics" class="space-y-4">
+                            <!-- Weeding metrics will be added here dynamically -->
                         </div>
                     </div>
                 </div>
@@ -247,11 +262,14 @@
 
 {% block extra_js %}
 <script>
-let plantCount = 1;
+// totalMetrics tracks the next available index in the formset
+// Initial state: 0=litter_general, 1=litter_recyclable, 2=first_plant
+let totalMetrics = 3; 
+
 const counters = {
     litter_general: 0,
     litter_recyclable: 0,
-    plant_0: 0
+    metric_2: 0 // First plant
 };
 
 function updateCounter(counterId, delta) {
@@ -279,34 +297,40 @@ function updateCounter(counterId, delta) {
     }
 }
 
-function addPlantMetric() {
-    const plantMetrics = document.getElementById('plantMetrics');
-    const newIndex = plantCount;
-    const metricIndex = 2 + newIndex;
+function addMetric(type) {
+    const containerId = type === 'plant' ? 'plantMetrics' : 'weedMetrics';
+    const container = document.getElementById(containerId);
+    const metricIndex = totalMetrics;
+    const counterId = `metric_${metricIndex}`;
+    
+    const labelPlaceholder = type === 'plant' ? 'e.g., Kniphofia' : 'e.g., Wattle (Bags)';
+    const labelText = type === 'plant' ? 'Plant Species' : 'Weed Species / Removal';
+    const icon = type === 'plant' ? 'add_circle' : 'delete_forever';
+    const accentColor = type === 'plant' ? 'primary' : 'orange-500';
     
     const newMetric = document.createElement('div');
     newMetric.className = 'grid grid-cols-1 sm:grid-cols-12 gap-4 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700 items-end animate-in fade-in slide-in-from-top-2 duration-300';
     newMetric.innerHTML = `
         <div class="sm:col-span-7 space-y-1.5">
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Plant Species</label>
-            <input type="text" name="metrics-${metricIndex}-label" placeholder="e.g., Kniphofia" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary/20 dark:text-slate-200">
+            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${labelText}</label>
+            <input type="text" name="metrics-${metricIndex}-label" placeholder="${labelPlaceholder}" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary/20 dark:text-slate-200">
         </div>
         <div class="sm:col-span-5 flex items-center justify-between bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
-            <button type="button" onclick="updateCounter('plant_${newIndex}', -1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">remove</span></button>
-            <span class="font-bold text-sm dark:text-white" id="plant_${newIndex}_value">0</span>
-            <button type="button" onclick="updateCounter('plant_${newIndex}', 1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">add</span></button>
-            <input type="hidden" name="metrics-${metricIndex}-metric_type" value="plant">
-            <input type="hidden" name="metrics-${metricIndex}-value" id="plant_${newIndex}_input" value="0">
+            <button type="button" onclick="updateCounter('${counterId}', -1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">remove</span></button>
+            <span class="font-bold text-sm dark:text-white" id="${counterId}_value">0</span>
+            <button type="button" onclick="updateCounter('${counterId}', 1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">add</span></button>
+            <input type="hidden" name="metrics-${metricIndex}-metric_type" value="${type}">
+            <input type="hidden" name="metrics-${metricIndex}-value" id="${counterId}_input" value="0">
         </div>
     `;
     
-    plantMetrics.appendChild(newMetric);
-    counters[`plant_${newIndex}`] = 0;
-    plantCount++;
+    container.appendChild(newMetric);
+    counters[counterId] = 0;
+    totalMetrics++;
     
-    // Update management form total forms (3 base forms + additional plant forms)
-    const totalForms = document.getElementById('id_metrics-TOTAL_FORMS');
-    if (totalForms) totalForms.value = 3 + (plantCount - 1);
+    // Update management form total forms
+    const totalFormsInput = document.getElementById('id_metrics-TOTAL_FORMS');
+    if (totalFormsInput) totalFormsInput.value = totalMetrics;
 }
 
 function previewPhoto(input) {
@@ -334,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`[DEBUG] Date set to: ${today}`);
     }
     
-    // Initialize counters
+    // Initialize counters from existing values in DOM
     for (const counterId in counters) {
         const valElem = document.getElementById(`${counterId}_value`);
         const inputElem = document.getElementById(`${counterId}_input`);
@@ -343,13 +367,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     console.log('[DEBUG] Counters initialized:', counters);
     
-    // Set initial TOTAL_FORMS to 3 (litter_general, litter_recyclable, plant_0)
-    const totalForms = document.getElementById('id_metrics-TOTAL_FORMS');
-    if (totalForms) {
-        totalForms.value = 3;
-        console.log(`[DEBUG] Set metrics TOTAL_FORMS to: ${totalForms.value}`);
-    } else {
-        console.log('[DEBUG] WARNING: metrics TOTAL_FORMS element not found!');
+    // Set initial TOTAL_FORMS
+    const totalFormsInput = document.getElementById('id_metrics-TOTAL_FORMS');
+    if (totalFormsInput) {
+        totalFormsInput.value = totalMetrics;
+        console.log(`[DEBUG] Set metrics TOTAL_FORMS to: ${totalFormsInput.value}`);
     }
     
     // Set initial photo TOTAL_FORMS to 1
@@ -357,40 +379,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (photoTotalForms) {
         photoTotalForms.value = 1;
         console.log(`[DEBUG] Set photos TOTAL_FORMS to: ${photoTotalForms.value}`);
-    } else {
-        console.log('[DEBUG] WARNING: photos TOTAL_FORMS element not found!');
     }
-    
-    // Debug: Log all metric input values
-    const metricInputs = document.querySelectorAll('input[name^="metrics-"]');
-    console.log(`[DEBUG] Found ${metricInputs.length} metric inputs`);
-    metricInputs.forEach(input => {
-        console.log(`[DEBUG] Input: ${input.name} = ${input.value}`);
-    });
     
     // Add form submit listener
     const form = document.getElementById('visitLogForm');
     if (form) {
         form.addEventListener('submit', function(e) {
             console.log('[DEBUG] Form submission started');
-            console.log('[DEBUG] Final counters state:', counters);
             
             // Update all counter inputs before submit
             for (const counterId in counters) {
                 const inputElem = document.getElementById(`${counterId}_input`);
                 if (inputElem) {
                     inputElem.value = counters[counterId];
-                    console.log(`[DEBUG] Submit - Setting ${counterId}_input = ${counters[counterId]}`);
                 }
             }
-            
-            // Log all form data
-            const formData = new FormData(form);
-            console.log('[DEBUG] Form data being submitted:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`  ${key}: ${value}`);
-            }
-            console.log('[DEBUG] Form submission continuing...');
         });
     }
 });

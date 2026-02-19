@@ -16,9 +16,13 @@ class SectionForm(forms.ModelForm):
 class TaskTemplateForm(forms.ModelForm):
     class Meta:
         model = TaskTemplate
-        fields = ['name', 'task_type', 'default_instructions']
+        fields = ['name', 'task_type', 'assignee_type', 'default_instructions', 'is_active']
         widgets = {
-            'default_instructions': forms.Textarea(attrs={'rows': 4}),
+            'default_instructions': forms.Textarea(attrs={'rows': 4, 'class': 'w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed'}),
+            'name': forms.TextInput(attrs={'class': 'w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none'}),
+            'task_type': forms.Select(attrs={'class': 'w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none'}),
+            'assignee_type': forms.Select(attrs={'class': 'w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary'}),
         }
 
 class TaskForm(forms.ModelForm):
@@ -27,7 +31,7 @@ class TaskForm(forms.ModelForm):
         required=False,
         empty_label="No template"
     )
-    
+
     class Meta:
         model = Task
         fields = ['date', 'section', 'assignee_type', 'instructions', 'template']
@@ -35,12 +39,12 @@ class TaskForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'type': 'date'}),
             'instructions': forms.Textarea(attrs={'rows': 4}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Set the queryset for template field
-        self.fields['template'].queryset = TaskTemplate.objects.all()
-        
+        # Set the queryset for template field - only show active templates
+        self.fields['template'].queryset = TaskTemplate.objects.filter(is_active=True)
+
         if 'template' in self.data and self.data['template']:
             try:
                 template_id = int(self.data['template'])
@@ -92,9 +96,20 @@ class PhotoForm(forms.ModelForm):
         
         return description
 
+class BaseMetricFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        for form in self.forms:
+            if self.can_delete and hasattr(form, 'cleaned_data'):
+                metric_type = form.cleaned_data.get('metric_type')
+                value = form.cleaned_data.get('value', 0)
+                # Skip saving if value is 0 for plants and weeds
+                if metric_type in ['plant', 'weed'] and value == 0:
+                    form.cleaned_data['DELETE'] = True
+
 # Formset for metrics
 MetricFormSet = inlineformset_factory(
-    VisitLog, Metric, form=MetricForm, extra=0, can_delete=True
+    VisitLog, Metric, form=MetricForm, formset=BaseMetricFormSet, extra=0, can_delete=True
 )
 
 class BasePhotoFormSet(forms.BaseInlineFormSet):

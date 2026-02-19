@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block title %}Task Templates - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    }
+    .filter-btn.active {
+        background-color: rgba(22, 101, 52, 0.1);
+        color: #166534;
+        border-color: #166534;
+    }
+    .template-row.inactive {
+        opacity: 0.6;
+        background-color: #f8fafc;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0 z-10">
+    <div class="flex flex-col">
+        <h1 class="text-xl font-bold dark:text-white leading-tight">Task Templates</h1>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Standard Operating Procedures</p>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="relative hidden md:block">
+            <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                <span class="material-symbols-outlined text-xl">search</span>
+            </span>
+            <input type="text" id="templateSearch" class="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm w-64 focus:ring-2 focus:ring-primary/20 dark:text-slate-200" placeholder="Find a template...">
+        </div>
+        <a href="{% url 'task_template_create' %}" class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-opacity-90 transition-all">
+            <span class="material-symbols-outlined text-lg">add</span>
+            Add Template
+        </a>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto custom-scrollbar">
+    <div class="max-w-5xl mx-auto p-8 lg:p-12">
+        <!-- Filters -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <h3 class="text-sm font-bold text-primary uppercase tracking-widest">Filter By</h3>
+                <div class="h-[1px] w-12 bg-primary/20"></div>
+                <div class="flex items-center gap-2">
+                    <button class="filter-btn active px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 dark:border-slate-700 transition-all hover:border-primary" data-filter="all">
+                        All Templates
+                    </button>
+                    <button class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 transition-all hover:border-primary" data-filter="team">
+                        <span class="material-symbols-outlined text-sm align-text-bottom">groups</span>
+                        Team
+                    </button>
+                    <button class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 transition-all hover:border-primary" data-filter="manager">
+                        <span class="material-symbols-outlined text-sm align-text-bottom">person</span>
+                        Manager
+                    </button>
+                    <button class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 transition-all hover:border-primary" data-filter="active">
+                        <span class="material-symbols-outlined text-sm align-text-bottom">check_circle</span>
+                        Active
+                    </button>
+                    <button class="filter-btn px-3 py-1.5 text-xs font-medium rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 transition-all hover:border-primary" data-filter="inactive">
+                        <span class="material-symbols-outlined text-sm align-text-bottom">archive</span>
+                        Retired
+                    </button>
+                </div>
+            </div>
+            <div class="text-sm text-slate-500">
+                <span id="templateCount">{{ templates|length }}</span> templates
+            </div>
+        </div>
+
+        <!-- Templates List -->
+        <div class="space-y-4" id="templateList">
+            {% for template in templates %}
+            <div class="template-row bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 hover:shadow-md transition-all group relative {% if not template.is_active %}inactive{% endif %}"
+                 data-assignee="{{ template.assignee_type }}"
+                 data-status="{% if template.is_active %}active{% else %}inactive{% endif %}">
+                
+                <!-- Icon based on task type -->
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 border
+                    {% if template.task_type == 'litter_run' %}bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-100 dark:border-amber-800
+                    {% elif template.task_type == 'weeding' %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-100 dark:border-emerald-800
+                    {% elif template.task_type == 'planting' %}bg-green-50 dark:bg-green-900/20 text-green-600 border-green-100 dark:border-green-800
+                    {% else %}bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100 dark:border-blue-800{% endif %}">
+                    <span class="material-symbols-outlined text-xl">
+                        {% if template.task_type == 'litter_run' %}delete_sweep
+                        {% elif template.task_type == 'weeding' %}grass
+                        {% elif template.task_type == 'planting' %}forest
+                        {% else %}description{% endif %}
+                    </span>
+                </div>
+                
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-1">
+                        <h4 class="text-base font-semibold text-slate-900 dark:text-white truncate template-name">{{ template.name }}</h4>
+                        {% if template.is_active %}
+                        <span class="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wide border border-emerald-100 dark:border-emerald-800">Active</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wide border border-slate-200 dark:border-slate-700">Retired</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="text-slate-500">{{ template.get_task_type_display }}</span>
+                        <span class="text-slate-300">•</span>
+                        <span class="{% if template.assignee_type == 'team' %}text-blue-600 dark:text-blue-400{% else %}text-purple-600 dark:text-purple-400{% endif %} font-medium">
+                            {{ template.get_assignee_type_display }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mt-2">{{ template.default_instructions|truncatechars:120 }}</p>
+                </div>
+
+                <div class="flex items-center gap-6 px-4 border-l border-slate-100 dark:border-slate-800 hidden md:flex">
+                    <div class="text-center">
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Created</span>
+                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">{{ template.created_at|date:"d M Y" }}</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'task_template_edit' template.pk %}" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Edit Template">
+                        <span class="material-symbols-outlined text-xl">edit_square</span>
+                    </a>
+                    {% if template.is_active %}
+                    <a href="{% url 'task_template_delete' template.pk %}" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Retire Template">
+                        <span class="material-symbols-outlined text-xl">archive</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="py-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800">
+                <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-700 mb-4">assignment</span>
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-1">No Templates Found</h3>
+                <p class="text-slate-500 text-sm">Create your first task template to standardize operating procedures.</p>
+                <a href="{% url 'task_template_create' %}" class="inline-flex items-center gap-2 mt-6 bg-primary text-white px-6 py-2 rounded-lg font-bold shadow-sm hover:bg-opacity-90 transition-all">
+                    <span class="material-symbols-outlined text-lg">add</span>
+                    Add First Template
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 text-slate-400 text-xs text-center">
+            <p>© 2026 Liesbeek Maintenance Management System</p>
+            <div class="flex gap-4">
+                <span class="text-slate-400">Task templates define standard operating procedures</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('templateSearch');
+    const templateList = document.getElementById('templateList');
+    const templates = templateList.querySelectorAll('.template-row');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const templateCount = document.getElementById('templateCount');
+    let currentFilter = 'all';
+
+    // Search functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            filterTemplates();
+        });
+    }
+
+    // Filter button functionality
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            // Update current filter
+            currentFilter = this.dataset.filter;
+            // Apply filters
+            filterTemplates();
+        });
+    });
+
+    function filterTemplates() {
+        const query = searchInput ? searchInput.value.toLowerCase() : '';
+        let visibleCount = 0;
+
+        templates.forEach(template => {
+            const name = template.querySelector('.template-name').textContent.toLowerCase();
+            const assignee = template.dataset.assignee;
+            const status = template.dataset.status;
+            
+            let matchesSearch = name.includes(query);
+            let matchesFilter = true;
+
+            switch(currentFilter) {
+                case 'team':
+                    matchesFilter = assignee === 'team';
+                    break;
+                case 'manager':
+                    matchesFilter = assignee === 'manager';
+                    break;
+                case 'active':
+                    matchesFilter = status === 'active';
+                    break;
+                case 'inactive':
+                    matchesFilter = status === 'inactive';
+                    break;
+                default: // 'all'
+                    matchesFilter = true;
+            }
+
+            if (matchesSearch && matchesFilter) {
+                template.style.display = 'flex';
+                visibleCount++;
+            } else {
+                template.style.display = 'none';
+            }
+        });
+
+        templateCount.textContent = visibleCount;
+    }
+});
+</script>
+{% endblock %}

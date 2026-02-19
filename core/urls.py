@@ -2,6 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Dashboard URL
+    path('dashboard/', views.GlobalDashboardView.as_view(), name='dashboard'),
+    
     # Section URLs
     path('sections/', views.SectionListView.as_view(), name='section_list'),
     path('sections/<int:pk>/', views.SectionDetailView.as_view(), name='section_detail'),
@@ -21,4 +24,10 @@ urlpatterns = [
     
     # Visit Log URLs
     path('visit-logs/create/', views.VisitLogCreateView.as_view(), name='visit_log_create'),
+
+    # Task Template Management URLs
+    path('templates/', views.TaskTemplateListView.as_view(), name='task_template_list'),
+    path('templates/create/', views.TaskTemplateCreateView.as_view(), name='task_template_create'),
+    path('templates/<int:pk>/edit/', views.TaskTemplateUpdateView.as_view(), name='task_template_edit'),
+    path('templates/<int:pk>/delete/', views.TaskTemplateDeleteView.as_view(), name='task_template_delete'),
 ]

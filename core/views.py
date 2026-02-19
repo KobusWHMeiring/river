@@ -6,11 +6,54 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.utils import timezone
 from datetime import datetime, timedelta
-from .models import Section, Task, TaskTemplate, VisitLog, Metric, Photo
-from .forms import SectionForm, TaskForm, VisitLogForm, MetricFormSet, PhotoFormSet
+from .models import Section, Task, TaskTemplate, VisitLog, Metric, Photo, SectionStageHistory
+from .forms import SectionForm, TaskForm, TaskTemplateForm, VisitLogForm, MetricFormSet, PhotoFormSet
 
 from django.db.models import Sum, Q
 from django.utils import timezone
+
+class GlobalDashboardView(LoginRequiredMixin, ListView):
+    model = VisitLog
+    template_name = 'core/dashboard.html'
+    context_object_name = 'recent_visits'
+
+    def get_queryset(self):
+        return VisitLog.objects.all().prefetch_related('metrics', 'photos', 'section').order_by('-date', '-created_at')[:15]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Aggregated Stats
+        metrics = Metric.objects.all()
+        total_bags_general = metrics.filter(metric_type='litter_general').aggregate(total=Sum('value'))['total'] or 0
+        total_bags_recyclable = metrics.filter(metric_type='litter_recyclable').aggregate(total=Sum('value'))['total'] or 0
+        total_plants = metrics.filter(metric_type='plant').aggregate(total=Sum('value'))['total'] or 0
+        total_weeds = metrics.filter(metric_type='weed').aggregate(total=Sum('value'))['total'] or 0
+
+        # Section Stage Distribution
+        from django.db.models import Count
+        stage_counts = Section.objects.values('current_stage').annotate(count=Count('id'))
+        
+        # Convert to a more usable dict with display names
+        stage_choices = dict(Section.STAGE_CHOICES)
+        stage_distribution = []
+        for stage_code, label in stage_choices.items():
+            count = next((item['count'] for item in stage_counts if item['current_stage'] == stage_code), 0)
+            stage_distribution.append({
+                'code': stage_code,
+                'label': label,
+                'count': count
+            })
+
+        context.update({
+            'total_bags_general': total_bags_general,
+            'total_bags_recyclable': total_bags_recyclable,
+            'total_plants': total_plants,
+            'total_weeds': total_weeds,
+            'total_bags': total_bags_general + total_bags_recyclable,
+            'stage_distribution': stage_distribution,
+        })
+        return context
 
 class SectionListView(LoginRequiredMixin, ListView):
     model = Section
@@ -26,39 +69,80 @@ class SectionDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         section = self.object
         today = timezone.now().date()
-        
-        print(f"[DEBUG] SectionDetailView.get_context_data for section: {section.name} (ID: {section.id})")
-        
+
         # Cumulative Metrics
         metrics = Metric.objects.filter(visit__section=section)
-        print(f"[DEBUG] Found {metrics.count()} total metrics for this section")
-        
-        # Debug: Show all metrics
-        for metric in metrics:
-            print(f"[DEBUG] Metric: type={metric.metric_type}, value={metric.value}, visit_id={metric.visit.id if metric.visit else 'None'}")
-        
         total_bags_general = metrics.filter(metric_type='litter_general').aggregate(total=Sum('value'))['total'] or 0
         total_bags_recyclable = metrics.filter(metric_type='litter_recyclable').aggregate(total=Sum('value'))['total'] or 0
         total_plants = metrics.filter(metric_type='plant').aggregate(total=Sum('value'))['total'] or 0
+        total_weeds = metrics.filter(metric_type='weed').aggregate(total=Sum('value'))['total'] or 0
+
+        # Top 3 Weeding Species
+        top_weeds = metrics.filter(metric_type='weed').values('label').annotate(total=Sum('value')).order_by('-total')[:3]
+        top_weeds_list = []
+        weeds_sum_top3 = 0
+        for w in top_weeds:
+            top_weeds_list.append(f"{w['label']}: {w['total']}")
+            weeds_sum_top3 += w['total']
         
-        print(f"[DEBUG] Totals: general={total_bags_general}, recyclable={total_bags_recyclable}, plants={total_plants}")
+        if total_weeds > weeds_sum_top3:
+            top_weeds_list.append(f"Other: {total_weeds - weeds_sum_top3}")
         
+        weeding_summary = ", ".join(top_weeds_list) if top_weeds_list else "None recorded"
+
         # Timeline queries with prefetching
         past_visits = VisitLog.objects.filter(section=section).prefetch_related('metrics', 'photos').order_by('-date', '-created_at')
-        print(f"[DEBUG] Found {past_visits.count()} past visits")
-        
+
+        # Stage History
+        stage_history = SectionStageHistory.objects.filter(section=section).order_by('-changed_at')
+
+        # Calculate days in current stage (from most recent history entry)
+        latest_stage_change = stage_history.first()
+        if latest_stage_change:
+            days_in_stage = (timezone.now() - latest_stage_change.changed_at).days
+        else:
+            days_in_stage = (timezone.now() - section.created_at).days
+
         today_tasks = Task.objects.filter(section=section, date=today)
         future_tasks = Task.objects.filter(section=section, date__gt=today, is_completed=False).order_by('date')
-        
+
+        # Combine visits and stage history for timeline
+        timeline_items = []
+
+        # Add visits
+        for visit in past_visits:
+            timeline_items.append({
+                'type': 'visit',
+                'date': visit.date,
+                'created_at': visit.created_at,
+                'object': visit
+            })
+
+        # Add stage changes
+        for history in stage_history:
+            timeline_items.append({
+                'type': 'stage_change',
+                'date': history.changed_at.date(),
+                'created_at': history.changed_at,
+                'object': history
+            })
+
+        # Sort by created_at descending
+        timeline_items.sort(key=lambda x: x['created_at'], reverse=True)
+
         context.update({
             'total_bags_general': total_bags_general,
             'total_bags_recyclable': total_bags_recyclable,
             'total_plants': total_plants,
+            'total_weeds': total_weeds,
+            'weeding_summary': weeding_summary,
             'past_visits': past_visits,
+            'stage_history': stage_history,
+            'timeline_items': timeline_items,
             'today_tasks': today_tasks,
             'future_tasks': future_tasks,
             'today': today,
-            'days_in_stage': (timezone.now() - section.updated_at).days
+            'days_in_stage': days_in_stage
         })
         return context
 
@@ -95,28 +179,21 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         today = timezone.now().date()
         start_of_week = today - timedelta(days=today.weekday() + 1)
-        
+
         # Create week days list
         week_days = []
         for i in range(7):
             day = start_of_week + timedelta(days=i)
             week_days.append(day)
-        
+
         context['week_days'] = week_days
         context['sections'] = Section.objects.all()
         context['task_form'] = TaskForm()
-        
-        try:
-            # Try to filter by assignee_type - might fail if field doesn't exist
-            context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team')
-            context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager')
-        except Exception as e:
-            # If filtering fails, provide all templates
-            # This is a fallback for when assignee_type field is not yet in database
-            all_templates = TaskTemplate.objects.all()
-            context['team_task_templates'] = all_templates
-            context['manager_task_templates'] = TaskTemplate.objects.none()
-        
+
+        # Only show active templates
+        context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team', is_active=True)
+        context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager', is_active=True)
+
         return context
 
 class DailyAgendaView(LoginRequiredMixin, ListView):
@@ -176,7 +253,7 @@ class TaskCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['task_templates'] = TaskTemplate.objects.all()
+        context['task_templates'] = TaskTemplate.objects.filter(is_active=True)
         return context
 
     def get_success_url(self):
@@ -193,7 +270,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['task_templates'] = TaskTemplate.objects.all()
+        context['task_templates'] = TaskTemplate.objects.filter(is_active=True)
         return context
 
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
@@ -318,7 +395,7 @@ def task_complete_view(request, pk):
     task = get_object_or_404(Task, pk=pk)
     task.is_completed = True
     task.save()
-    
+
     # Create a visit log for the completed task
     VisitLog.objects.create(
         task=task,
@@ -326,5 +403,47 @@ def task_complete_view(request, pk):
         date=timezone.now().date(),
         notes=f"Task completed: {task.instructions}"
     )
-    
+
     return redirect('daily_agenda')
+
+
+# Task Template Management Views
+class TaskTemplateListView(LoginRequiredMixin, ListView):
+    model = TaskTemplate
+    template_name = 'core/task_template_list.html'
+    context_object_name = 'templates'
+
+    def get_queryset(self):
+        # Order by active first, then by name
+        return TaskTemplate.objects.all().order_by('-is_active', 'name')
+
+
+class TaskTemplateCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = TaskTemplate
+    form_class = TaskTemplateForm
+    template_name = 'core/task_template_form.html'
+    success_url = reverse_lazy('task_template_list')
+    success_message = "Task template created successfully!"
+
+
+class TaskTemplateUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = TaskTemplate
+    form_class = TaskTemplateForm
+    template_name = 'core/task_template_form.html'
+    success_url = reverse_lazy('task_template_list')
+    success_message = "Task template updated successfully!"
+
+
+class TaskTemplateDeleteView(LoginRequiredMixin, DeleteView):
+    model = TaskTemplate
+    template_name = 'core/task_template_confirm_delete.html'
+    success_url = reverse_lazy('task_template_list')
+
+    def delete(self, request, *args, **kwargs):
+        # Instead of hard delete, set is_active to False
+        self.object = self.get_object()
+        self.object.is_active = False
+        self.object.save()
+        from django.contrib import messages
+        messages.success(request, f"'{self.object.name}' has been retired. Existing tasks using this template are preserved.")
+        return redirect(self.get_success_url())

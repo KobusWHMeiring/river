@@ -1,5 +1,14 @@
 from django.contrib import admin
-from .models import Section, TaskTemplate, Task, VisitLog, Metric, Photo
+from .models import Section, TaskTemplate, Task, VisitLog, Metric, Photo, SectionStageHistory
+
+
+class SectionStageHistoryInline(admin.TabularInline):
+    model = SectionStageHistory
+    extra = 0
+    readonly_fields = ('stage', 'changed_at')
+    fields = ('stage', 'changed_at', 'notes')
+    ordering = ('-changed_at',)
+
 
 @admin.register(Section)
 class SectionAdmin(admin.ModelAdmin):
@@ -7,6 +16,7 @@ class SectionAdmin(admin.ModelAdmin):
     list_filter = ('current_stage',)
     search_fields = ('name', 'description')
     ordering = ('name',)
+    inlines = [SectionStageHistoryInline]
 
 @admin.register(TaskTemplate)
 class TaskTemplateAdmin(admin.ModelAdmin):
@@ -22,6 +32,7 @@ class MetricInline(admin.TabularInline):
 class PhotoInline(admin.TabularInline):
     model = Photo
     extra = 1
+
 
 @admin.register(VisitLog)
 class VisitLogAdmin(admin.ModelAdmin):
