@@ -25,6 +25,19 @@
         background-color: #ecfdf5;
         border-left-color: #10b981;
     }
+    .section-list-item.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+    }
+    .section-list-item.drag-over {
+        border-top: 3px solid #10b981;
+    }
+    .drag-handle {
+        cursor: grab;
+    }
+    .drag-handle:active {
+        cursor: grabbing;
+    }
     /* Two-column layout */
     .sections-layout {
         display: flex;
@@ -151,6 +164,10 @@
                         <div class="h-[1px] w-8 bg-primary/20"></div>
                         <span class="text-xs text-slate-400 font-medium italic">Upstream to Downstream</span>
                     </div>
+                    <div id="reorderStatus" class="hidden text-xs font-medium text-emerald-600">
+                        <span class="material-symbols-outlined text-sm align-text-bottom">check_circle</span>
+                        Order saved
+                    </div>
                 </div>
 
                 <!-- Sections -->
@@ -158,7 +175,12 @@
                     {% for section in sections %}
                     <div class="section-list-item bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:shadow-md transition-shadow group relative cursor-pointer" 
                          data-section-id="{{ section.pk }}"
-                         onclick="window.location='{% url 'section_detail' section.pk %}'">
+                         draggable="true"
+                         onclick="if(!this.classList.contains('dragging')) window.location='{% url 'section_detail' section.pk %}'">
+                        <div class="drag-handle w-8 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0 border border-slate-200 dark:border-slate-700 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" 
+                             title="Drag to reorder">
+                            <span class="material-symbols-outlined text-lg">drag_indicator</span>
+                        </div>
                         <div class="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-primary shrink-0 border border-emerald-100 dark:border-emerald-800">
                             <span class="text-base font-bold">{{ forloop.counter|stringformat:"02d" }}</span>
                         </div>
@@ -166,10 +188,11 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-1">
                                 <h4 class="text-sm font-semibold text-slate-900 dark:text-white truncate section-name">{{ section.name }}</h4>
-                                {% if section.status == 'priority' %}
-                                <span class="px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-[10px] font-bold uppercase tracking-wide border border-red-100 dark:border-red-800">Priority</span>
-                                {% else %}
-                                <span class="px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-900/20 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wide border border-slate-200 dark:border-slate-800">Low Priority</span>
+                                {% if section.status %}
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border" 
+                                      style="background-color: {{ section.status.color_code }}20; color: {{ section.status.color_code }}; border-color: {{ section.status.color_code }}40;">
+                                    {{ section.status.name }}
+                                </span>
                                 {% endif %}
                             </div>
                             <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{% if section.description %}{{ section.description }}{% else %}No description provided for this section.{% endif %}</p>
@@ -431,6 +454,162 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+
+    // Drag and Drop functionality
+    const sectionList = document.getElementById('sectionList');
+    let draggedItem = null;
+
+    function initDragAndDrop() {
+        const items = sectionList.querySelectorAll('.section-list-item');
+        
+        items.forEach(item => {
+            const dragHandle = item.querySelector('.drag-handle');
+            
+            // Drag handle events
+            dragHandle.addEventListener('mousedown', (e) => {
+                item.setAttribute('draggable', 'true');
+            });
+            
+            dragHandle.addEventListener('mouseup', () => {
+                item.setAttribute('draggable', 'false');
+            });
+            
+            // Drag events on the item
+            item.addEventListener('dragstart', handleDragStart);
+            item.addEventListener('dragend', handleDragEnd);
+            item.addEventListener('dragover', handleDragOver);
+            item.addEventListener('dragenter', handleDragEnter);
+            item.addEventListener('dragleave', handleDragLeave);
+            item.addEventListener('drop', handleDrop);
+        });
+    }
+
+    function handleDragStart(e) {
+        draggedItem = this;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', this.getAttribute('data-section-id'));
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        draggedItem = null;
+        
+        // Remove all drag-over styles
+        const items = sectionList.querySelectorAll('.section-list-item');
+        items.forEach(item => item.classList.remove('drag-over'));
+    }
+
+    function handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    }
+
+    function handleDragEnter(e) {
+        if (this !== draggedItem) {
+            this.classList.add('drag-over');
+        }
+    }
+
+    function handleDragLeave(e) {
+        this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+
+        if (draggedItem !== this) {
+            // Get all items as an array
+            const items = Array.from(sectionList.querySelectorAll('.section-list-item'));
+            const draggedIndex = items.indexOf(draggedItem);
+            const dropIndex = items.indexOf(this);
+
+            // Reorder in DOM
+            if (draggedIndex < dropIndex) {
+                this.parentNode.insertBefore(draggedItem, this.nextSibling);
+            } else {
+                this.parentNode.insertBefore(draggedItem, this);
+            }
+
+            // Update numbers and save order
+            updateSectionNumbers();
+            saveOrder();
+        }
+
+        this.classList.remove('drag-over');
+        return false;
+    }
+
+    function updateSectionNumbers() {
+        const items = sectionList.querySelectorAll('.section-list-item');
+        items.forEach((item, index) => {
+            const numberSpan = item.querySelector('.text-base.font-bold');
+            if (numberSpan) {
+                numberSpan.textContent = String(index + 1).padStart(2, '0');
+            }
+        });
+    }
+
+    function saveOrder() {
+        const items = sectionList.querySelectorAll('.section-list-item');
+        const order = Array.from(items).map(item => item.getAttribute('data-section-id'));
+        
+        // Show saving indicator
+        const statusEl = document.getElementById('reorderStatus');
+        statusEl.classList.remove('hidden');
+        statusEl.innerHTML = '<span class="material-symbols-outlined text-sm align-text-bottom">sync</span> Saving...';
+        statusEl.className = 'text-xs font-medium text-slate-500';
+
+        // Send to server
+        fetch('{% url "section_reorder" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ order: order })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                statusEl.innerHTML = '<span class="material-symbols-outlined text-sm align-text-bottom">check_circle</span> Order saved';
+                statusEl.className = 'text-xs font-medium text-emerald-600';
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            statusEl.innerHTML = '<span class="material-symbols-outlined text-sm align-text-bottom">error</span> Error saving';
+            statusEl.className = 'text-xs font-medium text-red-600';
+            console.error('Error:', error);
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Initialize drag and drop
+    initDragAndDrop();
 });
 </script>
 {% endblock %}

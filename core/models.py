@@ -3,6 +3,21 @@ from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.utils import timezone
 
+class Status(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    color_code = models.CharField(max_length=7, default='#808080', help_text="Hex color code for visual distinction")
+    is_active = models.BooleanField(default=True, help_text="Only active statuses are shown in dropdowns")
+    position = models.PositiveIntegerField(default=0, help_text="Order in which statuses appear")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['position', 'name']
+        verbose_name_plural = 'Statuses'
+
+    def __str__(self):
+        return str(self.name)
+
+
 class Section(models.Model):
     STAGE_CHOICES = [
         ('mitigation', 'Mitigation'),
@@ -12,15 +27,10 @@ class Section(models.Model):
         ('community', 'Community'),
     ]
 
-    STATUS_CHOICES = [
-        ('priority', 'Priority'),
-        ('low_priority', 'Low Priority'),
-    ]
-
     name = models.CharField(max_length=100, unique=True)
     color_code = models.CharField(max_length=7, default='#808080')
     current_stage = models.CharField(max_length=20, choices=STAGE_CHOICES, default='mitigation')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='priority', help_text="Priority level for this section")
+    status = models.ForeignKey(Status, on_delete=models.SET_NULL, null=True, blank=True, help_text="Current status of this section")
     description = models.TextField(blank=True)
     position = models.PositiveIntegerField(default=0, help_text="Order of the section (upstream to downstream)")
     boundary_data = models.JSONField(default=dict, blank=True, help_text="GeoJSON-style polygon coordinates for section boundaries")

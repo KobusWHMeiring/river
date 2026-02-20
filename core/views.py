@@ -4,15 +4,37 @@ from django.urls import reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.http import JsonResponse
 from datetime import datetime, timedelta
 import calendar
+import json
 from collections import defaultdict
 from .models import Section, Task, TaskTemplate, VisitLog, Metric, Photo, SectionStageHistory
 from .forms import SectionForm, TaskForm, TaskTemplateForm, VisitLogForm, MetricFormSet, PhotoFormSet
 
 from django.db.models import Sum, Q
 from django.utils import timezone
+
+
+@login_required
+def section_reorder_view(request):
+    """AJAX endpoint to reorder sections by updating their position field."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            section_order = data.get('order', [])
+            
+            # Update each section's position
+            for index, section_id in enumerate(section_order):
+                Section.objects.filter(id=section_id).update(position=index)
+            
+            return JsonResponse({'success': True, 'message': 'Order updated successfully'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
 
 class GlobalDashboardView(LoginRequiredMixin, ListView):
     model = VisitLog

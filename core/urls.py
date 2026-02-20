@@ -7,6 +7,7 @@ urlpatterns = [
     
     # Section URLs
     path('sections/', views.SectionListView.as_view(), name='section_list'),
+    path('sections/reorder/', views.section_reorder_view, name='section_reorder'),
     path('sections/<int:pk>/', views.SectionDetailView.as_view(), name='section_detail'),
     path('sections/create/', views.SectionCreateView.as_view(), name='section_create'),
     path('sections/<int:pk>/edit/', views.SectionUpdateView.as_view(), name='section_edit'),

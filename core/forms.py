@@ -15,6 +15,12 @@ class SectionForm(forms.ModelForm):
             'center_point': forms.HiddenInput(),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show active statuses in the dropdown
+        from .models import Status
+        self.fields['status'].queryset = Status.objects.filter(is_active=True)
+
 class TaskTemplateForm(forms.ModelForm):
     class Meta:
         model = TaskTemplate

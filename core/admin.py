@@ -1,5 +1,13 @@
 from django.contrib import admin
-from .models import Section, TaskTemplate, Task, VisitLog, Metric, Photo, SectionStageHistory
+from .models import Section, Status, TaskTemplate, Task, VisitLog, Metric, Photo, SectionStageHistory
+
+
+@admin.register(Status)
+class StatusAdmin(admin.ModelAdmin):
+    list_display = ('name', 'color_code', 'is_active', 'position')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+    ordering = ('position', 'name')
 
 
 class SectionStageHistoryInline(admin.TabularInline):
