@@ -11,10 +11,16 @@ class Section(models.Model):
         ('follow_up', 'Follow-up'),
         ('community', 'Community'),
     ]
-    
+
+    STATUS_CHOICES = [
+        ('priority', 'Priority'),
+        ('low_priority', 'Low Priority'),
+    ]
+
     name = models.CharField(max_length=100, unique=True)
     color_code = models.CharField(max_length=7, default='#808080')
     current_stage = models.CharField(max_length=20, choices=STAGE_CHOICES, default='mitigation')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='priority', help_text="Priority level for this section")
     description = models.TextField(blank=True)
     position = models.PositiveIntegerField(default=0, help_text="Order of the section (upstream to downstream)")
     boundary_data = models.JSONField(default=dict, blank=True, help_text="GeoJSON-style polygon coordinates for section boundaries")

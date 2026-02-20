@@ -6,7 +6,7 @@ from .models import Section, Task, TaskTemplate, VisitLog, Metric, Photo
 class SectionForm(forms.ModelForm):
     class Meta:
         model = Section
-        fields = ['name', 'color_code', 'current_stage', 'description', 'position', 'boundary_data', 'center_point']
+        fields = ['name', 'color_code', 'current_stage', 'status', 'description', 'position', 'boundary_data', 'center_point']
         widgets = {
             'color_code': forms.TextInput(attrs={'type': 'color'}),
             'description': forms.Textarea(attrs={'rows': 3}),

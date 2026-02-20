@@ -1,0 +1,252 @@
+Material Symbols Icon Usage Report
+==================================================
+
+Total unique icons: 60
+
+Icons by file:
+
+add:
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\task_template_list.html
+  - core\templates\core\visit_log_form.html
+  - core\templates\core\weekly_planner.html
+
+add_a_photo:
+  - core\templates\core\visit_log_form.html
+
+add_circle:
+  - core\templates\core\daily_agenda.html
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\section_detail.html
+  - core\templates\core\weekly_planner.html
+
+add_location_alt:
+  - core\templates\core\section_list.html
+
+add_task:
+  - core\templates\core\daily_agenda.html
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\weekly_planner.html
+
+analytics:
+  - core\templates\core\dashboard.html
+  - core\templates\core\visit_log_form.html
+
+archive:
+  - core\templates\core\task_template_confirm_delete.html
+  - core\templates\core\task_template_list.html
+
+arrow_forward:
+  - core\templates\core\section_detail.html
+
+assignment:
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\task_form.html
+  - core\templates\core\task_template_form.html
+  - core\templates\core\task_template_list.html
+  - core\templates\core\visit_log_form.html
+  - core\templates\core\weekly_planner.html
+
+assignment_turned_in:
+  - core\templates\core\dashboard.html
+
+calendar_add_on:
+  - core\templates\core\section_detail.html
+
+calendar_month:
+  - core\templates\core\daily_agenda.html
+
+calendar_today:
+  - core\templates\core\daily_agenda.html
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\section_confirm_delete.html
+  - core\templates\core\task_confirm_delete.html
+  - core\templates\core\task_form.html
+  - core\templates\core\visit_log_form.html
+  - core\templates\core\weekly_planner.html
+
+calendar_view_week:
+  - core\templates\core\daily_agenda.html
+
+category:
+  - core\templates\core\visit_log_form.html
+
+check:
+  - core\templates\core\monthly_planner.html
+
+check_circle:
+  - core\templates\core\daily_agenda.html
+  - core\templates\core\section_detail.html
+  - core\templates\core\task_confirm_delete.html
+  - core\templates\core\task_template_list.html
+  - core\templates\core\visit_log_form.html
+  - core\templates\core\weekly_planner.html
+
+chevron_left:
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\weekly_planner.html
+
+chevron_right:
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\weekly_planner.html
+
+close:
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\section_detail.html
+  - core\templates\core\weekly_planner.html
+
+delete:
+  - core\templates\core\daily_agenda.html
+  - core\templates\core\dashboard.html
+  - core\templates\core\section_form.html
+  - core\templates\core\section_list.html
+  - core\templates\core\visit_log_form.html
+
+delete_forever:
+  - core\templates\core\dashboard.html
+  - core\templates\core\section_confirm_delete.html
+  - core\templates\core\task_confirm_delete.html
+
+description:
+  - core\templates\core\section_form.html
+
+done:
+  - core\templates\core\daily_agenda.html
+
+edit:
+  - core\templates\core\daily_agenda.html
+  - core\templates\core\section_detail.html
+  - core\templates\core\section_form.html
+
+edit_note:
+  - core\templates\core\daily_agenda.html
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\task_form.html
+  - core\templates\core\weekly_planner.html
+
+edit_square:
+  - core\templates\core\section_detail.html
+  - core\templates\core\section_list.html
+  - core\templates\core\task_template_list.html
+
+event:
+  - core\templates\core\section_detail.html
+
+event_busy:
+  - core\templates\core\section_detail.html
+
+expand_more:
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\section_form.html
+  - core\templates\core\task_form.html
+  - core\templates\core\task_template_form.html
+  - core\templates\core\visit_log_form.html
+  - core\templates\core\weekly_planner.html
+
+flag:
+  - core\templates\core\section_form.html
+
+forest:
+  - core\templates\core\visit_log_form.html
+
+format_align_left:
+  - core\templates\core\task_template_form.html
+
+grass:
+  - core\templates\core\visit_log_form.html
+
+group:
+  - core\templates\core\weekly_planner.html
+
+groups:
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\task_form.html
+  - core\templates\core\task_template_list.html
+  - core\templates\core\weekly_planner.html
+
+history:
+  - core\templates\core\dashboard.html
+  - core\templates\core\section_detail.html
+
+image:
+  - core\templates\core\visit_log_form.html
+
+inbox:
+  - core\templates\core\dashboard.html
+
+info:
+  - core\templates\core\daily_agenda.html
+  - core\templates\core\section_detail.html
+  - core\templates\core\section_form.html
+  - core\templates\core\task_template_confirm_delete.html
+  - core\templates\core\visit_log_form.html
+
+leaderboard:
+  - core\templates\core\dashboard.html
+
+location_on:
+  - core\templates\core\section_detail.html
+  - core\templates\core\section_form.html
+  - core\templates\core\task_confirm_delete.html
+  - core\templates\core\visit_log_form.html
+
+map:
+  - core\templates\core\monthly_planner.html
+  - core\templates\core\section_list.html
+  - core\templates\core\task_form.html
+  - core\templates\core\weekly_planner.html
+
+more_horiz:
+  - core\templates\core\weekly_planner.html
+
+palette:
+  - core\templates\core\section_form.html
+
+park:
+  - core\templates\core\dashboard.html
+
+people:
+  - core\templates\core\task_template_form.html
+
+person:
+  - core\templates\core\task_template_list.html
+  - core\templates\core\weekly_planner.html
+
+recycling:
+  - core\templates\core\visit_log_form.html
+
+remove:
+  - core\templates\core\visit_log_form.html
+
+search:
+  - core\templates\core\section_list.html
+  - core\templates\core\task_template_list.html
+
+shape_line:
+  - core\templates\core\section_form.html
+
+sort:
+  - core\templates\core\section_form.html
+
+star:
+  - core\templates\core\section_detail.html
+
+task:
+  - core\templates\core\section_confirm_delete.html
+  - core\templates\core\task_confirm_delete.html
+
+timeline:
+  - core\templates\core\section_form.html
+
+trending_up:
+  - core\templates\core\section_detail.html
+
+verified_user:
+  - core\templates\core\visit_log_form.html
+
+visibility:
+  - core\templates\core\section_list.html
+
+warning:
+  - core\templates\core\section_confirm_delete.html
+  - core\templates\core\task_confirm_delete.html

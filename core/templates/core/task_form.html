@@ -23,6 +23,9 @@
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <form method="post" class="p-8 space-y-6">
                 {% csrf_token %}
+                {% if request.GET.next %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+                {% endif %}
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Date -->
@@ -93,7 +96,7 @@
                 </div>
 
                 <div class="flex items-center justify-end space-x-4 pt-6 border-t border-slate-100 dark:border-slate-800">
-                    <a href="{% url 'weekly_planner' %}" class="px-6 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'weekly_planner' %}{% endif %}" class="px-6 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
                         Cancel
                     </a>
                     <button type="submit" class="bg-primary hover:bg-opacity-90 text-white px-8 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">

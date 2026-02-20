@@ -417,17 +417,27 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
     form_class = TaskForm
     template_name = 'core/task_form.html'
-    success_url = reverse_lazy('weekly_planner')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['task_templates'] = TaskTemplate.objects.filter(is_active=True)
         return context
 
+    def get_success_url(self):
+        next_url = self.request.GET.get('next') or self.request.POST.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy('weekly_planner')
+
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
     model = Task
     template_name = 'core/task_confirm_delete.html'
-    success_url = reverse_lazy('weekly_planner')
+
+    def get_success_url(self):
+        next_url = self.request.GET.get('next') or self.request.POST.get('next')
+        if next_url:
+            return next_url
+        return reverse_lazy('weekly_planner')
 
 class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = VisitLog

@@ -82,6 +82,21 @@
                         {% if form.current_stage.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.current_stage.errors.0 }}</p>{% endif %}
                     </div>
 
+                    <!-- Status -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.status.id_for_label }}">Status</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">flag</span>
+                            <select name="{{ form.status.name }}" id="{{ form.status.id_for_label }}" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                                {% for choice in form.status.field.choices %}
+                                    <option value="{{ choice.0 }}" {% if choice.0 == form.status.value %}selected{% endif %}>{{ choice.1 }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                        </div>
+                        {% if form.status.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.status.errors.0 }}</p>{% endif %}
+                    </div>
+
                     <!-- Position -->
                     <div class="space-y-1.5">
                         <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.position.id_for_label }}">Position (Order)</label>

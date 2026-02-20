@@ -55,6 +55,12 @@
                                 <span class="material-symbols-outlined text-lg">edit_note</span>
                                 Log and Complete
                             </a>
+                            <a href="{% url 'task_edit' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Task">
+                                <span class="material-symbols-outlined text-lg">edit</span>
+                            </a>
+                            <a href="{% url 'task_delete' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-600 transition-all" title="Delete Task">
+                                <span class="material-symbols-outlined text-lg">delete</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -80,10 +86,18 @@
                             </div>
                             <span class="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-widest">{{ task.assignee_type|title }}</span>
                         </div>
-                        <button class="w-full flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-2.5 rounded-lg text-sm font-bold cursor-not-allowed" disabled>
-                            <span class="material-symbols-outlined text-lg">check_circle</span>
-                            Task Completed
-                        </button>
+                        <div class="flex items-center gap-3">
+                            <button class="flex-1 flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-2.5 rounded-lg text-sm font-bold cursor-not-allowed" disabled>
+                                <span class="material-symbols-outlined text-lg">check_circle</span>
+                                Task Completed
+                            </button>
+                            <a href="{% url 'task_edit' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Task">
+                                <span class="material-symbols-outlined text-lg">edit</span>
+                            </a>
+                            <a href="{% url 'task_delete' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-600 transition-all" title="Delete Task">
+                                <span class="material-symbols-outlined text-lg">delete</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
                 {% endif %}

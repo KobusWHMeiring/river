@@ -204,9 +204,10 @@
                             {% if item.object.photos.all %}
                             <div class="flex gap-3">
                                 {% for photo in item.object.photos.all %}
-                                <img src="{{ photo.file.url }}" class="thumbnail-img" alt="{{ photo.description }}"
-                                     data-bs-toggle="modal" data-bs-target="#photoModal"
-                                     data-bs-src="{{ photo.file.url }}" data-bs-desc="{{ photo.description }}">
+                                <img src="{{ photo.file.url }}" class="thumbnail-img cursor-pointer" alt="{{ photo.description }}"
+                                     data-modal-trigger
+                                     data-modal-src="{{ photo.file.url }}"
+                                     data-modal-desc="{{ photo.description }}">
                                 {% endfor %}
                             </div>
                             {% endif %}
@@ -271,15 +272,24 @@
     </div>
 </main>
 
-<!-- Photo Modal -->
-<div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content bg-white dark:bg-slate-900 border-none rounded-2xl shadow-2xl overflow-hidden">
-      <div class="modal-body p-0 relative">
-        <button type="button" class="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors" data-bs-dismiss="modal">
+<!-- Photo Modal (Vanilla JS) -->
+<div id="photoModal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+  <!-- Backdrop -->
+  <div class="modal-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0" data-modal-close></div>
+  
+  <!-- Modal Content -->
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+    <div class="modal-panel bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden max-w-4xl w-full transform scale-95 opacity-0 transition-all duration-200">
+      <div class="relative">
+        <!-- Close Button -->
+        <button type="button" class="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center bg-black/20 hover:bg-black/40 text-white rounded-full transition-colors" data-modal-close>
             <span class="material-symbols-outlined text-sm">close</span>
         </button>
-        <img src="" id="modalImg" class="w-100 object-contain max-h-[80vh]" alt="Full size photo">
+        
+        <!-- Image -->
+        <img src="" id="modalImg" class="w-full object-contain max-h-[70vh]" alt="Full size photo">
+        
+        <!-- Description -->
         <div class="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
             <p id="modalDesc" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed"></p>
         </div>
@@ -293,19 +303,65 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const photoModal = document.getElementById('photoModal');
-    if (photoModal) {
-        photoModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const src = button.getAttribute('data-bs-src');
-            const desc = button.getAttribute('data-bs-desc');
-            
-            const modalImg = photoModal.querySelector('#modalImg');
-            const modalDesc = photoModal.querySelector('#modalDesc');
-            
-            modalImg.src = src;
-            modalDesc.textContent = desc;
+    const modalBackdrop = photoModal.querySelector('.modal-backdrop');
+    const modalPanel = photoModal.querySelector('.modal-panel');
+    const modalImg = document.getElementById('modalImg');
+    const modalDesc = document.getElementById('modalDesc');
+    
+    function openModal(src, desc) {
+        modalImg.src = src;
+        modalDesc.textContent = desc;
+        photoModal.classList.remove('hidden');
+        photoModal.setAttribute('aria-hidden', 'false');
+        
+        // Trigger animation
+        requestAnimationFrame(() => {
+            modalBackdrop.classList.remove('opacity-0');
+            modalPanel.classList.remove('scale-95', 'opacity-0');
+            modalPanel.classList.add('scale-100', 'opacity-100');
         });
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
     }
+    
+    function closeModal() {
+        modalBackdrop.classList.add('opacity-0');
+        modalPanel.classList.remove('scale-100', 'opacity-100');
+        modalPanel.classList.add('scale-95', 'opacity-0');
+        
+        // Wait for animation to finish
+        setTimeout(() => {
+            photoModal.classList.add('hidden');
+            photoModal.setAttribute('aria-hidden', 'true');
+            modalImg.src = '';
+            document.body.style.overflow = '';
+        }, 200);
+    }
+    
+    // Handle photo clicks
+    document.querySelectorAll('[data-modal-trigger]').forEach(trigger => {
+        trigger.addEventListener('click', function() {
+            const src = this.getAttribute('data-modal-src');
+            const desc = this.getAttribute('data-modal-desc');
+            openModal(src, desc);
+        });
+    });
+    
+    // Handle close clicks
+    photoModal.querySelectorAll('[data-modal-close]').forEach(closeBtn => {
+        closeBtn.addEventListener('click', closeModal);
+    });
+    
+    // Close on backdrop click
+    modalBackdrop.addEventListener('click', closeModal);
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !photoModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
 });
 </script>
 {% endblock %}
