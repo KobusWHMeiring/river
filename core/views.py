@@ -651,9 +651,15 @@ class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def form_valid(self, form):
         print(f"[DEBUG] VisitLogUpdateView.form_valid called")
+        print(f"[DEBUG] POST data keys: {list(self.request.POST.keys())}")
         context = self.get_context_data()
         metric_formset = context['metric_formset']
         photo_formset = context['photo_formset']
+        
+        # Debug: print each metric form's data
+        for i, m_form in enumerate(metric_formset.forms):
+            print(f"[DEBUG] Metric form {i} data: {m_form.data}")
+            print(f"[DEBUG] Metric form {i} errors: {m_form.errors}")
         
         print(f"[DEBUG] MetricFormSet valid: {metric_formset.is_valid()}")
         print(f"[DEBUG] PhotoFormSet valid: {photo_formset.is_valid()}")

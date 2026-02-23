@@ -270,19 +270,6 @@
                             </div>
                         </div>
                         <div id="plantMetrics" class="section-content p-6 space-y-4">
-                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700 items-end">
-                                <div class="sm:col-span-7 space-y-1.5">
-                                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Plant Species</label>
-                                    <input type="text" name="metrics-2-label" placeholder="e.g., Kniphofia" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary/20 dark:text-slate-200">
-                                </div>
-                                <div class="sm:col-span-5 flex items-center justify-between bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                                    <button type="button" onclick="updateCounter('metric_2', -1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">remove</span></button>
-                                    <span class="font-bold text-sm dark:text-white" id="metric_2_value">0</span>
-                                    <button type="button" onclick="updateCounter('metric_2', 1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">add</span></button>
-                                    <input type="hidden" name="metrics-2-metric_type" value="plant">
-                                    <input type="hidden" name="metrics-2-value" id="metric_2_input" value="0">
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -355,8 +342,8 @@
     {
         "index": {{ forloop.counter0 }},
         "id": "{{ m_form.instance.pk|default:'' }}",
-        "type": "{{ m_form.instance.metric_type }}",
-        "label": "{{ m_form.instance.label }}",
+        "type": "{{ m_form.instance.metric_type|default:'' }}",
+        "label": "{{ m_form.instance.label|default:'' }}",
         "value": {{ m_form.instance.value|default:0 }}
     }{% if not forloop.last %},{% endif %}
     {% endfor %}
@@ -472,40 +459,55 @@ function updateCounter(counterId, delta) {
     }
 }
 
-function addMetric(type) {
+function addMetric(type, existingData = null) {
+    console.log(`[DEBUG] addMetric called: type=${type}, existingData=`, existingData);
     const containerId = type === 'plant' ? 'plantMetrics' : 'weedMetrics';
     const container = document.getElementById(containerId);
-    const metricIndex = totalMetrics;
+    if (!container) {
+        console.log(`[DEBUG] Container ${containerId} not found!`);
+        return;
+    }
+
+    const metricIndex = existingData ? existingData.index : totalMetrics;
     const counterId = `metric_${metricIndex}`;
+    
+    const labelValue = existingData ? existingData.label : '';
+    const initialValue = existingData ? existingData.value : 0;
     
     const labelPlaceholder = type === 'plant' ? 'e.g., Kniphofia' : 'e.g., Wattle (Bags)';
     const labelText = type === 'plant' ? 'Plant Species' : 'Weed Species / Removal';
-    const icon = type === 'plant' ? 'add_circle' : 'delete_forever';
-    const accentColor = type === 'plant' ? 'primary' : 'orange-500';
     
     const newMetric = document.createElement('div');
     newMetric.className = 'grid grid-cols-1 sm:grid-cols-12 gap-4 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-700 items-end animate-in fade-in slide-in-from-top-2 duration-300';
+    
+    // Note: The hidden id field is already rendered by the template loop at lines 83-84
+    // We don't need to add it again here to avoid duplicates
+    
     newMetric.innerHTML = `
         <div class="sm:col-span-7 space-y-1.5">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${labelText}</label>
-            <input type="text" name="metrics-${metricIndex}-label" placeholder="${labelPlaceholder}" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary/20 dark:text-slate-200">
+            <input type="text" name="metrics-${metricIndex}-label" value="${labelValue}" placeholder="${labelPlaceholder}" class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary/20 dark:text-slate-200">
         </div>
         <div class="sm:col-span-5 flex items-center justify-between bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
             <button type="button" onclick="updateCounter('${counterId}', -1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">remove</span></button>
-            <span class="font-bold text-sm dark:text-white" id="${counterId}_value">0</span>
+            <span class="font-bold text-sm dark:text-white" id="${counterId}_value">${initialValue}</span>
             <button type="button" onclick="updateCounter('${counterId}', 1)" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-xl">add</span></button>
             <input type="hidden" name="metrics-${metricIndex}-metric_type" value="${type}">
-            <input type="hidden" name="metrics-${metricIndex}-value" id="${counterId}_input" value="0">
+            <input type="hidden" name="metrics-${metricIndex}-value" id="${counterId}_input" value="${initialValue}">
         </div>
     `;
     
     container.appendChild(newMetric);
-    counters[counterId] = 0;
-    totalMetrics++;
+    console.log(`[DEBUG] Added metric ${metricIndex} to container ${containerId}`);
+    console.log(`[DEBUG] Created fields: metrics-${metricIndex}-metric_type=${type}, metrics-${metricIndex}-label=${labelValue}, metrics-${metricIndex}-value=${initialValue}`);
+    counters[counterId] = initialValue;
     
-    // Update management form total forms
-    const totalFormsInput = document.getElementById('id_metrics-TOTAL_FORMS');
-    if (totalFormsInput) totalFormsInput.value = totalMetrics;
+    if (!existingData) {
+        totalMetrics++;
+        // Update management form total forms
+        const totalFormsInput = document.getElementById('id_metrics-TOTAL_FORMS');
+        if (totalFormsInput) totalFormsInput.value = totalMetrics;
+    }
 }
 
 function previewPhoto(input) {
@@ -561,6 +563,69 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize section visibility based on task type
     initializeSections();
     
+    // Parse and render existing metrics from JSON data
+    const existingMetricsScript = document.getElementById('existing-metrics-data');
+    if (existingMetricsScript) {
+        try {
+            const existingMetrics = JSON.parse(existingMetricsScript.textContent);
+            console.log('[DEBUG] Existing metrics data:', existingMetrics);
+            
+            // Log all metric-related fields in the DOM before rendering
+            const allMetricInputs = document.querySelectorAll('input[name^="metrics-"]');
+            console.log('[DEBUG] Existing metric inputs in DOM:', Array.from(allMetricInputs).map(i => ({name: i.name, value: i.value})));
+            
+            existingMetrics.forEach(metric => {
+                // Skip indices 0 and 1 (litter metrics - already rendered)
+                if (metric.index <= 1) return;
+                
+                // Check if this is an empty metric (no type, no label, zero value)
+                const isEmptyMetric = (!metric.type || metric.type === '') && 
+                                      (!metric.label || metric.label === '') && 
+                                      metric.value === 0;
+                
+                // For empty metrics, we still need to render them with valid data so they pass validation
+                // They will effectively be "no-op" records that don't affect anything
+                let type = metric.type;
+                let label = metric.label;
+                let value = metric.value;
+                
+                if (isEmptyMetric) {
+                    // Populate with placeholder data so form validation passes
+                    type = 'plant';
+                    label = '';
+                    value = 0;
+                    console.log(`[DEBUG] Rendering placeholder metric ${metric.index} with default values`);
+                } else if (!type || type === 'unknown' || type === '') {
+                    // Try to infer type from context or default to plant
+                    type = 'plant';
+                }
+                
+                // Create the metric data object with potentially modified values
+                const metricData = {
+                    ...metric,
+                    type: type,
+                    label: label,
+                    value: value
+                };
+                
+                console.log(`[DEBUG] Rendering existing metric ${metric.index}: type=${type}, label=${label}, value=${value}`);
+                addMetric(type, metricData);
+            });
+            
+            // Update totalMetrics to account for existing metrics
+            if (existingMetrics.length > totalMetrics) {
+                totalMetrics = existingMetrics.length;
+                const totalFormsInput = document.getElementById('id_metrics-TOTAL_FORMS');
+                if (totalFormsInput) {
+                    totalFormsInput.value = totalMetrics;
+                    console.log(`[DEBUG] Updated metrics TOTAL_FORMS to: ${totalFormsInput.value}`);
+                }
+            }
+        } catch (e) {
+            console.error('[DEBUG] Error parsing existing metrics:', e);
+        }
+    }
+    
     // Add form submit listener
     const form = document.getElementById('visitLogForm');
     if (form) {
@@ -574,6 +639,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     inputElem.value = counters[counterId];
                 }
             }
+            
+            // Debug: log all metric fields being submitted
+            const metricInputs = form.querySelectorAll('input[name^="metrics-"]');
+            console.log('[DEBUG] Metric fields being submitted:');
+            metricInputs.forEach(input => {
+                console.log(`  ${input.name} = ${input.value}`);
+            });
         });
     }
 });
