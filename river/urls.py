@@ -30,4 +30,9 @@ urlpatterns = [
     path('', SectionListView.as_view(), name='home'),
     path('core/', include('core.urls')),
     path('sentry-debug/', trigger_error),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+# Only serve media files through Django in DEBUG mode (development)
+# In production, Nginx handles media serving
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
