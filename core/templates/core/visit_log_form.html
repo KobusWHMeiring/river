@@ -204,14 +204,14 @@
                                         <button type="button" onclick="updateCounter('litter_general', -1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
                                             <span class="material-symbols-outlined">remove</span>
                                         </button>
-                                        <span class="text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_general_value">0</span>
+                                        <span class="text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_general_value">{{ metric_formset.0.value.value|default:0 }}</span>
                                         <button type="button" onclick="updateCounter('litter_general', 1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
                                             <span class="material-symbols-outlined">add</span>
                                         </button>
                                     </div>
                                     <input type="hidden" name="metrics-0-metric_type" value="litter_general">
                                     <input type="hidden" name="metrics-0-label" value="General Litter">
-                                    <input type="hidden" name="metrics-0-value" id="litter_general_input" value="0">
+                                    <input type="hidden" name="metrics-0-value" id="litter_general_input" value="{{ metric_formset.0.value.value|default:0 }}">
                                 </div>
 
                                 <!-- Recyclable Litter -->
@@ -222,14 +222,14 @@
                                         <button type="button" onclick="updateCounter('litter_recyclable', -1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
                                             <span class="material-symbols-outlined">remove</span>
                                         </button>
-                                        <span class="text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_recyclable_value">0</span>
+                                        <span class="text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_recyclable_value">{{ metric_formset.1.value.value|default:0 }}</span>
                                         <button type="button" onclick="updateCounter('litter_recyclable', 1)" class="w-10 h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors">
                                             <span class="material-symbols-outlined">add</span>
                                         </button>
                                     </div>
                                     <input type="hidden" name="metrics-1-metric_type" value="litter_recyclable">
                                     <input type="hidden" name="metrics-1-label" value="Recyclable Litter">
-                                    <input type="hidden" name="metrics-1-value" id="litter_recyclable_input" value="0">
+                                    <input type="hidden" name="metrics-1-value" id="litter_recyclable_input" value="{{ metric_formset.1.value.value|default:0 }}">
                                 </div>
                             </div>
                         </div>
@@ -347,6 +347,21 @@
         </div>
     </div>
 </div>
+
+{# Script block to pass existing metrics to JavaScript #}
+<script id="existing-metrics-data" type="application/json">
+[
+    {% for m_form in metric_formset %}
+    {
+        "index": {{ forloop.counter0 }},
+        "id": "{{ m_form.instance.pk|default:'' }}",
+        "type": "{{ m_form.instance.metric_type }}",
+        "label": "{{ m_form.instance.label }}",
+        "value": {{ m_form.instance.value|default:0 }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
 {% endblock %}
 
 {% block extra_js %}
