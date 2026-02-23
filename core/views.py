@@ -61,13 +61,36 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
         # Convert to a more usable dict with display names
         stage_choices = dict(Section.STAGE_CHOICES)
         stage_distribution = []
+        max_count = 1  # Default to 1 to avoid division by zero
         for stage_code, label in stage_choices.items():
             count = next((item['count'] for item in stage_counts if item['current_stage'] == stage_code), 0)
+            percentage = int(count / max_count * 100) if max_count > 0 else 0
             stage_distribution.append({
                 'code': stage_code,
                 'label': label,
-                'count': count
+                'count': count,
+                'percentage': percentage
             })
+            if count > max_count:
+                max_count = count
+        
+        # Recalculate percentages after we know the max
+        for stage in stage_distribution:
+            stage['percentage'] = int(stage['count'] / max_count * 100) if max_count > 0 else 0
+
+        # Plant Species Breakdown
+        plant_metrics = Metric.objects.filter(metric_type='plant')
+        total_plant_species = plant_metrics.exclude(label='').values('label').distinct().count()
+        plant_species_breakdown = list(plant_metrics.exclude(label='').values('label').annotate(
+            total=Sum('value')
+        ).order_by('-total')[:5])
+
+        # Weed Species Breakdown
+        weed_metrics = Metric.objects.filter(metric_type='weed')
+        total_weed_species = weed_metrics.exclude(label='').values('label').distinct().count()
+        weed_species_breakdown = list(weed_metrics.exclude(label='').values('label').annotate(
+            total=Sum('value')
+        ).order_by('-total')[:5])
 
         context.update({
             'total_bags_general': total_bags_general,
@@ -76,6 +99,10 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
             'total_weeds': total_weeds,
             'total_bags': total_bags_general + total_bags_recyclable,
             'stage_distribution': stage_distribution,
+            'total_plant_species': total_plant_species,
+            'plant_species_breakdown': plant_species_breakdown,
+            'total_weed_species': total_weed_species,
+            'weed_species_breakdown': weed_species_breakdown,
         })
         return context
 
@@ -235,6 +262,9 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        # Always get today's date first
+        today = timezone.now().date()
+
         # Get week from query param or default to current week
         week_str = self.request.GET.get('week')
         if week_str:
@@ -243,10 +273,8 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
                 # Start from Monday of that week
                 start_of_week = week_date - timedelta(days=week_date.weekday())
             except (ValueError, TypeError):
-                today = timezone.now().date()
                 start_of_week = today - timedelta(days=today.weekday())
         else:
-            today = timezone.now().date()
             start_of_week = today - timedelta(days=today.weekday())
 
         # Create week days list (Monday start)
@@ -258,6 +286,7 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
         context['week_days'] = week_days
         context['sections'] = Section.objects.all()
         context['task_form'] = TaskForm()
+        context['today'] = today
 
         # Only show active templates
         context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team', is_active=True)
@@ -332,6 +361,7 @@ class MonthlyPlannerView(LoginRequiredMixin, ListView):
         # Generate calendar grid (Monday start)
         cal = calendar.Calendar(firstweekday=0)
         month_weeks = cal.monthdatescalendar(year, month)
+        
         context['month_weeks'] = month_weeks
 
         # Group tasks by date for efficient template rendering
@@ -379,19 +409,17 @@ class DailyAgendaView(LoginRequiredMixin, ListView):
         if date_str:
             try:
                 target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                try:
+                    return Task.objects.filter(
+                        date=target_date
+                    ).order_by('assignee_type', 'section__name')
+                except Exception:
+                    return Task.objects.filter(
+                        date=target_date
+                    ).order_by('section__name')
             except (ValueError, TypeError):
-                target_date = timezone.now().date()
-        else:
-            target_date = timezone.now().date()
-        try:
-            return Task.objects.filter(
-                date=target_date
-            ).order_by('assignee_type', 'section__name')
-        except Exception:
-            # Fallback if assignee_type field doesn't exist
-            return Task.objects.filter(
-                date=target_date
-            ).order_by('section__name')
+                pass
+        return Task.objects.none()
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -400,9 +428,9 @@ class DailyAgendaView(LoginRequiredMixin, ListView):
             try:
                 target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
             except (ValueError, TypeError):
-                target_date = timezone.now().date()
+                target_date = None
         else:
-            target_date = timezone.now().date()
+            target_date = None
         context['today'] = target_date
         return context
 
@@ -536,7 +564,7 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         return reverse_lazy('daily_agenda')
 
     def form_valid(self, form):
-        print("[DEBUG] form_valid called")
+        print(f"[DEBUG] VisitLogCreateView.form_valid called")
         context = self.get_context_data()
         metric_formset = context['metric_formset']
         photo_formset = context['photo_formset']
@@ -544,60 +572,110 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         print(f"[DEBUG] MetricFormSet valid: {metric_formset.is_valid()}")
         print(f"[DEBUG] PhotoFormSet valid: {photo_formset.is_valid()}")
         
-        if not metric_formset.is_valid():
-            print(f"[DEBUG] MetricFormSet errors: {metric_formset.errors}")
-            print(f"[DEBUG] MetricFormSet non-form errors: {metric_formset.non_form_errors()}")
-        
-        if not photo_formset.is_valid():
-            print(f"[DEBUG] PhotoFormSet errors: {photo_formset.errors}")
-            print(f"[DEBUG] PhotoFormSet non-form errors: {photo_formset.non_form_errors()}")
-        else:
-            # Check which forms are marked for deletion
-            for i, photo_form in enumerate(photo_formset.forms):
-                if photo_form.cleaned_data.get('DELETE'):
-                    print(f"[DEBUG] Photo form {i} marked for deletion (no file uploaded)")
-        
         if metric_formset.is_valid() and photo_formset.is_valid():
             print("[DEBUG] All forms valid, saving...")
-            print(f"[DEBUG] Main form cleaned_data: section={form.cleaned_data.get('section')}, date={form.cleaned_data.get('date')}")
             try:
                 response = super().form_valid(form)
-                print(f"[DEBUG] VisitLog saved with ID: {self.object.id}, section={self.object.section}")
-                
                 metric_formset.instance = self.object
-                print("[DEBUG] About to save metrics...")
-                metrics_saved = metric_formset.save()
-                print(f"[DEBUG] Saved {len(metrics_saved)} metrics")
+                metric_formset.save()
                 
                 photo_formset.instance = self.object
-                print("[DEBUG] About to save photos...")
-                print(f"[DEBUG] Photo formset forms count: {len(photo_formset.forms)}")
-                for i, form in enumerate(photo_formset.forms):
-                    file_data = form.cleaned_data.get('file') if hasattr(form, 'cleaned_data') else None
-                    desc_data = form.cleaned_data.get('description') if hasattr(form, 'cleaned_data') else None
-                    print(f"[DEBUG] Photo form {i}: file={file_data}, desc={desc_data}")
-                    # Set the section on each photo form before saving
-                    if file_data and hasattr(form, 'instance'):
-                        form.instance.section = self.object.section
-                        print(f"[DEBUG] Set section on photo {i}: {self.object.section}")
-                photos_saved = photo_formset.save()
-                print(f"[DEBUG] Saved {len(photos_saved)} photos")
+                for photo_form in photo_formset.forms:
+                    if photo_form.cleaned_data.get('file') and not photo_form.cleaned_data.get('DELETE'):
+                        photo_form.instance.section = self.object.section
+                photo_formset.save()
                 
-                # Mark task as completed if linked
                 if self.object.task:
                     self.object.task.is_completed = True
                     self.object.task.save()
-                    print("[DEBUG] Task marked as completed")
                 
                 return response
             except Exception as e:
-                print(f"[DEBUG] ERROR during save: {type(e).__name__}: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"[DEBUG] ERROR during save: {e}")
                 raise
         else:
-            print("[DEBUG] Form invalid, returning form_invalid")
+            print(f"[DEBUG] form_valid called but formsets invalid")
             return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        print(f"[DEBUG] VisitLogCreateView.form_invalid called")
+        print(f"[DEBUG] Main form errors: {form.errors}")
+        context = self.get_context_data()
+        print(f"[DEBUG] Metric formset errors: {context['metric_formset'].errors}")
+        print(f"[DEBUG] Photo formset errors: {context['photo_formset'].errors}")
+        return super().form_invalid(form)
+
+class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = VisitLog
+    form_class = VisitLogForm
+    template_name = 'core/visit_log_form.html'
+    success_message = "Visit log updated successfully!"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
+        context['next'] = next_url
+        
+        visit_log = self.get_object()
+        task = visit_log.task
+        
+        # Determine task_type for UI adaptation
+        if task and task.template:
+            context['task_type'] = task.template.task_type
+            context['task_template_name'] = task.template.name
+        else:
+            context['task_type'] = 'unplanned'
+            context['task_template_name'] = None
+            
+        context['related_task'] = task
+
+        if self.request.method == 'POST':
+            context['metric_formset'] = MetricFormSet(self.request.POST, instance=visit_log)
+            context['photo_formset'] = PhotoFormSet(self.request.POST, self.request.FILES, instance=visit_log)
+        else:
+            context['metric_formset'] = MetricFormSet(instance=visit_log)
+            context['photo_formset'] = PhotoFormSet(instance=visit_log)
+            
+        return context
+
+    def form_valid(self, form):
+        print(f"[DEBUG] VisitLogUpdateView.form_valid called")
+        context = self.get_context_data()
+        metric_formset = context['metric_formset']
+        photo_formset = context['photo_formset']
+        
+        print(f"[DEBUG] MetricFormSet valid: {metric_formset.is_valid()}")
+        print(f"[DEBUG] PhotoFormSet valid: {photo_formset.is_valid()}")
+        
+        if metric_formset.is_valid() and photo_formset.is_valid():
+            print("[DEBUG] All forms valid, saving...")
+            response = super().form_valid(form)
+            metric_formset.save()
+            
+            # Ensure section is set on photos
+            for photo_form in photo_formset.forms:
+                if photo_form.cleaned_data.get('file') and not photo_form.cleaned_data.get('DELETE'):
+                    photo_form.instance.section = self.object.section
+            
+            photo_formset.save()
+            return response
+        else:
+            print(f"[DEBUG] form_valid called but formsets invalid")
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        print(f"[DEBUG] VisitLogUpdateView.form_invalid called")
+        print(f"[DEBUG] Main form errors: {form.errors}")
+        context = self.get_context_data()
+        print(f"[DEBUG] Metric formset errors: {context['metric_formset'].errors}")
+        print(f"[DEBUG] Photo formset errors: {context['photo_formset'].errors}")
+        return super().form_invalid(form)
+
+    def get_success_url(self):
+        next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+            return next_url
+        return reverse_lazy('daily_agenda')
 
 def task_complete_view(request, pk):
     task = get_object_or_404(Task, pk=pk)
@@ -655,3 +733,71 @@ class TaskTemplateDeleteView(LoginRequiredMixin, DeleteView):
         from django.contrib import messages
         messages.success(request, f"'{self.object.name}' has been retired. Existing tasks using this template are preserved.")
         return redirect(self.get_success_url())
+
+
+class VisitLogListView(LoginRequiredMixin, ListView):
+    """Master Activity Log - comprehensive view of all visit logs with search and filtering."""
+    model = VisitLog
+    template_name = 'core/visit_log_list.html'
+    context_object_name = 'visit_logs'
+    paginate_by = 25
+
+    def get_queryset(self):
+        queryset = VisitLog.objects.select_related('section', 'task').prefetch_related('metrics', 'photos').order_by('-date', '-created_at')
+        
+        # Global search
+        search_query = self.request.GET.get('q')
+        if search_query:
+            queryset = queryset.filter(
+                Q(notes__icontains=search_query) | 
+                Q(section__name__icontains=search_query) |
+                Q(task__template__name__icontains=search_query)
+            )
+        
+        # Section filter
+        section_id = self.request.GET.get('section')
+        if section_id:
+            queryset = queryset.filter(section_id=section_id)
+        
+        # Date range filters
+        start_date = self.request.GET.get('start_date')
+        if start_date:
+            try:
+                start = datetime.strptime(start_date, '%Y-%m-%d').date()
+                queryset = queryset.filter(date__gte=start)
+            except (ValueError, TypeError):
+                pass
+        
+        end_date = self.request.GET.get('end_date')
+        if end_date:
+            try:
+                end = datetime.strptime(end_date, '%Y-%m-%d').date()
+                queryset = queryset.filter(date__lte=end)
+            except (ValueError, TypeError):
+                pass
+        
+        # Activity type filter (Planned vs Unplanned)
+        activity_type = self.request.GET.get('activity_type')
+        if activity_type == 'planned':
+            queryset = queryset.filter(task__isnull=False)
+        elif activity_type == 'unplanned':
+            queryset = queryset.filter(task__isnull=True)
+        
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sections'] = Section.objects.all()
+        context['search_query'] = self.request.GET.get('q', '')
+        context['selected_section'] = self.request.GET.get('section', '')
+        context['start_date'] = self.request.GET.get('start_date', '')
+        context['end_date'] = self.request.GET.get('end_date', '')
+        context['activity_type'] = self.request.GET.get('activity_type', '')
+        
+        # Preserve query parameters for pagination
+        query_params = self.request.GET.copy()
+        if 'page' in query_params:
+            del query_params['page']
+        context['query_params'] = query_params.urlencode()
+        
+        return context

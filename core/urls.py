@@ -26,7 +26,9 @@ urlpatterns = [
     path('tasks/<int:pk>/complete/', views.task_complete_view, name='task_complete'),
     
     # Visit Log URLs
+    path('visit-logs/', views.VisitLogListView.as_view(), name='visit_log_list'),
     path('visit-logs/create/', views.VisitLogCreateView.as_view(), name='visit_log_create'),
+    path('visit-logs/<int:pk>/edit/', views.VisitLogUpdateView.as_view(), name='visit_log_edit'),
 
     # Task Template Management URLs
     path('templates/', views.TaskTemplateListView.as_view(), name='task_template_list'),

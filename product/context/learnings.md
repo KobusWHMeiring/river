@@ -966,3 +966,168 @@ document.addEventListener('keydown', e => {
 1. `core/templates/core/section_detail.html` - Replaced Bootstrap modal with vanilla JS
 2. `templates/base.html` - Removed Bootstrap CDN links
 3. `product/context/learnings.md` - Documented modal conversion pattern
+
+---
+
+## Date: 2026-02-22
+
+## Issue: Malformed Django Template Tag Causing Literal String Output
+
+### Problem Description
+When clicking on an empty day cell in the weekly or monthly planner to add a task, the modal header displayed the literal text `{{ day|date:'Y-m-d' }}` instead of the actual formatted date (e.g., "Add Task for 2026-02-22").
+
+Additionally, clicking on empty cells navigated to a broken URL containing the literal template tag: `/core/daily-agenda/?date={{%20day|date:%27Y-m-d%27%20%}`
+
+### Root Cause Analysis
+1. **Syntax Error**: In `weekly_planner.html`, line 104, the template tag was malformed:
+   - **Bad**: `{{ day|date:'Y-m-d' %}` (single closing brace + percent sign)
+   - **Good**: `{{ day|date:'Y-m-d' }}` (double closing braces)
+
+2. **Silent Failure**: Django's template engine doesn't raise an error for this - it simply outputs the literal string `{{ day|date:'Y-m-d' }}` when the tag syntax is invalid.
+
+3. **JavaScript Debugging**: Console logs revealed:
+   ```
+   [DEBUG JS] data-date attribute: {{ day|date:'Y-m-d' %}
+   ```
+   This confirmed the malformed template tag was being rendered as a literal string in the HTML `data-date` attribute.
+
+### Why It Worked Sometimes
+- The "plus" (+) button worked correctly because it used the same template tag but in a different line (line 126) which had correct syntax
+- The issue only appeared in specific elements where the malformed tag was present
+- Clicking on cells with existing tasks worked because navigation used the JavaScript `data-date` attribute from a DIFFERENT element (the day header with correct syntax)
+
+### Solution Implemented
+
+**File**: `core/templates/core/weekly_planner.html`
+
+**Fix**: Corrected the malformed template tag by replacing `%}` with `}}`:
+```html
+<!-- Before (line 104) - BROKEN -->
+<div data-date="{{ day|date:'Y-m-d' %}" data-assignee="team">
+
+<!-- After - FIXED -->
+<div data-date="{{ day|date:'Y-m-d' }}" data-assignee="team">
+```
+
+### Debugging Techniques Used
+
+1. **Python Debug Prints**: Added print statements to views to verify context data
+```python
+# views.py - WeeklyPlannerView
+print(f"[DEBUG] WeeklyPlannerView - week_days: {week_days}")
+```
+
+2. **JavaScript Console Logs**: Traced data flow through event handlers
+```javascript
+console.log('[DEBUG JS] data-date attribute:', this.dataset.date);
+console.log('[DEBUG JS] openModal called with date:', date);
+```
+
+3. **Hex Byte Analysis**: Used Python to examine raw file bytes and identify invisible characters
+```python
+with open('template.html', 'rb') as f:
+    content = f.read()
+    idx = content.find(b'data-date=')
+    segment = content[idx:idx+35]
+    print(segment.hex())  # Revealed %7d ( %} ) in wrong position
+```
+
+### Key Learnings
+
+#### Django Template Debugging
+1. **Silent Failures**: Django template syntax errors often render as literal text rather than raising errors
+2. **Double Braces**: Always use `}}` to close Django template tags - never single `}`
+3. **Percent Sign**: The `%` character has no special meaning in Django templates - `%}` is invalid
+4. **Visual Inspection**: Template tag errors can be hard to spot - use hex analysis for debugging
+
+#### Common Template Tag Patterns
+```python
+# Correct patterns:
+{{ variable }}
+{{ variable|filter }}
+{{ variable|filter:arg }}
+
+# Incorrect (causes literal output):
+{{ variable|filter }    # Missing }
+{{ variable|filter %}  # Wrong character
+```
+
+#### Debugging Workflow
+1. Check browser console for JavaScript errors
+2. Add console.log to trace JavaScript data flow
+3. Verify HTML source (View Source) for rendered template output
+4. Use binary file inspection to find hidden character issues
+5. Compare working vs broken elements to identify differences
+
+### Prevention for Future
+1. **Code Review**: Check template tags for matching `{{` and `}}`
+2. **IDE Support**: Use Django template language support in editors (VS Code, PyCharm)
+3. **Testing**: Test both empty and populated states when working with dynamic data
+4. **Console Logs**: Leave temporary debug logging for complex JavaScript interactions
+5. **Documentation**: Note this issue in developer handover for team awareness
+
+### Files Modified
+1. `core/templates/core/weekly_planner.html` - Fixed malformed template tag on line 104
+2. `core/views.py` - Added temporary debug print statements (later removed)
+
+### Impact
+- **User Experience**: Modal now shows correct date like "Add Task for 2026-02-22"
+- **Navigation**: Day cell clicks work correctly for both empty and populated days
+- **Data Integrity**: Date parameter properly passed to task creation form
+
+## Date: 2026-02-23
+
+## Issue: Collapsible Sections Breaking Due to Illegal HTML Nesting
+
+### Problem Description
+In the visit log form, the "Weeding Data" and "Planting Data" sections failed to collapse correctly. Specifically, dynamically added metrics (e.g., new plant species) would appear outside the container borders and remain visible even when the parent section was toggled to "collapsed".
+
+### Root Cause Analysis
+1.  **Illegal HTML Nesting**: The section headers were implemented using `<button>` tags. Inside these buttons, block-level elements (`<div>`) were used for layout (flexbox containers for icons and labels).
+2.  **Browser DOM Repair**: According to the HTML specification, `<button>` elements cannot contain interactive content or block-level elements like `<div>`. When modern browsers (Chrome, Safari, Firefox) encounter a `<div>` inside a `<button>`, they perform "DOM repair" by automatically closing the `<button>` tag before the `<div>`.
+3.  **Broken Scoping**: This "repair" resulted in the collapsible content (the `.section-content` div) being rendered as a **sibling** of the section header rather than a child. 
+    - **Intended Structure**: `.rounded-xl` > `button` > `.section-content`
+    - **Repaired Structure**: `.rounded-xl` > `button` (closed early) + `.section-content` (orphaned)
+4.  **CSS Selector Failure**: The CSS rule was `.section-collapsed .section-content { display: none !important; }`. Because the `.section-content` was no longer a child of the element holding the `.section-collapsed` class, the rule failed to apply.
+
+### Solution Implemented
+**File**: `core/templates/core/visit_log_form.html`
+
+1.  **Tag Replacement**: Changed all section headers from `<button>` to `<div>`.
+2.  **Affordance & Accessibility**: Added `role="button"` and `cursor-pointer` classes to maintain the visual and semantic cue that the header is interactive.
+3.  **Flattened Metrics**: Flattened the metrics container by merging the ID (e.g., `plantMetrics`) directly onto the `.section-content` div, reducing DOM depth and ambiguity.
+
+```html
+<!-- Before (Broken) -->
+<button onclick="toggleSection('planting')">
+    <div class="flex">...</div> <!-- Browser closes button here! -->
+</button>
+<div class="section-content">...</div> <!-- Now a sibling, scoping lost -->
+
+<!-- After (Fixed) -->
+<div onclick="toggleSection('planting')" role="button" class="cursor-pointer">
+    <div class="flex">...</div>
+</div>
+<div id="plantMetrics" class="section-content">...</div> <!-- Correctly nested -->
+```
+
+### Key Learnings
+
+#### HTML & Browser Behavior
+1.  **Button Constraints**: Never nest `<div>`, `<h1>-<h6>`, or other block-level elements inside a `<button>`. Buttons are meant for "phrasing content" (text, images, spans).
+2.  **Silent Failure**: Browsers won't throw an error for illegal nesting; they will silently "fix" your DOM, often in ways that break your CSS selectors and JavaScript logic.
+3.  **Scoping Dependency**: When using class-based state (like `.section-collapsed`), ensure the target element is a direct descendant. Use browser DevTools "Elements" tab to verify the **actual** rendered structure, not just your source code.
+
+#### Frontend Patterns
+1.  **Semantic Divs**: If you need a complex interactive header with internal flexbox/grid layout, use a `<div>` with `role="button"`.
+2.  **Affordance**: Always remember to add `cursor: pointer` via CSS/Tailwind when using non-button elements as triggers to ensure users know they are clickable.
+
+### Impact
+- **Reliability**: Collapsible sections now work 100% of the time, regardless of how many dynamic fields are added.
+- **Visual Integrity**: Borders and padding now correctly encapsulate all child data.
+- **Maintainability**: Cleaner DOM structure makes debugging JavaScript event propagation easier.
+
+### Prevention for Future
+1.  **Linting**: Use HTML validators or linters that catch illegal nesting.
+2.  **DevTools Audit**: During development of any new UI component, check the "Elements" tab to ensure the browser is nesting tags exactly as written in the template.
+3.  **Standard Components**: Establish a standard pattern for "Interactive Headers" that avoids `<button>` for complex layouts.

@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Master Activity Log - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0 z-10">
+    <div class="flex flex-col">
+        <h1 class="text-xl font-bold dark:text-white leading-tight">Master Activity Log</h1>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Complete audit trail of all river activities</p>
+    </div>
+    <div class="flex items-center gap-4">
+        <a href="{% url 'dashboard' %}" class="text-sm font-medium text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            Back to Dashboard
+        </a>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto custom-scrollbar bg-slate-50 dark:bg-slate-950/50 p-8">
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Search and Filter Section -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <form method="get" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Search -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Search</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                            <input type="text" name="q" value="{{ search_query }}" placeholder="Search notes, sections..." class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Section Filter -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Section</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">map</span>
+                            <select name="section" class="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                                <option value="">All Sections</option>
+                                {% for section in sections %}
+                                <option value="{{ section.id }}" {% if selected_section == section.id|stringformat:"s" %}selected{% endif %}>{{ section.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                        </div>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Start Date</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_today</span>
+                            <input type="date" name="start_date" value="{{ start_date }}" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">End Date</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_today</span>
+                            <input type="date" name="end_date" value="{{ end_date }}" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <!-- Activity Type Filter -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Activity Type:</label>
+                        <div class="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                            <button type="submit" name="activity_type" value="" class="px-4 py-1.5 text-xs font-medium {% if not activity_type %}bg-primary text-white{% else %}bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700{% endif %} transition-colors border-r border-slate-200 dark:border-slate-700">
+                                All
+                            </button>
+                            <button type="submit" name="activity_type" value="planned" class="px-4 py-1.5 text-xs font-medium {% if activity_type == 'planned' %}bg-primary text-white{% else %}bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700{% endif %} transition-colors border-r border-slate-200 dark:border-slate-700">
+                                Planned
+                            </button>
+                            <button type="submit" name="activity_type" value="unplanned" class="px-4 py-1.5 text-xs font-medium {% if activity_type == 'unplanned' %}bg-primary text-white{% else %}bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700{% endif %} transition-colors">
+                                Unplanned
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex items-center gap-3">
+                        <a href="{% url 'visit_log_list' %}" class="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                            Clear Filters
+                        </a>
+                        <button type="submit" class="bg-primary hover:bg-opacity-90 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">filter_list</span>
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Count -->
+        <div class="flex items-center justify-between">
+            <p class="text-sm text-slate-500">
+                Showing <span class="font-semibold text-slate-900 dark:text-white">{{ page_obj.start_index }}</span> - <span class="font-semibold text-slate-900 dark:text-white">{{ page_obj.end_index }}</span> of <span class="font-semibold text-slate-900 dark:text-white">{{ paginator.count }}</span> logs
+            </p>
+        </div>
+
+        <!-- Activity Log List -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for visit in visit_logs %}
+                <div class="p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div class="flex gap-6">
+                        <!-- Date Column -->
+                        <div class="flex flex-col items-center shrink-0 w-12 pt-1">
+                            <span class="text-xs font-bold text-slate-900 dark:text-white leading-none">{{ visit.date|date:"d" }}</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{{ visit.date|date:"M" }}</span>
+                            <span class="text-[10px] text-slate-400">{{ visit.date|date:"Y" }}</span>
+                        </div>
+                        
+                        <div class="flex-1 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <a href="{% url 'section_detail' visit.section.pk %}" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border transition-all" style="background-color: {{ visit.section.color_code }}10; border-color: {{ visit.section.color_code }}30; color: {{ visit.section.color_code }};">
+                                        {{ visit.section.name }}
+                                    </a>
+                                    {% if visit.task %}
+                                    <span class="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
+                                        <span class="material-symbols-outlined text-xs">assignment_turned_in</span> Planned
+                                    </span>
+                                    {% else %}
+                                    <span class="flex items-center gap-1 text-[10px] font-bold text-amber-500 uppercase">
+                                        <span class="material-symbols-outlined text-xs">add_circle</span> Unplanned
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-slate-400 font-medium">{{ visit.created_at|timesince }} ago</span>
+                                    {% if visit.task %}
+                                    <a href="{% url 'section_detail' visit.section.pk %}#log-{{ visit.pk }}" class="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors" title="View in section timeline">
+                                        <span class="material-symbols-outlined text-base">visibility</span>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic">"{{ visit.notes|truncatechars:200 }}"</p>
+                            
+                            <div class="flex items-center justify-between pt-1">
+                                <div class="flex flex-wrap gap-2">
+                                    {% for metric in visit.metrics.all %}
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-tighter px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded">
+                                        {{ metric.value }} {{ metric.label|default:metric.get_metric_type_display }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if visit.photos.all %}
+                                <div class="flex -space-x-3">
+                                    {% for photo in visit.photos.all|slice:":5" %}
+                                    <img src="{{ photo.file.url }}" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 object-cover" alt="Activity">
+                                    {% endfor %}
+                                    {% if visit.photos.all|length > 5 %}
+                                    <div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                        +{{ visit.photos.all|length|add:"-5" }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-12 text-center">
+                    <span class="material-symbols-outlined text-4xl text-slate-200 mb-4 block">inbox</span>
+                    <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No logs found</h3>
+                    <p class="text-sm text-slate-400 font-medium">Try adjusting your search or filter criteria.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="flex items-center justify-center gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.previous_page_number }}" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                <span class="material-symbols-outlined">chevron_left</span>
+            </a>
+            {% else %}
+            <span class="p-2 text-slate-200 dark:text-slate-700">
+                <span class="material-symbols-outlined">chevron_left</span>
+            </span>
+            {% endif %}
+
+            <span class="text-sm text-slate-600 dark:text-slate-400">
+                Page {{ page_obj.number }} of {{ paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+            <a href="?{% if query_params %}{{ query_params }}&{% endif %}page={{ page_obj.next_page_number }}" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                <span class="material-symbols-outlined">chevron_right</span>
+            </a>
+            {% else %}
+            <span class="p-2 text-slate-200 dark:text-slate-700">
+                <span class="material-symbols-outlined">chevron_right</span>
+            </span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

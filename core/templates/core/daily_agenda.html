@@ -13,14 +13,18 @@
 {% block content %}
 <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0">
     <div class="flex flex-col">
+        {% if today %}
         <h1 class="text-xl font-bold dark:text-white leading-tight">{{ today|date:"l, F j, Y" }}</h1>
+        {% else %}
+        <h1 class="text-xl font-bold dark:text-white leading-tight">Select a Date</h1>
+        {% endif %}
         <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Daily Agenda</p>
     </div>
     <div class="flex items-center gap-4">
         {% if tasks %}
         <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 rounded-lg">
             <span class="material-symbols-outlined text-sm text-sky-600 dark:text-sky-400">info</span>
-            <span class="text-xs font-medium text-sky-700 dark:text-sky-300">{{ tasks|length }} task{{ tasks|pluralize }} scheduled for today</span>
+            <span class="text-xs font-medium text-sky-700 dark:text-sky-300">{{ tasks|length }} task{{ tasks|pluralize }} scheduled</span>
         </div>
         {% endif %}
         <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-opacity-90 transition-all">
@@ -91,9 +95,17 @@
                                 <span class="material-symbols-outlined text-lg">check_circle</span>
                                 Task Completed
                             </button>
+                            {% with visit_log=task.visitlog_set.first %}
+                            {% if visit_log %}
+                            <a href="{% url 'visit_log_edit' visit_log.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Log">
+                                <span class="material-symbols-outlined text-lg">edit_note</span>
+                            </a>
+                            {% else %}
                             <a href="{% url 'task_edit' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Task">
                                 <span class="material-symbols-outlined text-lg">edit</span>
                             </a>
+                            {% endif %}
+                            {% endwith %}
                             <a href="{% url 'task_delete' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-600 transition-all" title="Delete Task">
                                 <span class="material-symbols-outlined text-lg">delete</span>
                             </a>

@@ -32,7 +32,7 @@
     <div class="max-w-7xl mx-auto space-y-8">
         
         <!-- Impact Counters -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="stat-card border-t-4 border-t-blue-500">
                 <div class="flex justify-between items-start mb-4">
                     <span class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
@@ -54,7 +54,17 @@
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Re-Planting</span>
                 </div>
                 <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_plants }} <span class="text-sm font-medium text-slate-400 uppercase">Plants</span></div>
-                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Indigenous species added</p>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-3">{{ total_plant_species }} Species planted</p>
+                {% if plant_species_breakdown %}
+                <div class="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3">
+                    {% for species in plant_species_breakdown %}
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400 truncate max-w-[70%]">{{ species.label }}</span>
+                        <span class="text-slate-900 dark:text-white font-semibold">{{ species.total }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
 
             <div class="stat-card border-t-4 border-t-orange-500">
@@ -65,19 +75,19 @@
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invasives Removed</span>
                 </div>
                 <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_weeds }} <span class="text-sm font-medium text-slate-400 uppercase">Units</span></div>
-                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Alien species managed</p>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-3">{{ total_weed_species }} Species managed</p>
+                {% if weed_species_breakdown %}
+                <div class="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3">
+                    {% for species in weed_species_breakdown %}
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400 truncate max-w-[70%]">{{ species.label }}</span>
+                        <span class="text-slate-900 dark:text-white font-semibold">{{ species.total }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
 
-            <div class="stat-card border-t-4 border-t-primary">
-                <div class="flex justify-between items-start mb-4">
-                    <span class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-primary">
-                        <span class="material-symbols-outlined">analytics</span>
-                    </span>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Success Metrics</span>
-                </div>
-                <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">100%</div>
-                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">All section data validated</p>
-            </div>
         </div>
 
         <div class="grid grid-cols-12 gap-8">
@@ -97,7 +107,7 @@
                                 <span class="text-slate-900 dark:text-white">{{ stage.count }} Sections</span>
                             </div>
                             <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-primary" style="width: {% if stage.count > 0 %}{{ stage.count|add:"0"|divisibleby:"1" }}%{% else %}0%{% endif %};"></div>
+                                <div class="h-full bg-primary" style="width: {{ stage.percentage }}%;"></div>
                             </div>
                         </div>
                         {% endfor %}
@@ -113,7 +123,7 @@
                             <span class="material-symbols-outlined text-lg text-primary">history</span>
                             Recent River Activity
                         </h2>
-                        <a href="#" class="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">View All Logs</a>
+                        <a href="{% url 'visit_log_list' %}" class="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">View All Logs</a>
                     </div>
                     
                     <div class="divide-y divide-slate-100 dark:divide-slate-800">

@@ -1,4 +1,4 @@
-**Generated on:** 2026-02-19 10:45:33
+**Generated on:** 2026-02-20 14:13:17
 
 ### File Structure
 ```
@@ -48,6 +48,7 @@
     └── MEDIA_SETUP.md
     └── PRODUCTION_CHECKLIST.md
 └── feature-status.sh
+└── icon-usage-report.txt
 └── manage.py
 └── new-feature.sh
 └── Prep_Sheets_2026-02-18.pdf
@@ -55,30 +56,34 @@
     └── backlog.md
     └── context
         └── learnings.md
+        └── project_overview.md
         └── stack.md
         └── ui_standards.md
     └── debug
         └── deploy.md
     └── Done
+        └── context_aware_logging.md
         └── dashboard.md
         └── implemenation.md
         └── investigation_handover.md
+        └── monthly_view.md
+        └── planner_interaction_update.md
         └── prd_zone_view
+        └── section_mapping.md
         └── stage_tracking.md
         └── styling.md
+        └── success_metrics_card.md
         └── task_template_data.md
         └── template_management.md
         └── weeding_data.md
+        └── weekly_planner_navigation.md
     └── prompts
         └── po.md
-    └── Ready
-        └── monthly_view.md
     └── refinement
+        └── active_sections_dashboard.md
         └── all_logs_view.md
-        └── context_aware_logging.md
-        └── planner_interaction_update.md
-        └── section_mapping.md
-        └── weekly_planner_navigation.md
+        └── detailed_planting_metrics.md
+        └── edit_completed_task.md
 └── requirements.txt
 └── river
     └── .env
@@ -99,6 +104,8 @@
     └── STEPS.md
     └── urls.py
     └── wsgi.py
+└── scripts
+    └── update_icons.py
 └── summarise.py
 └── switch-feature.sh
 └── sync-feature.sh
@@ -112,6 +119,10 @@
 ### Summarized Key Files
 #### `SUMMARY: core/admin.py`
 ```python
+@admin.register(Status)
+class StatusAdmin(admin.ModelAdmin):
+    # ... implementation hidden ...
+
 class SectionStageHistoryInline(admin.TabularInline):
     # ... implementation hidden ...
 
@@ -175,13 +186,23 @@ class BasePhotoFormSet(forms.BaseInlineFormSet):
 
 #### `SUMMARY: core/models.py`
 ```python
+class Status(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    color_code = models.CharField(max_length=7, default='#808080', help_text='Hex color code for visual distinction')
+    is_active = models.BooleanField(default=True, help_text='Only active statuses are shown in dropdowns')
+    position = models.PositiveIntegerField(default=0, help_text='Order in which statuses appear')
+    created_at = models.DateTimeField(auto_now_add=True)
+
 class Section(models.Model):
     STAGE_CHOICES = [('mitigation', 'Mitigation'), ('clearing', 'Clearing'), ('planting', 'Planting'), ('follow_up', 'Follow-up'), ('community', 'Community')]
     name = models.CharField(max_length=100, unique=True)
     color_code = models.CharField(max_length=7, default='#808080')
     current_stage = models.CharField(max_length=20, choices=STAGE_CHOICES, default='mitigation')
+    status = models.ForeignKey(Status, on_delete=models.SET_NULL, null=True, blank=True, help_text='Current status of this section')
     description = models.TextField(blank=True)
     position = models.PositiveIntegerField(default=0, help_text='Order of the section (upstream to downstream)')
+    boundary_data = models.JSONField(default=dict, blank=True, help_text='GeoJSON-style polygon coordinates for section boundaries')
+    center_point = models.JSONField(default=dict, blank=True, help_text='GeoJSON-style center point coordinates [lng, lat]')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -230,13 +251,18 @@ class Photo(models.Model):
 class SectionStageHistory(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='stage_history')
     stage = models.CharField(max_length=20, choices=Section.STAGE_CHOICES)
-    # Choices: STAGE_CHOICES, name, color_code, current_stage, description, position, created_at, updated_at
+    # Choices: STAGE_CHOICES, name, color_code, current_stage, status, description, position, boundary_data, center_point, created_at, updated_at
     changed_at = models.DateTimeField()
     notes = models.TextField(blank=True)
 ```
 
 #### `SUMMARY: core/views.py`
 ```python
+@login_required
+def section_reorder_view(request):
+    """AJAX endpoint to reorder sections by updating their position field."""
+    # ... implementation hidden ...
+
 class GlobalDashboardView(LoginRequiredMixin, ListView):  # Renders: core/dashboard.html
     # ... implementation hidden ...
 
@@ -304,6 +330,7 @@ class DailyAgendaViewTests:
 #### `SUMMARY: river/settings.py`
 ```python
 BASE_DIR = Path(__file__).resolve().parent.parent
+SENTRY_DSN = os.environ.get('SENTRY_DSN')
 DEBUG = env.bool('DEBUG', default=True)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 INSTALLED_APPS = [
@@ -338,6 +365,7 @@ urlpatterns = [
     
     # Section URLs
     path('sections/', views.SectionListView.as_view(), name='section_list'),
+    path('sections/reorder/', views.section_reorder_view, name='section_reorder'),
     path('sections/<int:pk>/', views.SectionDetailView.as_view(), name='section_detail'),
     path('sections/create/', views.SectionCreateView.as_view(), name='section_create'),
     path('sections/<int:pk>/edit/', views.SectionUpdateView.as_view(), name='section_edit'),
@@ -391,10 +419,16 @@ from django.conf import settings
 from django.conf.urls.static import static
 from core.views import SectionListView
 
+
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', SectionListView.as_view(), name='home'),
     path('core/', include('core.urls')),
+    path('sentry-debug/', trigger_error),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 ```

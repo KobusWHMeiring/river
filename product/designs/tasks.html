@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Environmental Metrics Entry - Variant 1</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#10b981", // Emerald 500 for environmental feel
+              "background-light": "#f8fafc",
+              "background-dark": "#0f172a",
+              "card-light": "#ffffff",
+              "card-dark": "#1e293b",
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+            },
+          },
+        },
+      };
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen p-8 transition-colors duration-200">
+<div class="max-w-4xl mx-auto">
+<div class="mb-8 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-icons-outlined text-slate-500 dark:text-slate-400">analytics</span>
+<h2 class="text-sm font-bold tracking-widest uppercase text-slate-500 dark:text-slate-400">Metrics &amp; Collection</h2>
+</div>
+<button class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-outlined text-slate-600 dark:text-slate-300">dark_mode</span>
+</button>
+</div>
+<div class="space-y-6">
+<div class="bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex items-center justify-between shadow-sm cursor-pointer hover:border-primary transition-colors group">
+<div class="flex items-center gap-4">
+<div class="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/30 transition-colors">
+<span class="material-icons-outlined text-slate-500 dark:text-slate-400 group-hover:text-primary">delete_outline</span>
+</div>
+<span class="font-semibold text-slate-700 dark:text-slate-200 text-lg">Litter Collection</span>
+</div>
+<span class="material-icons-outlined text-slate-400">chevron_right</span>
+</div>
+<div class="bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl shadow-md overflow-hidden ring-2 ring-primary ring-opacity-10">
+<div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+<div class="flex items-center gap-4">
+<div class="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg">
+<span class="material-icons-outlined text-primary">eco</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-100 text-lg">Weeding Data</span>
+</div>
+<span class="material-icons-outlined text-slate-400 transform rotate-90">expand_more</span>
+</div>
+<div class="p-6 space-y-6">
+<div class="space-y-4">
+<div class="grid grid-cols-12 gap-4 items-end bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+<div class="col-span-12 md:col-span-7 space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">Weed Species / Removal Method</label>
+<div class="relative group">
+<span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors text-xl">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-700 dark:text-slate-200 transition-all outline-none" placeholder="e.g., Wattle (Bags)" type="text"/>
+</div>
+</div>
+<div class="col-span-12 md:col-span-4 space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">Quantity</label>
+<div class="flex items-center bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden h-[46px]">
+<button class="w-12 h-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
+<span class="material-icons-outlined">remove</span>
+</button>
+<input class="flex-1 w-full text-center border-none bg-transparent text-slate-800 dark:text-slate-100 font-semibold focus:ring-0" type="number" value="0"/>
+<button class="w-12 h-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors border-l border-slate-100 dark:border-slate-800">
+<span class="material-icons-outlined">add</span>
+</button>
+</div>
+</div>
+<div class="col-span-12 md:col-span-1 flex justify-end">
+<button class="p-2.5 text-slate-300 hover:text-red-400 transition-colors">
+<span class="material-icons-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<button class="flex items-center gap-2 px-5 py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-primary hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-500 dark:text-slate-400 hover:text-primary rounded-xl font-semibold transition-all w-full justify-center">
+<span class="material-icons-outlined text-xl">add_circle_outline</span>
+                        Add New Species
+                    </button>
+</div>
+</div>
+<div class="bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl shadow-md overflow-hidden">
+<div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+<span class="material-icons-outlined text-slate-500 dark:text-slate-400">forest</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-100 text-lg">Planting Data</span>
+</div>
+<span class="material-icons-outlined text-slate-400 transform rotate-90">expand_more</span>
+</div>
+<div class="p-6 space-y-6">
+<div class="space-y-4">
+<div class="grid grid-cols-12 gap-4 items-end p-2">
+<div class="col-span-12 md:col-span-7 space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">Plant Species</label>
+<input class="w-full px-4 py-2.5 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-700 dark:text-slate-200 outline-none" type="text" value="Eucalyptus Melliodora"/>
+</div>
+<div class="col-span-12 md:col-span-4 space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">Count</label>
+<div class="flex items-center bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden h-[46px]">
+<button class="w-12 h-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
+<span class="material-icons-outlined">remove</span>
+</button>
+<input class="flex-1 w-full text-center border-none bg-transparent text-slate-800 dark:text-slate-100 font-semibold focus:ring-0" type="number" value="45"/>
+<button class="w-12 h-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
+<span class="material-icons-outlined">add</span>
+</button>
+</div>
+</div>
+<div class="col-span-12 md:col-span-1 flex justify-end">
+<button class="p-2.5 text-slate-300 hover:text-red-400 transition-colors">
+<span class="material-icons-outlined">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-4 items-end p-2 border-t border-slate-50 dark:border-slate-800 pt-4">
+<div class="col-span-12 md:col-span-7 space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">Plant Species</label>
+<input class="w-full px-4 py-2.5 bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-slate-700 dark:text-slate-200 outline-none" type="text" value="Acacia Pycnantha"/>
+</div>
+<div class="col-span-12 md:col-span-4 space-y-2">
+<label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">Count</label>
+<div class="flex items-center bg-card-light dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden h-[46px]">
+<button class="w-12 h-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
+<span class="material-icons-outlined">remove</span>
+</button>
+<input class="flex-1 w-full text-center border-none bg-transparent text-slate-800 dark:text-slate-100 font-semibold focus:ring-0" type="number" value="12"/>
+<button class="w-12 h-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors">
+<span class="material-icons-outlined">add</span>
+</button>
+</div>
+</div>
+<div class="col-span-12 md:col-span-1 flex justify-end">
+<button class="p-2.5 text-slate-300 hover:text-red-400 transition-colors">
+<span class="material-icons-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="pt-2">
+<button class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-white font-bold rounded-lg shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 hover:shadow-emerald-600/40 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+<span class="material-icons-outlined">add</span>
+                            Add Species Entry
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-12 flex justify-end gap-4">
+<button class="px-6 py-2.5 text-slate-500 dark:text-slate-400 font-semibold hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+                Cancel
+            </button>
+<button class="px-8 py-2.5 bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-900 font-bold rounded-lg hover:bg-slate-900 dark:hover:bg-white transition-all shadow-md">
+                Save Collection Data
+            </button>
+</div>
+</div>
+
+</body></html>
