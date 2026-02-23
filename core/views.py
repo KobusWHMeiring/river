@@ -92,6 +92,16 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
             total=Sum('value')
         ).order_by('-total')[:5])
 
+        # Active Sections (with activity in last 30 days)
+        from django.db.models import Max, Count
+        thirty_days_ago = timezone.now().date() - timedelta(days=30)
+        active_sections = Section.objects.filter(
+            visitlog__date__gte=thirty_days_ago
+        ).annotate(
+            last_visit_date=Max('visitlog__date'),
+            visit_count=Count('visitlog')
+        ).distinct().order_by('-last_visit_date')[:10]
+
         context.update({
             'total_bags_general': total_bags_general,
             'total_bags_recyclable': total_bags_recyclable,
@@ -103,6 +113,7 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
             'plant_species_breakdown': plant_species_breakdown,
             'total_weed_species': total_weed_species,
             'weed_species_breakdown': weed_species_breakdown,
+            'active_sections': active_sections,
         })
         return context
 

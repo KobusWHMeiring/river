@@ -78,6 +78,11 @@
                 {% csrf_token %}
                 {{ metric_formset.management_form }}
                 {{ photo_formset.management_form }}
+                
+                {# Render hidden ID fields for existing metrics and photos to ensure they are tracked #}
+                {% for m_form in metric_formset %}{{ m_form.id }}{% endfor %}
+                {% for p_form in photo_formset %}{{ p_form.id }}{% endfor %}
+
                 <input type="hidden" name="next" value="{{ next }}">
 
                 <!-- Task Context Header -->
