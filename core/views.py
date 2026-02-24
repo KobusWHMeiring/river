@@ -415,34 +415,30 @@ class DailyAgendaView(LoginRequiredMixin, ListView):
     template_name = 'core/daily_agenda.html'
     context_object_name = 'tasks'
     
-    def get_queryset(self):
+    def get_target_date(self):
+        """Get the target date from query params or default to today."""
         date_str = self.request.GET.get('date')
         if date_str:
             try:
-                target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                try:
-                    return Task.objects.filter(
-                        date=target_date
-                    ).order_by('assignee_type', 'section__name')
-                except Exception:
-                    return Task.objects.filter(
-                        date=target_date
-                    ).order_by('section__name')
+                return datetime.strptime(date_str, '%Y-%m-%d').date()
             except (ValueError, TypeError):
                 pass
-        return Task.objects.none()
+        return timezone.now().date()
+    
+    def get_queryset(self):
+        target_date = self.get_target_date()
+        try:
+            return Task.objects.filter(
+                date=target_date
+            ).order_by('assignee_type', 'section__name')
+        except Exception:
+            return Task.objects.filter(
+                date=target_date
+            ).order_by('section__name')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        date_str = self.request.GET.get('date')
-        if date_str:
-            try:
-                target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-            except (ValueError, TypeError):
-                target_date = None
-        else:
-            target_date = None
-        context['today'] = target_date
+        context['today'] = self.get_target_date()
         return context
 
 class TaskCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
