@@ -2,7 +2,10 @@
 <html class="light" lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#166534">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>{% block title %}Liesbeek Master Plan{% endblock %}</title>
     {% load static %}
     <link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
@@ -21,7 +24,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&text=addadd_a_photoadd_circleadd_location_altadd_taskanalyticsarchivearrow_forwardassignmentassignment_turned_incalendar_add_oncalendar_monthcalendar_todaycalendar_view_weekcategorycheckcheck_circlechevron_leftchevron_rightclosedeletedelete_foreverdescriptiondoneeditedit_noteedit_squareeventevent_busyexpand_moreflagforestformat_align_leftgrassgroupgroupshistoryimageinboxinfoleaderboardlocation_onmapmore_horizpaletteparkpeoplepersonrecyclingremovesearchshape_linesortstartasktimelinetrending_upverified_uservisibilitywarning" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&text=addadd_a_photoadd_circleadd_location_altadd_taskanalyticsarchivearrow_forwardassignmentassignment_turned_incalendar_add_oncalendar_monthcalendar_todaycalendar_view_weekcategorycheckcheck_circlechevron_leftchevron_rightclosedark_modedeletedelete_foreverdescriptiondoneeditedit_noteedit_squareeventevent_busyexpand_moreflagforestformat_align_leftgrassgrid_viewgroupgroupshistoryimageinboxinfoleaderboardlight_modelocation_onmapmore_horizpaletteparkpeoplepersonrecyclingremovesearchshape_linesortstartasktimelinetrending_upverified_userview_agendaview_weekvisibilitywarning" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -43,6 +46,7 @@
             },
         };
     </script>
+    <link rel="stylesheet" href="{% static 'css/mobile.css' %}">
     <style>
         body { font-family: 'Inter', sans-serif; }
         /* Icon font consolidation - Material Symbols handles both outlined and round styles */
@@ -84,8 +88,50 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased h-screen overflow-hidden flex">
-    <!-- Sidebar -->
-    <aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav md:hidden" data-testid="mobile-nav">
+        <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <span class="material-symbols-outlined">analytics</span>
+        </a>
+        <a href="{% url 'weekly_planner' %}" class="{% if request.resolver_match.url_name == 'weekly_planner' or request.resolver_match.url_name == 'monthly_planner' %}active{% endif %}">
+            <span class="material-symbols-outlined">calendar_view_week</span>
+        </a>
+        <a href="{% url 'daily_agenda' %}" class="{% if request.resolver_match.url_name == 'daily_agenda' %}active{% endif %}">
+            <span class="material-symbols-outlined">view_agenda</span>
+        </a>
+        <a href="{% url 'section_list' %}" class="{% if request.resolver_match.url_name == 'section_list' %}active{% endif %}">
+            <span class="material-symbols-outlined">grid_view</span>
+        </a>
+        <a href="#" id="mobile-menu-toggle" data-testid="nav-more">
+            <span class="material-symbols-outlined">more_horiz</span>
+        </a>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="hidden fixed inset-0 z-50 md:hidden">
+        <div class="absolute inset-0 bg-black/50" onclick="document.getElementById('mobile-menu').classList.add('hidden')"></div>
+        <div class="absolute bottom-20 left-4 right-4 bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-4 mobile-menu-open">
+            <div class="space-y-2">
+                <a href="{% url 'task_template_list' %}" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <span class="material-symbols-outlined">assignment</span>
+                    <span class="font-medium">Task Templates</span>
+                </a>
+                {% if user.is_staff %}
+                <a href="{% url 'admin:index' %}" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                    <span class="font-medium">Admin</span>
+                </a>
+                {% endif %}
+                <a href="{% url 'admin:logout' %}" class="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span class="font-medium">Logout</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar (hidden on mobile) -->
+    <aside class="hidden md:flex w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-col shrink-0">
         <div class="p-6 flex items-center gap-3">
             <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
                 <span class="material-symbols-outlined text-xl">waves</span>
@@ -140,7 +186,7 @@
     </aside>
 
     <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark">
+    <main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark mobile-content">
         <!-- Messages -->
         {% if messages %}
             <div class="px-8 pt-4">
@@ -173,6 +219,9 @@
             document.body.classList.add('fonts-loaded');
         }
     </script>
+
+    <!-- Mobile Navigation JavaScript -->
+    <script src="{% static 'js/mobile.js' %}"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

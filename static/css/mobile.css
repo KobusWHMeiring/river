@@ -1,0 +1,249 @@
+/* Mobile Responsiveness Styles for Liesbeek Management System */
+
+/* Mobile navigation */
+.mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 50;
+}
+
+.mobile-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.mobile-nav a.active,
+.mobile-nav a:hover {
+    color: #166534;
+}
+
+.mobile-nav a .material-symbols-outlined {
+    font-size: 24px;
+}
+
+/* Ensure content isn't hidden behind mobile nav */
+.mobile-content {
+    padding-bottom: 80px;
+}
+
+/* Touch-friendly form elements */
+@media (max-width: 768px) {
+    input, select, textarea, button {
+        font-size: 16px;
+    }
+    
+    .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Counter buttons - larger on mobile */
+    .counter-btn {
+        width: 48px;
+        height: 48px;
+    }
+    
+    /* Section headers - larger tap area */
+    .section-header {
+        min-height: 48px;
+        padding: 12px 16px;
+    }
+    
+    .section-header:active {
+        background-color: rgba(0,0,0,0.05);
+    }
+    
+    /* Floating action button */
+    .fab {
+        position: fixed;
+        bottom: 80px;
+        right: 16px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 40;
+    }
+    
+    /* Sticky form actions */
+    .sticky-actions {
+        position: sticky;
+        bottom: 64px;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        padding: 16px;
+        z-index: 30;
+    }
+    
+    /* Mobile-only utilities */
+    .mobile-full-width {
+        width: 100%;
+    }
+    
+    /* Task cards mobile optimization */
+    .task-card {
+        margin-bottom: 12px;
+    }
+    
+    .task-card-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .task-card-actions .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .task-card-actions .btn-secondary {
+        justify-content: center;
+    }
+    
+    /* Photo upload mobile optimization */
+    .photo-upload-area {
+        min-height: 160px;
+    }
+    
+    /* Collapsible sections mobile */
+    .collapsible-section {
+        margin-bottom: 12px;
+    }
+    
+    .collapsible-header {
+        padding: 16px;
+    }
+}
+
+/* Hide mobile nav on desktop */
+@media (min-width: 769px) {
+    .mobile-nav {
+        display: none;
+    }
+    
+    .mobile-content {
+        padding-bottom: 0;
+    }
+    
+    .fab {
+        display: none;
+    }
+}
+
+/* Planner horizontal scroll on mobile */
+@media (max-width: 768px) {
+    /* Allow horizontal scroll for planner grids */
+    .overflow-auto {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Ensure mobile nav stays on top during horizontal scroll */
+    .mobile-nav {
+        position: fixed;
+        z-index: 50;
+    }
+    
+    /* Planner grid containers */
+    [class*="min-w-"] {
+        margin-bottom: 80px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .mobile-nav {
+        background: #1e293b;
+        border-top-color: #334155;
+    }
+    
+    .mobile-nav a {
+        color: #94a3b8;
+    }
+    
+    .mobile-nav a.active,
+    .mobile-nav a:hover {
+        color: #4ade80;
+    }
+    
+    .sticky-actions {
+        background: #1e293b;
+        border-top-color: #334155;
+    }
+}
+
+html.dark .mobile-nav {
+    background: #1e293b;
+    border-top-color: #334155;
+}
+
+html.dark .mobile-nav a {
+    color: #94a3b8;
+}
+
+html.dark .mobile-nav a.active,
+html.dark .mobile-nav a:hover {
+    color: #4ade80;
+}
+
+html.dark .sticky-actions {
+    background: #1e293b;
+    border-top-color: #334155;
+}
+
+/* Smooth scrolling for mobile */
+@media (max-width: 768px) {
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Prevent horizontal scroll */
+    body {
+        overflow-x: hidden;
+    }
+}
+
+/* Animation for mobile menu */
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.mobile-menu-open {
+    animation: slideUp 0.2s ease-out;
+}
+
+/* Active state feedback for touch */
+@media (max-width: 768px) {
+    button:active,
+    a:active {
+        opacity: 0.7;
+    }
+    
+    .btn-primary:active {
+        transform: scale(0.98);
+    }
+}

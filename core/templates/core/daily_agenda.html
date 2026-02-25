@@ -11,14 +11,22 @@
 {% endblock %}
 
 {% block content %}
-<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0">
+<!-- Floating Action Button (Mobile) -->
+<a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" 
+   class="fab md:hidden bg-primary text-white z-40" 
+   data-testid="mobile-add-log-btn"
+   aria-label="Add Log">
+    <span class="material-symbols-outlined text-2xl">add</span>
+</a>
+
+<header class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:px-8 md:h-16 flex items-center justify-between shrink-0">
     <div class="flex flex-col">
         {% if today %}
-        <h1 class="text-xl font-bold dark:text-white leading-tight">{{ today|date:"l, F j, Y" }}</h1>
+        <h1 class="text-lg font-bold dark:text-white leading-tight md:text-xl">{{ today|date:"D, M j" }}</h1>
         {% else %}
-        <h1 class="text-xl font-bold dark:text-white leading-tight">Select a Date</h1>
+        <h1 class="text-lg font-bold dark:text-white leading-tight md:text-xl">Select a Date</h1>
         {% endif %}
-        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Daily Agenda</p>
+        <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider md:text-xs">Daily Agenda</p>
     </div>
     <div class="flex items-center gap-4">
         {% if tasks %}
@@ -27,113 +35,121 @@
             <span class="text-xs font-medium text-sky-700 dark:text-sky-300">{{ tasks|length }} task{{ tasks|pluralize }} scheduled</span>
         </div>
         {% endif %}
-        <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-opacity-90 transition-all">
+        <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="hidden md:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-opacity-90 transition-all">
             <span class="material-symbols-outlined text-lg">add_circle</span>
-            Log Activity
+            Add Log
         </a>
     </div>
 </header>
 
-<div class="flex-1 overflow-auto p-8 custom-scrollbar">
-    <div class="max-w-3xl mx-auto space-y-6">
+<div class="flex-1 overflow-auto p-4 md:p-8 custom-scrollbar">
+    <div class="max-w-3xl mx-auto space-y-4 md:space-y-6">
         {% if tasks %}
             {% for task in tasks %}
                 {% if not task.is_completed %}
-                <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden border-l-4" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#94a3b8{% endif %};">
-                    <div class="p-5">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex flex-col gap-1">
+                <div class="task-card bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden border-l-4" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#94a3b8{% endif %};">
+                    <div class="p-4 md:p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
                                 {% if task.section %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide w-fit" style="background-color: {{ task.section.color_code }}20; color: {{ task.section.color_code }};">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide" style="background-color: {{ task.section.color_code }}20; color: {{ task.section.color_code }};">
                                     {{ task.section.name }}
                                 </span>
                                 {% else %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 uppercase tracking-wide w-fit">No Section</span>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 uppercase tracking-wide">No Section</span>
                                 {% endif %}
-                                <h3 class="text-base font-semibold text-slate-800 dark:text-white">{{ task.instructions|truncatechars:100 }}</h3>
                             </div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ task.assignee_type|title }}</span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <a href="{% url 'visit_log_create' %}?task={{ task.pk }}&next={{ request.get_full_path|urlencode }}" class="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-2.5 rounded-lg text-sm font-bold shadow-sm hover:bg-opacity-90 transition-all">
+                        <h3 class="text-sm font-semibold text-slate-800 dark:text-white mb-4">{{ task.instructions|truncatechars:120 }}</h3>
+                        <div class="task-card-actions flex flex-col md:flex-row gap-2 md:gap-3">
+                            <a href="{% url 'visit_log_create' %}?task={{ task.pk }}&next={{ request.get_full_path|urlencode }}" class="btn-primary w-full md:flex-1 flex items-center justify-center gap-2 bg-primary text-white py-3 md:py-2.5 px-4 rounded-lg text-sm font-bold shadow-sm hover:bg-opacity-90 transition-all">
                                 <span class="material-symbols-outlined text-lg">edit_note</span>
                                 Log and Complete
                             </a>
-                            <a href="{% url 'task_edit' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Task">
-                                <span class="material-symbols-outlined text-lg">edit</span>
-                            </a>
-                            <a href="{% url 'task_delete' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-600 transition-all" title="Delete Task">
-                                <span class="material-symbols-outlined text-lg">delete</span>
-                            </a>
+                            <div class="flex gap-2 justify-end md:justify-start">
+                                <a href="{% url 'task_edit' task.pk %}?next={{ request.get_full_path|urlencode }}" class="btn-secondary w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Task">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </a>
+                                <a href="{% url 'task_delete' task.pk %}?next={{ request.get_full_path|urlencode }}" class="btn-secondary w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-600 transition-all" title="Delete Task">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
                 {% else %}
-                <div class="bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 shadow-none overflow-hidden border-l-4 border-l-slate-300">
-                    <div class="p-5">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex flex-col gap-1">
-                                <div class="flex items-center gap-2">
-                                    {% if task.section %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide w-fit" style="background-color: {{ task.section.color_code }}20; color: {{ task.section.color_code }}; opacity: 0.5;">
-                                        {{ task.section.name }}
-                                    </span>
-                                    {% else %}
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200/50 text-slate-500 dark:bg-slate-700 dark:text-slate-400 uppercase tracking-wide w-fit">No Section</span>
-                                    {% endif %}
-                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-500 uppercase">
-                                        <span class="material-symbols-outlined text-[10px]">done</span>
-                                        Completed
-                                    </span>
-                                </div>
-                                <h3 class="text-base font-semibold text-slate-400 dark:text-slate-500 line-through">{{ task.instructions|truncatechars:100 }}</h3>
+                <div class="task-card bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 shadow-none overflow-hidden border-l-4 border-l-slate-300" data-testid="completed-task">
+                    <div class="p-4 md:p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                {% if task.section %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide" style="background-color: {{ task.section.color_code }}20; color: {{ task.section.color_code }}; opacity: 0.5;">
+                                    {{ task.section.name }}
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200/50 text-slate-500 dark:bg-slate-700 dark:text-slate-400 uppercase tracking-wide">No Section</span>
+                                {% endif %}
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-500 uppercase">
+                                    <span class="material-symbols-outlined text-[10px]">done</span>
+                                    Completed
+                                </span>
                             </div>
                             <span class="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-widest">{{ task.assignee_type|title }}</span>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <button class="flex-1 flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-2.5 rounded-lg text-sm font-bold cursor-not-allowed" disabled>
+                        <h3 class="text-sm font-semibold text-slate-400 dark:text-slate-500 line-through mb-4">{{ task.instructions|truncatechars:120 }}</h3>
+                        <div class="task-card-actions flex flex-col md:flex-row gap-2 md:gap-3">
+                            <button class="w-full md:flex-1 flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-3 md:py-2.5 px-4 rounded-lg text-sm font-bold cursor-not-allowed" disabled>
                                 <span class="material-symbols-outlined text-lg">check_circle</span>
                                 Task Completed
                             </button>
-                            {% with visit_log=task.visitlog_set.first %}
-                            {% if visit_log %}
-                            <a href="{% url 'visit_log_edit' visit_log.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Log">
-                                <span class="material-symbols-outlined text-lg">edit_note</span>
-                            </a>
-                            {% else %}
-                            <a href="{% url 'task_edit' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Task">
-                                <span class="material-symbols-outlined text-lg">edit</span>
-                            </a>
-                            {% endif %}
-                            {% endwith %}
-                            <a href="{% url 'task_delete' task.pk %}?next={{ request.get_full_path|urlencode }}" class="flex items-center justify-center w-10 h-10 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-600 transition-all" title="Delete Task">
-                                <span class="material-symbols-outlined text-lg">delete</span>
-                            </a>
+                            <div class="flex gap-2 justify-end md:justify-start">
+                                {% with visit_log=task.visitlog_set.first %}
+                                {% if visit_log %}
+                                <a href="{% url 'visit_log_edit' visit_log.pk %}?next={{ request.get_full_path|urlencode }}" class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Log">
+                                    <span class="material-symbols-outlined text-lg">edit_note</span>
+                                </a>
+                                {% else %}
+                                <a href="{% url 'task_edit' task.pk %}?next={{ request.get_full_path|urlencode }}" class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-primary hover:border-primary transition-all" title="Edit Task">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </a>
+                                {% endif %}
+                                {% endwith %}
+                                <a href="{% url 'task_delete' task.pk %}?next={{ request.get_full_path|urlencode }}" class="w-10 h-10 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-600 transition-all" title="Delete Task">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
                 {% endif %}
             {% endfor %}
         {% else %}
-            <div class="py-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-700 mb-4">calendar_today</span>
-                <h3 class="text-lg font-bold text-slate-800 dark:text-white mb-1">No Tasks Scheduled</h3>
-                <p class="text-slate-500 text-sm max-w-xs mx-auto">There are no tasks scheduled for today.</p>
-                <a href="{% url 'weekly_planner' %}" class="inline-flex items-center gap-2 mt-6 text-primary font-bold text-sm hover:underline">
-                    <span class="material-symbols-outlined text-lg">calendar_view_week</span>
-                    Go to Weekly Planner
-                </a>
+            <div class="py-12 px-4 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <span class="material-symbols-outlined text-4xl md:text-5xl text-slate-300 dark:text-slate-700 mb-3 md:mb-4">calendar_today</span>
+                <h3 class="text-base md:text-lg font-bold text-slate-800 dark:text-white mb-1">No Tasks Today</h3>
+                <p class="text-sm text-slate-500">There are no tasks scheduled for today.</p>
+                <div class="flex flex-col gap-3 mt-6 md:flex-row md:justify-center">
+                    <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-xl text-sm font-bold transition-all">
+                        <span class="material-symbols-outlined text-lg">add_circle</span>
+                        Add Log
+                    </a>
+                    <a href="{% url 'weekly_planner' %}" class="inline-flex items-center justify-center gap-2 px-4 py-3 border-2 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-bold transition-all">
+                        <span class="material-symbols-outlined text-lg">calendar_view_week</span>
+                        View Week
+                    </a>
+                </div>
             </div>
         {% endif %}
 
-        <div class="pt-6 space-y-3">
+        <div class="pt-4 md:pt-6 space-y-3">
             <a href="{% url 'task_create' %}?date={{ today|date:'Y-m-d' }}&next={{ request.get_full_path|urlencode }}" class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-primary/20 hover:border-primary/40 text-primary rounded-xl text-sm font-bold transition-all bg-white dark:bg-slate-900">
                 <span class="material-symbols-outlined text-lg">add_task</span>
                 Add Planned Task
             </a>
             <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-primary/20 hover:border-primary/40 text-primary rounded-xl text-sm font-bold transition-all bg-white dark:bg-slate-900">
                 <span class="material-symbols-outlined text-lg">add_circle</span>
-                Log Unplanned Activity
+                Add Log
             </a>
             <a href="{% url 'weekly_planner' %}" class="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-600 dark:text-slate-400 rounded-xl text-sm font-bold transition-all bg-white dark:bg-slate-900">
                 <span class="material-symbols-outlined text-lg">calendar_month</span>
