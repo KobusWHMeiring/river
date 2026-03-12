@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit Task Type{% else %}Create Task Type{% endif %} - Liesbeek Master Plan{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    .material-symbols-outlined {
+        font-size: 1.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 flex items-center justify-between shrink-0 z-10">
+    <div class="flex flex-col">
+        <h1 class="text-xl font-bold dark:text-white leading-tight">{% if object %}Edit Task Type{% else %}Create New Task Type{% endif %}</h1>
+        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Define a category for organizing tasks</p>
+    </div>
+</header>
+
+<div class="flex-1 overflow-auto custom-scrollbar bg-slate-50 dark:bg-slate-950/50">
+    <div class="max-w-2xl mx-auto p-8 lg:p-12">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <form method="post" class="p-8 space-y-6">
+                {% csrf_token %}
+
+                <!-- Name -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.name.id_for_label }}">Name</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">label</span>
+                        {{ form.name }}
+                    </div>
+                    {% if form.name.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Code -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.code.id_for_label }}">Code</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">code</span>
+                        {{ form.code }}
+                        <span id="code-lock-icon" class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 text-sm hidden" title="Manually edited">lock</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Auto-generated from name (lowercase with underscores) - you can edit it manually if needed</p>
+                    {% if form.code.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.code.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Description -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.description.id_for_label }}">Description</label>
+                    <div class="relative">
+                        {{ form.description }}
+                    </div>
+                    {% if form.description.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.description.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Applicable To -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.applicable_to.id_for_label }}">Applicable To</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">people</span>
+                        {{ form.applicable_to }}
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Determines which groups can use this task type</p>
+                    {% if form.applicable_to.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.applicable_to.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Position -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.position.id_for_label }}">Position</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">sort</span>
+                        {{ form.position }}
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Order in which this type appears in lists (0 = first)</p>
+                    {% if form.position.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.position.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Icon Name -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.icon_name.id_for_label }}">Icon Name</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">image</span>
+                        {{ form.icon_name }}
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Material Symbols icon name (e.g., 'delete_sweep', 'grass', 'forest', 'description') - <a href="https://fonts.google.com/icons" target="_blank" class="text-primary hover:underline">browse icons</a></p>
+                    {% if form.icon_name.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.icon_name.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Color Class -->
+                <div class="space-y-1.5">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.color_class.id_for_label }}">Color</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">palette</span>
+                        {{ form.color_class }}
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                        <!-- Color Preview -->
+                        <div id="color-preview" class="absolute right-10 top-1/2 -translate-y-1/2 w-6 h-6 rounded border border-slate-200 dark:border-slate-600 transition-all"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Choose a color theme for this task type</p>
+                    {% if form.color_class.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.color_class.errors.0 }}</p>{% endif %}
+                </div>
+
+                <!-- Active Status -->
+                <div class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        {{ form.is_active }}
+                        <div class="flex flex-col">
+                            <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">Active</span>
+                            <span class="text-xs text-slate-400">Inactive task types are hidden from dropdowns</span>
+                        </div>
+                    </label>
+                    {% if form.is_active.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.is_active.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="flex items-center justify-end space-x-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <a href="{% url 'task_type_list' %}" class="px-6 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                        Cancel
+                    </a>
+                    <button type="submit" class="bg-primary hover:bg-opacity-90 text-white px-8 py-2.5 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">{% if object %}save{% else %}add{% endif %}</span>
+                        {% if object %}Update{% else %}Create{% endif %} Task Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nameInput = document.getElementById('id_name');
+    const codeInput = document.getElementById('id_code');
+    const colorSelect = document.getElementById('id_color_class');
+    const colorPreview = document.getElementById('color-preview');
+    
+    // Color mapping for preview
+    const colorMap = {
+        'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-100 dark:border-amber-800': '#f59e0b',
+        'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-100 dark:border-emerald-800': '#10b981',
+        'bg-green-50 dark:bg-green-900/20 text-green-600 border-green-100 dark:border-green-800': '#22c55e',
+        'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100 dark:border-blue-800': '#3b82f6',
+        'bg-purple-50 dark:bg-purple-900/20 text-purple-600 border-purple-100 dark:border-purple-800': '#a855f7',
+        'bg-red-50 dark:bg-red-900/20 text-red-600 border-red-100 dark:border-red-800': '#ef4444',
+        'bg-orange-50 dark:bg-orange-900/20 text-orange-600 border-orange-100 dark:border-orange-800': '#f97316',
+        'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 border-yellow-100 dark:border-yellow-800': '#eab308',
+        'bg-teal-50 dark:bg-teal-900/20 text-teal-600 border-teal-100 dark:border-teal-800': '#14b8a6',
+        'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 border-cyan-100 dark:border-cyan-800': '#06b6d4',
+        'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 border-indigo-100 dark:border-indigo-800': '#6366f1',
+        'bg-pink-50 dark:bg-pink-900/20 text-pink-600 border-pink-100 dark:border-pink-800': '#ec4899',
+        'bg-rose-50 dark:bg-rose-900/20 text-rose-600 border-rose-100 dark:border-rose-800': '#f43f5e',
+        'bg-slate-50 dark:bg-slate-800 text-slate-600 border-slate-100 dark:border-slate-700': '#64748b',
+        'bg-gray-50 dark:bg-gray-800 text-gray-600 border-gray-100 dark:border-gray-700': '#6b7280',
+    };
+    
+    // Auto-generate code from name
+    if (nameInput && codeInput) {
+        nameInput.addEventListener('input', function() {
+            // Only auto-generate if code field is empty or hasn't been manually edited
+            if (!codeInput.dataset.manuallyEdited) {
+                const name = this.value;
+                const code = name
+                    .toLowerCase()
+                    .replace(/[^a-z0-9\s]/g, '')  // Remove special characters
+                    .replace(/\s+/g, '_')          // Replace spaces with underscores
+                    .replace(/_+/g, '_')           // Remove consecutive underscores
+                    .replace(/^_+|_+$/g, '');      // Remove leading/trailing underscores
+                codeInput.value = code;
+            }
+        });
+        
+        // Mark as manually edited when user types in code field
+        const lockIcon = document.getElementById('code-lock-icon');
+        codeInput.addEventListener('input', function() {
+            this.dataset.manuallyEdited = 'true';
+            if (lockIcon) {
+                lockIcon.classList.remove('hidden');
+            }
+        });
+    }
+    
+    // Update color preview
+    function updateColorPreview() {
+        if (colorSelect && colorPreview) {
+            const selectedColor = colorSelect.value;
+            if (selectedColor && colorMap[selectedColor]) {
+                colorPreview.style.backgroundColor = colorMap[selectedColor];
+                colorPreview.style.borderColor = colorMap[selectedColor];
+            } else {
+                colorPreview.style.backgroundColor = 'transparent';
+                colorPreview.style.borderColor = '#cbd5e1';
+            }
+        }
+    }
+    
+    // Update preview on change
+    if (colorSelect) {
+        colorSelect.addEventListener('change', updateColorPreview);
+        // Set initial preview
+        updateColorPreview();
+    }
+});
+</script>
+{% endblock %}

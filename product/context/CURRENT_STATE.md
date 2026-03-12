@@ -1,4 +1,4 @@
-**Generated on:** 2026-02-20 14:13:17
+**Generated on:** 2026-03-11 15:56:28
 
 ### File Structure
 ```
@@ -31,6 +31,7 @@
             └── task_template_form.html
             └── task_template_list.html
             └── visit_log_form.html
+            └── visit_log_list.html
             └── weekly_planner.html
     └── templatetags
         └── __init__.py
@@ -42,6 +43,7 @@
     └── views.py
 └── coremanagementcommands
 └── db.sqlite3
+└── debug_river.sh
 └── deploy.sh
 └── DEVELOPER_HANDOVER.md
 └── docs
@@ -61,11 +63,19 @@
         └── ui_standards.md
     └── debug
         └── deploy.md
+        └── edit_log.md
+    └── designs
+        └── log_avtivity.png
+        └── tasks.html
     └── Done
+        └── active_sections_dashboard.md
+        └── all_logs_view.md
         └── context_aware_logging.md
         └── dashboard.md
+        └── detailed_planting_metrics.md
         └── implemenation.md
         └── investigation_handover.md
+        └── log_layout.md
         └── monthly_view.md
         └── planner_interaction_update.md
         └── prd_zone_view
@@ -80,10 +90,8 @@
     └── prompts
         └── po.md
     └── refinement
-        └── active_sections_dashboard.md
-        └── all_logs_view.md
-        └── detailed_planting_metrics.md
         └── edit_completed_task.md
+        └── mobile_responsive_implementation.md
 └── requirements.txt
 └── river
     └── .env
@@ -302,6 +310,9 @@ class TaskDeleteView(LoginRequiredMixin, DeleteView):  # Renders: core/task_conf
 class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):  # Renders: core/visit_log_form.html
     # ... implementation hidden ...
 
+class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):  # Renders: core/visit_log_form.html
+    # ... implementation hidden ...
+
 def task_complete_view(request, pk):
     # ... implementation hidden ...
 
@@ -315,6 +326,10 @@ class TaskTemplateUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView
     # ... implementation hidden ...
 
 class TaskTemplateDeleteView(LoginRequiredMixin, DeleteView):  # Renders: core/task_template_confirm_delete.html
+    # ... implementation hidden ...
+
+class VisitLogListView(LoginRequiredMixin, ListView):  # Renders: core/visit_log_list.html
+    """Master Activity Log - comprehensive view of all visit logs with search and filtering."""
     # ... implementation hidden ...
 ```
 
@@ -384,7 +399,9 @@ urlpatterns = [
     path('tasks/<int:pk>/complete/', views.task_complete_view, name='task_complete'),
     
     # Visit Log URLs
+    path('visit-logs/', views.VisitLogListView.as_view(), name='visit_log_list'),
     path('visit-logs/create/', views.VisitLogCreateView.as_view(), name='visit_log_create'),
+    path('visit-logs/<int:pk>/edit/', views.VisitLogUpdateView.as_view(), name='visit_log_edit'),
 
     # Task Template Management URLs
     path('templates/', views.TaskTemplateListView.as_view(), name='task_template_list'),
@@ -429,7 +446,12 @@ urlpatterns = [
     path('', SectionListView.as_view(), name='home'),
     path('core/', include('core.urls')),
     path('sentry-debug/', trigger_error),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+# Only serve media files through Django in DEBUG mode (development)
+# In production, Nginx handles media serving
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 ```
 

@@ -3,6 +3,54 @@ from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.utils import timezone
 
+
+class TaskType(models.Model):
+    """Dynamic task types that can be managed from the frontend."""
+    ASSIGNEE_CHOICES = [
+        ('team', 'Team'),
+        ('manager', 'Manager'),
+        ('both', 'Both'),
+    ]
+
+    name = models.CharField(max_length=50, unique=True)
+    code = models.CharField(max_length=20, unique=True, help_text="Short code used internally (e.g., 'litter_run', 'weeding')")
+    description = models.TextField(blank=True, help_text="Optional description of this task type")
+    applicable_to = models.CharField(
+        max_length=10,
+        choices=ASSIGNEE_CHOICES,
+        default='both',
+        help_text="Which assignee types this task type is applicable to"
+    )
+    is_active = models.BooleanField(default=True, help_text="Only active task types are shown in dropdowns")
+    position = models.PositiveIntegerField(default=0, help_text="Order in which task types appear")
+    icon_name = models.CharField(
+        max_length=50,
+        default='task',
+        help_text="Material Symbols icon name (e.g., 'delete_sweep', 'grass', 'forest')"
+    )
+    color_class = models.CharField(
+        max_length=50,
+        default='bg-slate-50 text-slate-600 border-slate-100',
+        help_text="Tailwind CSS classes for styling (e.g., 'bg-amber-50 text-amber-600 border-amber-100')"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['position', 'name']
+        verbose_name = 'Task Type'
+        verbose_name_plural = 'Task Types'
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        return f"{self.name} ({self.code}) - {status}"
+
+    def is_applicable_to_assignee(self, assignee_type):
+        """Check if this task type is applicable to a specific assignee type."""
+        if self.applicable_to == 'both':
+            return True
+        return self.applicable_to == assignee_type
+
+
 class Status(models.Model):
     name = models.CharField(max_length=50, unique=True)
     color_code = models.CharField(max_length=7, default='#808080', help_text="Hex color code for visual distinction")
@@ -69,27 +117,27 @@ class Section(models.Model):
         ordering = ['position', 'name']
 
 class TaskTemplate(models.Model):
-    TASK_TYPE_CHOICES = [
-        ('litter_run', 'Litter Run'),
-        ('weeding', 'Weeding'),
-        ('planting', 'Planting'),
-        ('admin', 'Admin'),
-    ]
-
     ASSIGNEE_TYPE_CHOICES = [
         ('team', 'Team'),
         ('manager', 'Manager'),
     ]
 
     name = models.CharField(max_length=100)
-    task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES)
+    task_type = models.ForeignKey(
+        TaskType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Category of task",
+        related_name='templates'
+    )
     assignee_type = models.CharField(max_length=10, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     default_instructions = models.TextField()
     is_active = models.BooleanField(default=True, help_text="Inactive templates are hidden from task creation but preserved for existing tasks")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        task_type_display = dict(self.TASK_TYPE_CHOICES).get(str(self.task_type), str(self.task_type))
+        task_type_display = str(self.task_type) if self.task_type else "Uncategorized"
         status = "Active" if self.is_active else "Retired"
         return f"{self.name} ({task_type_display}) - {status}"
 
@@ -125,14 +173,14 @@ class Task(models.Model):
 
 class VisitLog(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True, blank=True)
-    section = models.ForeignKey(Section, on_delete=models.CASCADE)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True, help_text="River section where activity took place (optional for general logs)")
     date = models.DateField()
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         task_str = f"Task: {self.task}" if self.task else "Unplanned"
-        section_name = self.section.name if self.section else "No Section"
+        section_name = self.section.name if self.section else "General"
         return f"{self.date} - {section_name} - {task_str}"
     
     class Meta:

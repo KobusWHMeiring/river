@@ -30,9 +30,18 @@ urlpatterns = [
     path('visit-logs/create/', views.VisitLogCreateView.as_view(), name='visit_log_create'),
     path('visit-logs/<int:pk>/edit/', views.VisitLogUpdateView.as_view(), name='visit_log_edit'),
 
+    # Data Export URLs
+    path('export/', views.DataExportView.as_view(), name='data_export'),
+
     # Task Template Management URLs
     path('templates/', views.TaskTemplateListView.as_view(), name='task_template_list'),
     path('templates/create/', views.TaskTemplateCreateView.as_view(), name='task_template_create'),
     path('templates/<int:pk>/edit/', views.TaskTemplateUpdateView.as_view(), name='task_template_edit'),
     path('templates/<int:pk>/delete/', views.TaskTemplateDeleteView.as_view(), name='task_template_delete'),
+
+    # Task Type Management URLs
+    path('task-types/', views.TaskTypeListView.as_view(), name='task_type_list'),
+    path('task-types/create/', views.TaskTypeCreateView.as_view(), name='task_type_create'),
+    path('task-types/<int:pk>/edit/', views.TaskTypeUpdateView.as_view(), name='task_type_edit'),
+    path('task-types/<int:pk>/delete/', views.TaskTypeDeleteView.as_view(), name='task_type_delete'),
 ]

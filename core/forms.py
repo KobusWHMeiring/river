@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 from django.core.validators import MinLengthValidator
-from .models import Section, Task, TaskTemplate, VisitLog, Metric, Photo
+from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo
 
 class SectionForm(forms.ModelForm):
     class Meta:
@@ -21,6 +21,48 @@ class SectionForm(forms.ModelForm):
         from .models import Status
         self.fields['status'].queryset = Status.objects.filter(is_active=True)
 
+class TaskTypeForm(forms.ModelForm):
+    # Define color choices with user-friendly labels
+    COLOR_CHOICES = [
+        ('', 'Select a color...'),
+        ('bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-100 dark:border-amber-800', 'Amber - Litter/Cleanup'),
+        ('bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-100 dark:border-emerald-800', 'Emerald - Weeding'),
+        ('bg-green-50 dark:bg-green-900/20 text-green-600 border-green-100 dark:border-green-800', 'Green - Planting'),
+        ('bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100 dark:border-blue-800', 'Blue - Admin'),
+        ('bg-purple-50 dark:bg-purple-900/20 text-purple-600 border-purple-100 dark:border-purple-800', 'Purple'),
+        ('bg-red-50 dark:bg-red-900/20 text-red-600 border-red-100 dark:border-red-800', 'Red - Alert/Important'),
+        ('bg-orange-50 dark:bg-orange-900/20 text-orange-600 border-orange-100 dark:border-orange-800', 'Orange'),
+        ('bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 border-yellow-100 dark:border-yellow-800', 'Yellow'),
+        ('bg-teal-50 dark:bg-teal-900/20 text-teal-600 border-teal-100 dark:border-teal-800', 'Teal'),
+        ('bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 border-cyan-100 dark:border-cyan-800', 'Cyan'),
+        ('bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 border-indigo-100 dark:border-indigo-800', 'Indigo'),
+        ('bg-pink-50 dark:bg-pink-900/20 text-pink-600 border-pink-100 dark:border-pink-800', 'Pink'),
+        ('bg-rose-50 dark:bg-rose-900/20 text-rose-600 border-rose-100 dark:border-rose-800', 'Rose'),
+        ('bg-slate-50 dark:bg-slate-800 text-slate-600 border-slate-100 dark:border-slate-700', 'Slate - Default'),
+        ('bg-gray-50 dark:bg-gray-800 text-gray-600 border-gray-100 dark:border-gray-700', 'Gray'),
+    ]
+
+    color_class = forms.ChoiceField(
+        choices=COLOR_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none',
+            'id': 'id_color_class'
+        })
+    )
+
+    class Meta:
+        model = TaskType
+        fields = ['name', 'code', 'description', 'applicable_to', 'is_active', 'position', 'icon_name', 'color_class']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none', 'id': 'id_name'}),
+            'code': forms.TextInput(attrs={'class': 'w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none font-mono text-sm', 'id': 'id_code'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed'}),
+            'applicable_to': forms.Select(attrs={'class': 'w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary'}),
+            'position': forms.NumberInput(attrs={'class': 'w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none', 'min': 0}),
+            'icon_name': forms.TextInput(attrs={'class': 'w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none font-mono text-sm'}),
+        }
+
 class TaskTemplateForm(forms.ModelForm):
     class Meta:
         model = TaskTemplate
@@ -32,6 +74,12 @@ class TaskTemplateForm(forms.ModelForm):
             'assignee_type': forms.Select(attrs={'class': 'w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show active task types in the dropdown
+        from .models import TaskType
+        self.fields['task_type'].queryset = TaskType.objects.filter(is_active=True).order_by('position', 'name')
 
 class TaskForm(forms.ModelForm):
     template = forms.ModelChoiceField(
@@ -73,7 +121,7 @@ class VisitLogForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['task'].required = False
-        self.fields['section'].required = True
+        self.fields['section'].required = False  # Allow general logs without specific section
 
 class MetricForm(forms.ModelForm):
     class Meta:

@@ -102,6 +102,10 @@
         <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider md:text-xs">Management & Spatial Visualization</p>
     </div>
     <div class="flex items-center gap-3">
+        <a href="{% url 'data_export' %}" class="flex items-center gap-1 md:gap-2 bg-emerald-600 text-white px-3 py-2 md:px-4 rounded-lg text-xs md:text-sm font-semibold shadow-sm hover:bg-emerald-700 transition-all whitespace-nowrap">
+            <span class="material-symbols-outlined text-lg">download</span>
+            <span class="hidden md:inline">Export</span>
+        </a>
         <div class="relative flex-1 md:block">
             <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
                 <span class="material-symbols-outlined text-lg md:text-xl">search</span>

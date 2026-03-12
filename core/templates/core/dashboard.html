@@ -21,6 +21,10 @@
         <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Liesbeek River Rehabilitation Global Overview</p>
     </div>
     <div class="flex items-center gap-4">
+        <a href="{% url 'data_export' %}" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm transition-all">
+            <span class="material-symbols-outlined text-[20px]">download</span>
+            <span>Export to Excel</span>
+        </a>
         <div class="text-right hidden sm:block">
             <p class="text-xs font-bold text-slate-900 dark:text-white leading-none mb-1">{% now "l, j F Y" %}</p>
             <p class="text-[10px] text-slate-400 uppercase tracking-widest">Real-time stats</p>

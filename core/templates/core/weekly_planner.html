@@ -23,9 +23,14 @@
 
 {% block content %}
 <!-- Floating Action Button (Mobile) -->
-<button class="fab md:hidden bg-primary text-white z-40 open-modal-btn" aria-label="New Task">
-    <span class="material-symbols-outlined text-2xl">add</span>
-</button>
+<div class="fixed bottom-20 right-4 md:hidden flex flex-col gap-3 z-40">
+    <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="fab bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center" aria-label="New Log">
+        <span class="material-symbols-outlined text-2xl">note_add</span>
+    </a>
+    <button class="fab bg-primary text-white shadow-lg hover:bg-forest transition-all flex items-center justify-center open-modal-btn" aria-label="New Task">
+        <span class="material-symbols-outlined text-2xl">add</span>
+    </button>
+</div>
 
 <header class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:px-8 md:h-16 flex flex-col md:flex-row md:items-center justify-between shrink-0 gap-3">
     <div class="flex items-center justify-between md:justify-start gap-4">
@@ -63,6 +68,10 @@
                 <span class="material-symbols-outlined text-base align-middle leading-none">chevron_right</span>
             </a>
         </div>
+        <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="hidden md:flex items-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-700 hover:shadow-md transition-all active:scale-95">
+            <span class="material-symbols-outlined text-lg">note_add</span>
+            New Log
+        </a>
         <button class="hidden md:flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-forest hover:shadow-md transition-all active:scale-95 open-modal-btn">
             <span class="material-symbols-outlined text-lg">add_circle</span>
             New Task

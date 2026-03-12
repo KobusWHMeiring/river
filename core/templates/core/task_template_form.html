@@ -38,12 +38,7 @@
                 <div class="space-y-1.5">
                     <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.task_type.id_for_label }}">Task Type</label>
                     <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                            {% if form.task_type.value == 'litter_run' %}delete_sweep
-                            {% elif form.task_type.value == 'weeding' %}grass
-                            {% elif form.task_type.value == 'planting' %}forest
-                            {% else %}description{% endif %}
-                        </span>
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" id="task-type-icon">category</span>
                         {{ form.task_type }}
                         <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                     </div>
@@ -110,24 +105,8 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const taskTypeSelect = document.getElementById('{{ form.task_type.id_for_label }}');
-    const iconSpan = taskTypeSelect ? taskTypeSelect.parentElement.querySelector('.material-symbols-outlined') : null;
-
-    if (taskTypeSelect && iconSpan) {
-        const iconMap = {
-            'litter_run': 'delete_sweep',
-            'weeding': 'grass',
-            'planting': 'forest',
-            'admin': 'description'
-        };
-
-        taskTypeSelect.addEventListener('change', function() {
-            const selectedType = this.value;
-            if (iconMap[selectedType]) {
-                iconSpan.textContent = iconMap[selectedType];
-            }
-        });
-    }
+    // Task type icons are now handled server-side
+    // This script can be extended to fetch icons dynamically if needed
 });
 </script>
 {% endblock %}

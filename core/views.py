@@ -1,18 +1,22 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views import View
 from django.urls import reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from datetime import datetime, timedelta
 import calendar
 import json
+import io
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from collections import defaultdict
-from .models import Section, Task, TaskTemplate, VisitLog, Metric, Photo, SectionStageHistory
-from .forms import SectionForm, TaskForm, TaskTemplateForm, VisitLogForm, MetricFormSet, PhotoFormSet
+from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo, SectionStageHistory
+from .forms import SectionForm, TaskForm, TaskTemplateForm, TaskTypeForm, VisitLogForm, MetricFormSet, PhotoFormSet
 
 from django.db.models import Sum, Q
 from django.utils import timezone
@@ -540,7 +544,8 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         
         # Determine task_type for UI adaptation
         if task and task.template:
-            context['task_type'] = task.template.task_type
+            # Use the task_type code for template logic
+            context['task_type'] = task.template.task_type.code if task.template.task_type else 'unplanned'
             context['task_template_name'] = task.template.name
         else:
             # Default to 'unplanned' if no task or template
@@ -628,7 +633,7 @@ class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         
         # Determine task_type for UI adaptation
         if task and task.template:
-            context['task_type'] = task.template.task_type
+            context['task_type'] = task.template.task_type.code if task.template.task_type else 'unplanned'
             context['task_template_name'] = task.template.name
         else:
             context['task_type'] = 'unplanned'
@@ -814,3 +819,229 @@ class VisitLogListView(LoginRequiredMixin, ListView):
         context['query_params'] = query_params.urlencode()
         
         return context
+
+
+# Task Type Management Views
+class TaskTypeListView(LoginRequiredMixin, ListView):
+    model = TaskType
+    template_name = 'core/task_type_list.html'
+    context_object_name = 'task_types'
+
+    def get_queryset(self):
+        # Order by position, then by name
+        return TaskType.objects.all().order_by('position', 'name')
+
+
+class TaskTypeCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = TaskType
+    form_class = TaskTypeForm
+    template_name = 'core/task_type_form.html'
+    success_url = reverse_lazy('task_type_list')
+    success_message = "Task type created successfully!"
+
+
+class TaskTypeUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = TaskType
+    form_class = TaskTypeForm
+    template_name = 'core/task_type_form.html'
+    success_url = reverse_lazy('task_type_list')
+    success_message = "Task type updated successfully!"
+
+
+class TaskTypeDeleteView(LoginRequiredMixin, DeleteView):
+    model = TaskType
+    template_name = 'core/task_type_confirm_delete.html'
+    success_url = reverse_lazy('task_type_list')
+
+    def delete(self, request, *args, **kwargs):
+        # Instead of hard delete, set is_active to False
+        self.object = self.get_object()
+        self.object.is_active = False
+        self.object.save()
+        from django.contrib import messages
+        messages.success(request, f"'{self.object.name}' has been deactivated. Existing templates using this type are preserved.")
+        return redirect(self.get_success_url())
+
+
+class DataExportView(LoginRequiredMixin, View):
+    """View to generate a comprehensive multi-sheet Excel export."""
+    
+    def get(self, request, *args, **kwargs):
+        # Create an in-memory output file for the new workbook
+        output = io.BytesIO()
+        wb = openpyxl.Workbook()
+        
+        # Styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="166534", end_color="166534", fill_type="solid")
+        center_aligned = Alignment(horizontal='center')
+        border = Border(
+            left=Side(style='thin'), 
+            right=Side(style='thin'), 
+            top=Side(style='thin'), 
+            bottom=Side(style='thin')
+        )
+
+        # --- SHEET 1: PROJECT OVERVIEW ---
+        ws_overview = wb.active
+        ws_overview.title = "Project Overview"
+        
+        ws_overview.append(["Liesbeek River Rehabilitation - Project Overview"])
+        ws_overview.append(["Generated on", timezone.now().strftime("%Y-%m-%d %H:%M")])
+        ws_overview.append([])
+        
+        # Aggregated Metrics Table
+        ws_overview.append(["Project-Wide Totals"])
+        headers = ["Metric", "Value", "Unit"]
+        ws_overview.append(headers)
+        
+        # Apply header styles
+        for cell in ws_overview[ws_overview.max_row]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = border
+
+        metrics = Metric.objects.all()
+        total_bags_general = metrics.filter(metric_type='litter_general').aggregate(total=Sum('value'))['total'] or 0
+        total_bags_recyclable = metrics.filter(metric_type='litter_recyclable').aggregate(total=Sum('value'))['total'] or 0
+        total_plants = metrics.filter(metric_type='plant').aggregate(total=Sum('value'))['total'] or 0
+        total_weeds = metrics.filter(metric_type='weed').aggregate(total=Sum('value'))['total'] or 0
+        total_visits = VisitLog.objects.count()
+        total_sections = Section.objects.count()
+
+        rows = [
+            ["Total Sections", total_sections, "Sections"],
+            ["Total Activity Logs", total_visits, "Logs"],
+            ["General Litter Collected", total_bags_general, "Bags"],
+            ["Recyclable Litter Collected", total_bags_recyclable, "Bags"],
+            ["Total Litter Collected", total_bags_general + total_bags_recyclable, "Bags"],
+            ["Total Plants Planted", total_plants, "Plants"],
+            ["Total Weeding/Removal", total_weeds, "Units/Sessions"],
+        ]
+        for row in rows:
+            ws_overview.append(row)
+            for cell in ws_overview[ws_overview.max_row]:
+                cell.border = border
+        
+        ws_overview.append([])
+        
+        # Species Breakdowns
+        # Planting
+        ws_overview.append(["Top Planting Species"])
+        ws_overview.append(["Species", "Total Planted"])
+        for cell in ws_overview[ws_overview.max_row]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = border
+            
+        plant_breakdown = Metric.objects.filter(metric_type='plant').values('label').annotate(total=Sum('value')).order_by('-total')[:10]
+        for item in plant_breakdown:
+            ws_overview.append([item['label'] or "Unlabeled", item['total']])
+            for cell in ws_overview[ws_overview.max_row]:
+                cell.border = border
+
+        ws_overview.append([])
+        
+        # Weeding
+        ws_overview.append(["Top Weeding/Removal Species"])
+        ws_overview.append(["Species", "Total Removed"])
+        for cell in ws_overview[ws_overview.max_row]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = border
+            
+        weed_breakdown = Metric.objects.filter(metric_type='weed').values('label').annotate(total=Sum('value')).order_by('-total')[:10]
+        for item in weed_breakdown:
+            ws_overview.append([item['label'] or "Unlabeled", item['total']])
+            for cell in ws_overview[ws_overview.max_row]:
+                cell.border = border
+
+        # Column widths
+        ws_overview.column_dimensions['A'].width = 30
+        ws_overview.column_dimensions['B'].width = 15
+        ws_overview.column_dimensions['C'].width = 15
+
+        # --- PER-SECTION SHEETS ---
+        sections = Section.objects.all().order_by('position', 'name')
+        
+        for section in sections:
+            # Sheet names must be <= 31 chars
+            safe_name = (section.name[:28] + '..') if len(section.name) > 31 else section.name
+            ws = wb.create_sheet(title=safe_name)
+            
+            # Section Header
+            ws.append([f"Section Detail: {section.name}"])
+            ws.append(["Current Stage", section.get_current_stage_display()])
+            ws.append(["Current Status", str(section.status) if section.status else "N/A"])
+            ws.append([])
+            
+            # --- Visit Logs Table ---
+            ws.append(["Activity Logs"])
+            log_headers = ["Date", "Notes", "Metrics Summary", "Photos Count"]
+            ws.append(log_headers)
+            for cell in ws[ws.max_row]:
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.border = border
+            
+            logs = VisitLog.objects.filter(section=section).prefetch_related('metrics', 'photos').order_by('-date')
+            for log in logs:
+                # Summarize metrics
+                m_parts = []
+                for m in log.metrics.all():
+                    m_parts.append(f"{m.get_metric_type_display()}: {m.value} ({m.label})")
+                m_summary = "; ".join(m_parts)
+                
+                ws.append([
+                    log.date,
+                    log.notes,
+                    m_summary,
+                    log.photos.count()
+                ])
+                for cell in ws[ws.max_row]:
+                    cell.border = border
+                    if ws.max_row > 1: # Wrap text for notes and metrics
+                        ws.cell(row=ws.max_row, column=2).alignment = Alignment(wrap_text=True)
+                        ws.cell(row=ws.max_row, column=3).alignment = Alignment(wrap_text=True)
+            
+            ws.append([])
+            
+            # --- Planned Tasks Table ---
+            ws.append(["Planned Tasks History"])
+            task_headers = ["Date", "Assignee", "Instructions", "Completed?"]
+            ws.append(task_headers)
+            for cell in ws[ws.max_row]:
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.border = border
+                
+            tasks = Task.objects.filter(section=section).order_by('-date')
+            for task in tasks:
+                ws.append([
+                    task.date,
+                    task.get_assignee_type_display(),
+                    task.instructions,
+                    "Yes" if task.is_completed else "No"
+                ])
+                for cell in ws[ws.max_row]:
+                    cell.border = border
+                    ws.cell(row=ws.max_row, column=3).alignment = Alignment(wrap_text=True)
+
+            # Adjust column widths for per-section sheets
+            ws.column_dimensions['A'].width = 15
+            ws.column_dimensions['B'].width = 40
+            ws.column_dimensions['C'].width = 40
+            ws.column_dimensions['D'].width = 12
+
+        # Finalize
+        wb.save(output)
+        output.seek(0)
+        
+        filename = f"Liesbeek_River_Report_{timezone.now().strftime('%Y-%m-%d')}.xlsx"
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        
+        return response
