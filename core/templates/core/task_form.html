@@ -23,20 +23,33 @@
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
             <form method="post" class="p-8 space-y-6">
                 {% csrf_token %}
-                {% if request.GET.next %}
-                <input type="hidden" name="next" value="{{ request.GET.next }}">
-                {% endif %}
-                
+                <input type="hidden" name="next" value="{{ next|default:request.GET.next|default:'' }}">
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Date -->
                     <div class="space-y-1.5">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.date.id_for_label }}">Task Date</label>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.date.id_for_label }}">
+                            {% if not object %}Start Date{% else %}Task Date{% endif %}
+                        </label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_today</span>
                             <input type="date" name="{{ form.date.name }}" id="{{ form.date.id_for_label }}" value="{{ form.date.value|date:'Y-m-d'|default:'' }}" required class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                         </div>
                         {% if form.date.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.date.errors.0 }}</p>{% endif %}
                     </div>
+
+                    {% if not object %}
+                    <!-- End Date (Series) -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400" for="{{ form.end_date.id_for_label }}">End Date (Optional)</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">date_range</span>
+                            <input type="date" name="{{ form.end_date.name }}" id="{{ form.end_date.id_for_label }}" value="{{ form.end_date.value|date:'Y-m-d'|default:'' }}" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                        </div>
+                        <p class="text-[10px] text-slate-400">Leave blank for a single day task</p>
+                        {% if form.end_date.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.end_date.errors.0 }}</p>{% endif %}
+                    </div>
+                    {% endif %}
 
                     <!-- Assignee Type -->
                     <div class="space-y-1.5">
@@ -52,7 +65,31 @@
                         </div>
                         {% if form.assignee_type.errors %}<p class="text-[11px] text-red-500 font-medium">{{ form.assignee_type.errors.0 }}</p>{% endif %}
                     </div>
+
+                    {% if not object %}
+                    <!-- Exclude Weekends -->
+                    <div class="flex items-center space-x-3 pt-6">
+                        <input type="checkbox" name="{{ form.exclude_weekends.name }}" id="{{ form.exclude_weekends.id_for_label }}" {% if form.exclude_weekends.value %}checked{% endif %} class="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary">
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="{{ form.exclude_weekends.id_for_label }}">Exclude weekends</label>
+                    </div>
+                    {% endif %}
                 </div>
+
+                {% if object and object.group_id %}
+                <!-- Update Series Option -->
+                <div class="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center space-x-4">
+                    <div class="flex-shrink-0 bg-primary/20 rounded-lg p-2">
+                        <span class="material-symbols-outlined text-primary">layers</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" name="{{ form.update_all_in_series.name }}" id="{{ form.update_all_in_series.id_for_label }}" class="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary">
+                            <label class="text-sm font-bold text-primary" for="{{ form.update_all_in_series.id_for_label }}">Update all tasks in this series</label>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 pl-8">Sync instructions and section across all related tasks in this date range.</p>
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- Section -->
                 <div class="space-y-1.5">
@@ -115,14 +152,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     const templateSelect = document.getElementById('{{ form.template.id_for_label }}');
     const instructionsText = document.getElementById('{{ form.instructions.id_for_label }}');
-    
+
     // We'll need the templates data for JS-side population
     const templates = {
         {% for template in task_templates %}
         "{{ template.id }}": "{{ template.default_instructions|escapejs }}",
         {% endfor %}
     };
-    
+
     if (templateSelect && instructionsText) {
         templateSelect.addEventListener('change', function() {
             const selectedId = this.value;

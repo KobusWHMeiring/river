@@ -1226,3 +1226,41 @@ if (existingMetrics.length > totalMetrics) {
 - **User Experience**: Users can now successfully edit visit logs and update metric values
 - **Data Integrity**: Existing records are properly updated rather than causing validation failures
 - **Maintainability**: Clear pattern established for handling inline formset edits with dynamically rendered forms
+
+## Date: 2026-03-12
+
+## Issue: Expanding Assignee Dimensions (Chairperson Role)
+
+### Overview
+Successfully integrated a third assignee type, "Chairperson", across the entire system. This involved schema changes, high-density UI adjustments, and dynamic form logic.
+
+### Key Insights
+
+#### 1. Field Length vs. Choice Expansion
+**Learning**: When adding new options to a `CharField` with `choices`, always verify that `max_length` is sufficient for the longest string.
+- **Problem**: Adding 'chairperson' (11 chars) to a field with `max_length=10` caused `SystemCheckError`.
+- **Solution**: Increased `max_length` to 15 in the model before generating migrations.
+
+#### 2. Schema Evolution vs. Legacy Tests
+**Learning**: Transitioning a field from a string to a `ForeignKey` (e.g., `TaskTemplate.task_type`) creates a "stealth" breaking change for unit tests.
+- **Impact**: Tests that previously assigned strings (e.g., `task_type='litter_run'`) failed with `ValueError`.
+- **Fix**: Updated test `setUp` methods to instantiate the related model first.
+
+#### 3. High-Density UI Scaling
+**Learning**: Adding a 3rd grouping to a constrained grid (Monthly Planner) requires proactive "slice" management.
+- **Strategy**: Reduced the visible task count per category from 2 to 1 in the monthly view to accommodate the 3rd row without doubling the cell height.
+- **Outcome**: Maintained information density without triggering excessive scrolling or breaking the grid layout.
+
+#### 4. Strategic Alphabetical Ordering
+**Learning**: Alphabetical sorting on code fields can be used for "free" prioritization in simple list views.
+- **Observation**: By chance/design, 'c'hairperson sorts before 'm'anager and 't'eam, naturally placing strategic tasks at the top of the Daily Agenda and Planner rows.
+
+#### 5. Encapsulated Template Data
+**Learning**: Passing pre-filtered JSON data blocks to the frontend is superior to complex template logic for dynamic forms.
+- **Implementation**: Used `<script id="...Data" type="application/json">` to provide three distinct template sets (Team, Manager, Chairperson).
+- **Benefit**: JavaScript handles switching instantly as the user changes assignee type, providing a "single page app" feel within a traditional Django template.
+
+### Impact
+- **Strategic Alignment**: Chairperson tasks are now siloed from operational clutter.
+- **UI Consistency**: Soft Rose theme (`bg-rose-50`) provides clear visual distinction from operational categories.
+- **System Robustness**: All 26 core tests now reflect the updated schema and new role logic.

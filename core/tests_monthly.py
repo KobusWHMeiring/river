@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import date, timedelta
 import calendar
-from core.models import Section, Task, TaskTemplate
+from core.models import Section, Task, TaskTemplate, TaskType
 
 
 class MonthlyPlannerViewTests(TestCase):
@@ -23,10 +23,16 @@ class MonthlyPlannerViewTests(TestCase):
             color_code='#FF5733'
         )
 
+        # Create a task type
+        self.task_type = TaskType.objects.create(
+            name='Litter Run',
+            code='litter_run'
+        )
+
         # Create a task template
         self.template = TaskTemplate.objects.create(
             name='Test Template',
-            task_type='litter_run',
+            task_type=self.task_type,
             assignee_type='team',
             default_instructions='Test instructions'
         )

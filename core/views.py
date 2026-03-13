@@ -17,9 +17,12 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from collections import defaultdict
 from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo, SectionStageHistory
 from .forms import SectionForm, TaskForm, TaskTemplateForm, TaskTypeForm, VisitLogForm, MetricFormSet, PhotoFormSet
+from .services.task_services import create_task_series, update_task_series, delete_task_series
 
 from django.db.models import Sum, Q
 from django.utils import timezone
+from django.contrib import messages
+from django.http import HttpResponseRedirect
 
 
 @login_required
@@ -306,6 +309,7 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
         # Only show active templates
         context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team', is_active=True)
         context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager', is_active=True)
+        context['chairperson_task_templates'] = TaskTemplate.objects.filter(assignee_type='chairperson', is_active=True)
 
         # Navigation dates for prev/next week
         context['prev_week'] = start_of_week - timedelta(days=7)
@@ -411,6 +415,7 @@ class MonthlyPlannerView(LoginRequiredMixin, ListView):
         context['sections'] = Section.objects.all()
         context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team', is_active=True)
         context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager', is_active=True)
+        context['chairperson_task_templates'] = TaskTemplate.objects.filter(assignee_type='chairperson', is_active=True)
 
         return context
 
@@ -466,6 +471,9 @@ class TaskCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['task_templates'] = TaskTemplate.objects.filter(is_active=True)
+        # Preserve next URL for form invalid states
+        next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
+        context['next'] = next_url
         return context
 
     def get_success_url(self):
@@ -473,6 +481,34 @@ class TaskCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
             return next_url
         return reverse_lazy('weekly_planner')
+
+    def form_valid(self, form):
+        end_date = form.cleaned_data.get('end_date')
+        if end_date:
+            # Handle series creation
+            base_task_data = {
+                'section': form.cleaned_data.get('section'),
+                'assignee_type': form.cleaned_data.get('assignee_type'),
+                'instructions': form.cleaned_data.get('instructions'),
+                'template': form.cleaned_data.get('template'),
+            }
+            start_date = form.cleaned_data.get('date')
+            exclude_weekends = form.cleaned_data.get('exclude_weekends')
+            
+            try:
+                count = create_task_series(
+                    base_task_data, 
+                    start_date, 
+                    end_date, 
+                    exclude_weekends
+                )
+                messages.success(self.request, f"Series of {count} tasks created successfully!")
+                return HttpResponseRedirect(self.get_success_url())
+            except ValueError as e:
+                form.add_error('end_date', str(e))
+                return self.form_invalid(form)
+        
+        return super().form_valid(form)
 
 class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
@@ -482,6 +518,9 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['task_templates'] = TaskTemplate.objects.filter(is_active=True)
+        # Preserve next URL for form invalid states
+        next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
+        context['next'] = next_url
         return context
 
     def get_success_url(self):
@@ -490,15 +529,57 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
             return next_url
         return reverse_lazy('weekly_planner')
 
+    def form_valid(self, form):
+        update_all = form.cleaned_data.get('update_all_in_series')
+        if update_all and self.object.group_id:
+            # Handle series update
+            update_data = {
+                'section': form.cleaned_data.get('section'),
+                'assignee_type': form.cleaned_data.get('assignee_type'),
+                'instructions': form.cleaned_data.get('instructions'),
+                'template': form.cleaned_data.get('template'),
+            }
+            count = update_task_series(
+                self.object.group_id, 
+                update_data, 
+                update_all=True, 
+                current_task_id=self.object.id
+            )
+            messages.success(self.request, f"Entire series ({count} tasks) updated successfully!")
+            return HttpResponseRedirect(self.get_success_url())
+            
+        return super().form_valid(form)
+
 class TaskDeleteView(LoginRequiredMixin, DeleteView):
     model = Task
     template_name = 'core/task_confirm_delete.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
+        context['next'] = next_url
+        return context
 
     def get_success_url(self):
         next_url = self.request.GET.get('next') or self.request.POST.get('next')
         if next_url:
             return next_url
         return reverse_lazy('weekly_planner')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        delete_all = request.POST.get('delete_all') == 'true'
+        
+        if delete_all and self.object.group_id:
+            count = delete_task_series(
+                self.object.group_id, 
+                delete_all=True, 
+                current_task_id=self.object.id
+            )
+            messages.success(request, f"Entire series ({count} tasks) deleted successfully!")
+            return HttpResponseRedirect(self.get_success_url())
+        
+        return super().post(request, *args, **kwargs)
 
 class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = VisitLog
@@ -1008,30 +1089,34 @@ class DataExportView(LoginRequiredMixin, View):
             
             # --- Planned Tasks Table ---
             ws.append(["Planned Tasks History"])
-            task_headers = ["Date", "Assignee", "Instructions", "Completed?"]
+            task_headers = ["Date", "Assignee", "Task Type", "Task Template", "Instructions", "Completed?"]
             ws.append(task_headers)
             for cell in ws[ws.max_row]:
                 cell.font = header_font
                 cell.fill = header_fill
                 cell.border = border
                 
-            tasks = Task.objects.filter(section=section).order_by('-date')
+            tasks = Task.objects.filter(section=section).select_related('template__task_type').order_by('-date')
             for task in tasks:
                 ws.append([
                     task.date,
                     task.get_assignee_type_display(),
+                    str(task.template.task_type.name) if (task.template and task.template.task_type) else "Custom",
+                    task.template.name if task.template else "Custom",
                     task.instructions,
                     "Yes" if task.is_completed else "No"
                 ])
                 for cell in ws[ws.max_row]:
                     cell.border = border
-                    ws.cell(row=ws.max_row, column=3).alignment = Alignment(wrap_text=True)
+                    ws.cell(row=ws.max_row, column=5).alignment = Alignment(wrap_text=True)
 
             # Adjust column widths for per-section sheets
             ws.column_dimensions['A'].width = 15
-            ws.column_dimensions['B'].width = 40
-            ws.column_dimensions['C'].width = 40
-            ws.column_dimensions['D'].width = 12
+            ws.column_dimensions['B'].width = 12
+            ws.column_dimensions['C'].width = 20
+            ws.column_dimensions['D'].width = 25
+            ws.column_dimensions['E'].width = 45
+            ws.column_dimensions['F'].width = 12
 
         # Finalize
         wb.save(output)

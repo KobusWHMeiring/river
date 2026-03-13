@@ -9,16 +9,17 @@ class TaskType(models.Model):
     ASSIGNEE_CHOICES = [
         ('team', 'Team'),
         ('manager', 'Manager'),
-        ('both', 'Both'),
+        ('chairperson', 'Chairperson'),
+        ('all', 'All'),
     ]
 
     name = models.CharField(max_length=50, unique=True)
     code = models.CharField(max_length=20, unique=True, help_text="Short code used internally (e.g., 'litter_run', 'weeding')")
     description = models.TextField(blank=True, help_text="Optional description of this task type")
     applicable_to = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=ASSIGNEE_CHOICES,
-        default='both',
+        default='all',
         help_text="Which assignee types this task type is applicable to"
     )
     is_active = models.BooleanField(default=True, help_text="Only active task types are shown in dropdowns")
@@ -120,6 +121,7 @@ class TaskTemplate(models.Model):
     ASSIGNEE_TYPE_CHOICES = [
         ('team', 'Team'),
         ('manager', 'Manager'),
+        ('chairperson', 'Chairperson'),
     ]
 
     name = models.CharField(max_length=100)
@@ -131,7 +133,7 @@ class TaskTemplate(models.Model):
         help_text="Category of task",
         related_name='templates'
     )
-    assignee_type = models.CharField(max_length=10, choices=ASSIGNEE_TYPE_CHOICES, default='team')
+    assignee_type = models.CharField(max_length=15, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     default_instructions = models.TextField()
     is_active = models.BooleanField(default=True, help_text="Inactive templates are hidden from task creation but preserved for existing tasks")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -148,14 +150,16 @@ class Task(models.Model):
     ASSIGNEE_TYPE_CHOICES = [
         ('team', 'Team'),
         ('manager', 'Manager'),
+        ('chairperson', 'Chairperson'),
     ]
     
     date = models.DateField()
     section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True)
-    assignee_type = models.CharField(max_length=10, choices=ASSIGNEE_TYPE_CHOICES, default='team')
+    assignee_type = models.CharField(max_length=15, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     instructions = models.TextField()
     is_completed = models.BooleanField(default=False)
     template = models.ForeignKey(TaskTemplate, on_delete=models.SET_NULL, null=True, blank=True)
+    group_id = models.UUIDField(null=True, blank=True, db_index=True, help_text="Links tasks created as a series")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

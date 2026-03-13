@@ -1,117 +1,161 @@
-# PRD: Multi-Day Task Series (Task Duration)
+# PRD: Multi-Day Task Series (Refined v2)
 
 ## 1. Problem Statement
-Managers currently have to create individual task entries for activities that span multiple days (e.g., a week of weeding). This is repetitive and makes adjusting plans difficult if instructions change mid-week.
+Managers currently have to create individual task entries for activities that span multiple days (e.g., a week of weeding). This is repetitive and makes adjusting plans difficult. Furthermore, field work usually pauses on weekends, which the current manual process makes tedious to handle.
 
 ## 2. Strategic Goal
-Allow managers to create a "series" of tasks for a date range in one action, while maintaining the ability for field workers to complete each day's task independently.
+Allow managers to create and manage a "series" of tasks for a date range in one action, supporting weekend exclusions and bulk updates/deletions, while maintaining independent completion tracking for field workers.
 
 ## 3. Proposed Scope
-- **Creation:** Add an optional `end_date` to the task creation form.
-- **Logic:** If an `end_date` is provided, the system generates a separate `Task` record for every day in that range.
-- **Grouping:** Use a `group_id` (UUID) to link these tasks together.
-- **Editing:** When editing a task that is part of a series, offer an option to "Update all future tasks in this series."
-- **Completion:** Completion remains per-task/per-day. Ticking off Monday does NOT complete Tuesday.
+- **Creation:** 
+    - Add `end_date` (optional) to the task form.
+    - Add `exclude_weekends` (boolean, default True).
+    - If `end_date` is set, generate individual `Task` records for each valid day in the range.
+- **Grouping:** Use a `group_id` (UUID) to link tasks together.
+- **Editing:** 
+    - Provide two distinct options: "Update this task only" vs "Update all tasks in this series".
+    - "Update all" syncs: instructions, section, assignee_type across the entire group.
+- **Deletion:**
+    - Provide options: "Delete this task only" vs "Delete entire series".
+- **Visuals:** 
+    - Planners show a subtle "series" indicator (e.g., a link icon or unique border-left).
 
-## 4. Technical Constraints
-- **Database:** Must add `group_id` to the `Task` model.
-- **Existing Logic:** Must not break `DailyAgendaView` or `VisitLog` creation.
-- **UI:** Maintain consistency with Tailwind CSS and Material Symbols.
+## 4. UX/UI Concept
+- **Task Form (Creation):** New fields `end_date` and `exclude_weekends` appear.
+- **Task Form (Update):** If a task has a `group_id`, a toggle or radio group appears: 
+  - [ ] Apply changes to this task only
+  - [ ] Apply changes to ALL tasks in this series
+- **Deletion Modal:** A similar choice for single vs. series deletion.
 
-## 5. Developer Context (Current State)
+## 5. Risks
+- **Historical Integrity:** Updating "All" might overwrite notes on tasks that were already completed. *Mitigation:* Only sync `instructions`, `section`, and `assignee_type`. Never sync `is_completed` or `date`.
+- **Performance:** Range capped at 90 days to prevent bloat.
 
-### What Already Exists
-- **Task Model:** Has `date`, `section`, `instructions`, `is_completed`.
-- **TaskForm:** Basic model form for single-day tasks.
-- **TaskCreateView:** Standard Django `CreateView`.
+---
 
-### What Needs to Be Created
-- **Migration:** Add `group_id` to `Task`.
-- **Form Update:** Add `end_date` (non-model field) and `update_series` (boolean) to `TaskForm`.
-- **View Logic:** Overload `form_valid` in `TaskCreateView` and `TaskUpdateView` to handle series logic.
-- **Template Update:** Update `task_form.html` to show new fields.
+# Technical Blueprint: Multi-Day Task Series
+
+## 1. Database / Models
+- **Task Model (`core/models.py`):**
+    - Add `group_id = models.UUIDField(null=True, blank=True, db_index=True, help_text="Links tasks created as a series")`.
+    - *Architectural Check:* `db_index=True` is mandatory for performant grouping/filtering during bulk updates.
+
+## 2. Queries & ORM Strategy
+- **Bulk Creation:** Use `Task.objects.bulk_create()` to minimize database hits when generating long series.
+- **Bulk Update:** Use `Task.objects.filter(group_id=...).update(...)` for the "Update All" feature.
+- **Transaction Safety:** Wrap series creation in `transaction.atomic()` to ensure either all tasks in the range are created or none are.
+
+## 3. Services / Business Logic
+- **New Service Module (`core/services/task_services.py`):**
+    - `def create_task_series(base_task_data: dict, start_date: date, end_date: date, exclude_weekends: bool) -> int:`
+        - Handles date looping, weekend logic, and `bulk_create`. Returns the number of tasks created.
+    - `def update_task_series(group_id: uuid, update_data: dict, update_all: bool, current_task_id: int) -> int:`
+        - Handles conditional logic for updating a single task vs. the entire group.
+    - `def delete_task_series(group_id: uuid, delete_all: bool, current_task_id: int):`
+        - Handles deletion logic.
+
+## 4. Views / API Endpoints
+- **Forms (`core/forms.py`):**
+    - Update `TaskForm` to include non-model fields: `end_date`, `exclude_weekends`, `update_all_in_series`.
+    - Validation: Ensure `end_date >= date` and the range does not exceed 90 days.
+- **Views (`core/views.py`):**
+    - `TaskCreateView`: Override `form_valid` to call `create_task_series` if `end_date` is provided.
+    - `TaskUpdateView`: Override `form_valid` to call `update_task_series`.
+    - `TaskDeleteView`: Override `form_valid` (or `delete` method) to handle series deletion choices.
+
+## 5. Step-by-Step Implementation Checklist
+1.  **Tests:** Write `test_task_series.py` covering creation (with/without weekends) and bulk update/delete logic.
+2.  **Model:** Update `Task` model with `group_id` and generate migration.
+3.  **Service:** Implement `core/services/task_services.py`.
+4.  **Form:** Enhance `TaskForm` with series-specific fields and logic.
+5.  **Views:** Refactor `TaskCreateView`, `TaskUpdateView`, and `TaskDeleteView` to utilize the new service.
+6.  **Templates:** Update `task_form.html` and `task_confirm_delete.html` to display series options.
+7.  **Planner:** Update `weekly_planner.html` and `monthly_planner.html` to show the series indicator icon.
 
 ---
 
 # User Stories (Generated by Technical PO)
 
-## Story 1: Task Grouping Infrastructure
-**Value Proposition:** As a Developer, I want to link related tasks together so that I can implement bulk editing.
+## Story 1: Task Series Data Infrastructure
+**Value Proposition:** As a Developer, I want to link related tasks together using a unique identifier so that I can perform bulk operations on them.
 
 **Technical Implementation Path:**
-- Target File: `core/models.py`
-  - Add `group_id = models.UUIDField(null=True, blank=True, db_index=True)` to `Task`.
-- Target File: `migrations/` (Generate and run migration).
+- Target File: `core/models.py` (Update `Task` class)
 
 **Acceptance Criteria (AC):**
-- [ ] `Task` model supports a `group_id`.
-- [ ] Database migration is applied.
+- [ ] `Task` model includes a `group_id` UUIDField (nullable, blankable).
+- [ ] `group_id` is indexed for performant filtering.
+- [ ] Database migration is generated and applied.
 
 **The Test Plan:**
-- **Unit Test:** Create two tasks with the same UUID and verify they can be queried as a group.
+- **Unit Test:** `TaskTestCase` to verify `group_id` can store UUIDs and is indexed.
+- **Edge Case:** Verify that existing tasks correctly default to `null` for `group_id`.
 
----
-
-## Story 2: Bulk Creation for Date Range
-**Value Proposition:** As a Manager, I want to define a start and end date for a task so that I can plan a whole week's work in one step.
+## Story 2: Bulk Task Creation with Weekend Logic
+**Value Proposition:** As a Manager, I want to create tasks for a date range (excluding weekends) in one step so that I can plan a week's work efficiently.
 
 **Technical Implementation Path:**
-- Target File: `core/forms.py`
-  - Add `end_date = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date'}))` to `TaskForm`.
-- Target File: `core/views.py` (`TaskCreateView.form_valid`)
-  - If `end_date` is in `form.cleaned_data`:
-    - Generate a `uuid.uuid4()`.
-    - Loop from `date` to `end_date`.
-    - Create a `Task` instance for each day with the same properties and the `group_id`.
+- Target File: `core/services/task_services.py` (New service `create_task_series`)
+- Target File: `core/forms.py` (Update `TaskForm` with `end_date` and `exclude_weekends`)
+- Target File: `core/views.py` (Update `TaskCreateView.form_valid`)
 
 **Acceptance Criteria (AC):**
-- [ ] Selecting a range (e.g., March 12-14) creates 3 task records.
-- [ ] All 3 tasks appear in the Weekly/Monthly planners on their respective days.
-- [ ] All 3 tasks share the same `group_id`.
+- [ ] `TaskForm` displays `end_date` and `exclude_weekends` (default True).
+- [ ] If `end_date` is provided, `create_task_series` generates a `Task` for every valid day.
+- [ ] Weekends are skipped if `exclude_weekends` is checked.
+- [ ] All created tasks share the same `group_id`.
+- [ ] Operation is wrapped in an atomic transaction.
 
 **The Test Plan:**
-- **Integration Test:** Submit the task form with an `end_date`. Verify the count of tasks in the database increases by the number of days in the range.
+- **Unit Test:** `create_task_series` service test: Verify a 5-day range skipping 2 weekend days results in exactly 3 tasks.
+- **Integration Test:** Submit `TaskCreateView` with a range and verify the total task count in the DB.
+- **Edge Case:** Range > 90 days returns a validation error.
 
----
-
-## Story 3: Synchronized Editing
-**Value Proposition:** As a Manager, I want to update instructions for a whole series at once so that I don't have to edit 5 separate records.
+## Story 3: Synchronized Series Updates
+**Value Proposition:** As a Manager, I want to update instructions or section assignments across an entire series so that my plans stay consistent without manual repetition.
 
 **Technical Implementation Path:**
-- Target File: `core/forms.py`
-  - Add `update_series = forms.BooleanField(required=False, label="Update all future tasks in this series?")`.
-- Target File: `core/views.py` (`TaskUpdateView.form_valid`)
-  - If `update_series` is checked AND `task.group_id` exists:
-    - Update all tasks with same `group_id` where `date >= current_task.date`.
-    - Sync `instructions`, `section`, and `assignee_type`.
+- Target File: `core/services/task_services.py` (New service `update_task_series`)
+- Target File: `core/forms.py` (Update `TaskForm` with `update_all_in_series`)
+- Target File: `core/views.py` (Update `TaskUpdateView.form_valid`)
 
 **Acceptance Criteria (AC):**
-- [ ] Editing a task in a series shows the "Update all future tasks" checkbox.
-- [ ] Instructions updated with the checkbox checked propagate to future tasks in that series.
-- [ ] `is_completed` status is NOT synchronized (remains individual).
+- [ ] Edit form shows "Update all tasks in this series" if `group_id` is present.
+- [ ] If checked, `instructions`, `section`, `assignee_type`, and `template` are synced to all tasks with the same `group_id`.
+- [ ] `is_completed` and `date` are NEVER synchronized.
 
 **The Test Plan:**
-- **Integration Test:** Edit the middle task of a 5-day series. Check "Update all future tasks". Verify the 4th and 5th tasks are updated, but the 1st and 2nd remain unchanged.
+- **Unit Test:** `update_task_series` service test: Update instructions for a series and verify all siblings reflect the change but retain their original completion status.
+- **Edge Case:** If the user changes the template, the instructions should update across the series (if "Update all" is checked).
 
----
-
-## Story 4: Visual Identification in Planners
-**Value Proposition:** As a User, I want to see which tasks are part of a series so that I know they are linked.
+## Story 4: Multi-Day Deletion Logic
+**Value Proposition:** As a Manager, I want to choose between deleting a single task or the entire series so that I can handle schedule changes flexibly.
 
 **Technical Implementation Path:**
-- Target File: `core/templates/core/weekly_planner.html`
-- Target File: `core/templates/core/monthly_planner.html`
-  - If `task.group_id`, show a small "link" icon next to the task name.
+- Target File: `core/services/task_services.py` (New service `delete_task_series`)
+- Target File: `core/views.py` (Update `TaskDeleteView`)
+- Target File: `core/templates/core/task_confirm_delete.html` (Update with choices)
 
 **Acceptance Criteria (AC):**
-- [ ] Linked tasks are visually distinguishable from standalone tasks.
+- [ ] Deletion modal offers: "Delete this task only" vs "Delete entire series".
+- [ ] "Delete entire series" removes all tasks with the matching `group_id`.
+- [ ] Redirects correctly back to the planner after bulk deletion.
 
 **The Test Plan:**
-- **Visual Test:** Check both planners for the link icon on grouped tasks.
+- **Integration Test:** Perform a series deletion and verify all related tasks are purged from the database.
+- **Edge Case:** Deleting the last task of a series works normally.
 
----
+## Story 5: Visual Indicators in Planners
+**Value Proposition:** As a User, I want to see which tasks are part of a series in the planners so that I can distinguish them from standalone tasks.
 
-**CRITICAL STOP RULE:**
-Should we allow users to *delete* a whole series at once?
+**Technical Implementation Path:**
+- Target File: `core/templates/core/weekly_planner.html` (Add logic to task badges)
+- Target File: `core/templates/core/monthly_planner.html` (Add logic to task badges)
 
-**Decision:** v1 will handle creation and editing. Deletion remains per-task for safety, unless the user specifically asks for "Delete Series" in a future refinement.
+**Acceptance Criteria (AC):**
+- [ ] Tasks with a `group_id` display a `link` or `layers` icon.
+- [ ] Visual styling remains consistent with existing Material Symbols usage.
+
+**The Test Plan:**
+- **Visual Test:** Verify the icon appears on series tasks in both Weekly and Monthly views.
+- **Visual Test:** Ensure the icon does not clutter the high-density Monthly view.

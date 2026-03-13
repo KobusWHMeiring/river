@@ -87,6 +87,26 @@ class TaskForm(forms.ModelForm):
         required=False,
         empty_label="No template"
     )
+    
+    # Non-model fields for series creation
+    end_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        help_text="Leave blank for a single task"
+    )
+    exclude_weekends = forms.BooleanField(
+        initial=True,
+        required=False,
+        help_text="Skip Saturday and Sunday"
+    )
+    
+    # Non-model field for series update
+    update_all_in_series = forms.BooleanField(
+        initial=False,
+        required=False,
+        label="Update all tasks in this series",
+        help_text="Synchronize instructions/section across the entire group"
+    )
 
     class Meta:
         model = Task
@@ -108,6 +128,27 @@ class TaskForm(forms.ModelForm):
                 self.fields['instructions'].initial = template.default_instructions
             except (ValueError, TaskTemplate.DoesNotExist):
                 pass
+        
+        # Only show series update option if task is already part of a series
+        if self.instance and self.instance.pk and self.instance.group_id:
+            self.fields['update_all_in_series'].widget = forms.CheckboxInput()
+        else:
+            self.fields['update_all_in_series'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('date')
+        end_date = cleaned_data.get('end_date')
+        
+        if end_date:
+            if not start_date:
+                self.add_error('date', 'Start date is required for a series.')
+            elif end_date < start_date:
+                self.add_error('end_date', 'End date cannot be before the start date.')
+            elif (end_date - start_date).days > 90:
+                self.add_error('end_date', 'Task series range cannot exceed 90 days.')
+        
+        return cleaned_data
 
 class VisitLogForm(forms.ModelForm):
     class Meta:

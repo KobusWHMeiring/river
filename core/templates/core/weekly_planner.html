@@ -126,13 +126,18 @@
                         {% if task.date == day and task.assignee_type == 'team' %}
                         <div class="block bg-white dark:bg-slate-800 border-l-4 rounded-lg p-3 shadow-sm mb-2 hover:shadow-md transition-shadow task-card {% if task.is_completed %}opacity-60{% endif %}" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};">
                             <div class="flex justify-between items-start mb-2">
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" style="background-color: {% if task.section %}{{ task.section.color_code }}20{% else %}#f1f5f9{% endif %}; color: {% if task.section %}{{ task.section.color_code }}{% else %}#64748b{% endif %};">
-                                    {% if task.section %}{{ task.section.name }}{% else %}General{% endif %}
-                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" style="background-color: {% if task.section %}{{ task.section.color_code }}20{% else %}#f1f5f9{% endif %}; color: {% if task.section %}{{ task.section.color_code }}{% else %}#64748b{% endif %};">
+                                        {% if task.section %}{{ task.section.name }}{% else %}General{% endif %}
+                                    </span>
+                                    {% if task.group_id %}
+                                    <span class="material-symbols-outlined text-[14px] text-slate-400" title="Part of a series">layers</span>
+                                    {% endif %}
+                                </div>
                                 {% if task.is_completed %}
                                 <span class="material-symbols-outlined text-xs text-emerald-500 font-bold">check_circle</span>
                                 {% else %}
-                                <span class="material-symbols-outlined text-xs text-slate-400">more_horiz</span>
+                                <a href="{% url 'task_edit' task.id %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-400 hover:text-primary transition-colors">edit</a>
                                 {% endif %}
                             </div>
                             <h4 class="text-xs font-bold mb-1 dark:text-slate-200 {% if task.is_completed %}line-through text-slate-400{% endif %}">
@@ -152,7 +157,7 @@
         </div>
 
         <!-- Manager Tasks Section -->
-        <div>
+        <div class="mb-10">
             <div class="flex items-center gap-3 mb-4">
                 <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
                 <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest px-2">Manager Oversight</h2>
@@ -202,6 +207,58 @@
                 {% endfor %}
             </div>
         </div>
+
+        <!-- Chairperson Strategy Section -->
+        <div>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest px-2">Chairperson Strategy</h2>
+                <div class="h-px flex-1 bg-slate-200 dark:bg-slate-800"></div>
+            </div>
+            
+            <div class="grid grid-cols-[180px_repeat(7,1fr)] gap-4">
+                <div class="flex items-start pt-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-slate-500">workspace_premium</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold dark:text-white">Chairperson</p>
+                            <p class="text-xs text-slate-500">Strategic Activities</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% for day in week_days %}
+                <div class="group relative bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-2 min-h-[160px] hover:border-primary/50 hover:bg-slate-100/70 dark:hover:bg-slate-800/70 transition-all day-cell cursor-pointer {% if day == today %}today-highlight{% endif %}" data-date="{{ day|date:'Y-m-d' }}" data-assignee="chairperson">
+                    {% for task in tasks %}
+                        {% if task.date == day and task.assignee_type == 'chairperson' %}
+                        <div class="block bg-white dark:bg-slate-800 border-l-4 rounded-lg p-3 shadow-sm mb-2 hover:shadow-md transition-shadow task-card {% if task.is_completed %}opacity-60{% endif %}" style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase" style="background-color: {% if task.section %}{{ task.section.color_code }}20{% else %}#f1f5f9{% endif %}; color: {% if task.section %}{{ task.section.color_code }}{% else %}#64748b{% endif %};">
+                                    {% if task.section %}{{ task.section.name }}{% else %}Strategy{% endif %}
+                                </span>
+                                {% if task.is_completed %}
+                                <span class="material-symbols-outlined text-xs text-emerald-500 font-bold">check_circle</span>
+                                {% else %}
+                                <span class="material-symbols-outlined text-xs text-slate-400">more_horiz</span>
+                                {% endif %}
+                            </div>
+                            <h4 class="text-xs font-bold mb-1 dark:text-slate-200 {% if task.is_completed %}line-through text-slate-400{% endif %}">
+                                {{ task.template.name|default:"Custom Strategy" }}
+                            </h4>
+                            <p class="text-[11px] text-slate-500 {% if task.is_completed %}text-slate-400{% endif %}">{{ task.instructions|truncatechars:60 }}</p>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    <button class="absolute bottom-2 right-2 p-2.5 bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm transition-all hover:text-primary hover:border-primary/50 hover:scale-110 active:scale-95 add-task-btn opacity-60 group-hover:opacity-100" data-date="{{ day|date:'Y-m-d' }}" data-assignee="chairperson">
+                        <span class="material-symbols-outlined text-base font-bold">add</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -222,27 +279,41 @@
             
             <form method="post" action="{% url 'task_create' %}" class="p-6 space-y-5">
                 {% csrf_token %}
-                <input type="hidden" name="date" id="modalDate">
-                <input type="hidden" name="assignee_type" id="modalAssignee">
+                <input type="hidden" name="next" id="modalNext" value="{{ request.get_full_path }}">
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1.5">
-                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Task Date</label>
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Start Date</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_today</span>
-                            <input type="date" name="date_proxy" id="modalDateDisplay" required class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                            <input type="date" name="date" id="modalDateDisplay" required class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                         </div>
                     </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">End Date (Optional)</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">date_range</span>
+                            <input type="date" name="end_date" id="modalEndDate" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1.5">
                         <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Assignee Type</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">groups</span>
-                            <select name="assignee_type_proxy" id="modalAssigneeDisplay" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                            <select name="assignee_type" id="modalAssigneeDisplay" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                                 <option value="team">Team</option>
                                 <option value="manager">Manager</option>
+                                <option value="chairperson">Chairperson</option>
                             </select>
                             <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                         </div>
+                    </div>
+                    <div class="flex items-center space-x-3 pt-6">
+                        <input type="checkbox" name="exclude_weekends" id="modalExcludeWeekends" checked class="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary">
+                        <label class="text-sm font-medium text-slate-700 dark:text-slate-300" for="modalExcludeWeekends">Exclude weekends</label>
                     </div>
                 </div>
 
@@ -288,11 +359,18 @@
                     {% endfor %}
                 ]
                 </script>
+                <script id="chairpersonTemplatesData" type="application/json">
+                [
+                    {% for template in chairperson_task_templates %}
+                    {"id": {{ template.id }}, "name": "{{ template.name|escapejs }}", "task_type": "{{ template.get_task_type_display|escapejs }}", "instructions": "{{ template.default_instructions|escapejs }}"}{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ]
+                </script>
 
                 <div class="space-y-1.5">
                     <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Instructions & Notes</label>
                     <div class="relative">
-                        <textarea name="instructions" id="instructionsText" rows="4" class="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed" placeholder="Add specific details for the task..."></textarea>
+                        <textarea name="instructions" id="instructionsText" rows="4" required class="w-full p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-700 dark:text-slate-300 outline-none resize-none leading-relaxed" placeholder="Add specific details for the task..."></textarea>
                         <div class="absolute bottom-3 right-3 opacity-20 dark:opacity-10 pointer-events-none">
                             <span class="material-symbols-outlined text-2xl">edit_note</span>
                         </div>
@@ -319,10 +397,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('addTaskModal');
-    const modalDateInput = document.getElementById('modalDate');
-    const modalAssigneeInput = document.getElementById('modalAssignee');
     const modalDateDisplay = document.getElementById('modalDateDisplay');
     const modalAssigneeDisplay = document.getElementById('modalAssigneeDisplay');
+    const modalEndDate = document.getElementById('modalEndDate');
     const modalTitle = document.getElementById('modalTitle');
     const templateSelect = document.getElementById('templateSelect');
     const instructionsText = document.getElementById('instructionsText');
@@ -330,10 +407,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load template data
     const teamTemplates = JSON.parse(document.getElementById('teamTemplatesData').textContent);
     const managerTemplates = JSON.parse(document.getElementById('managerTemplatesData').textContent);
+    const chairpersonTemplates = JSON.parse(document.getElementById('chairpersonTemplatesData').textContent);
     
     // Function to update template dropdown based on assignee type
     const updateTemplateDropdown = (assigneeType) => {
-        const templates = assigneeType === 'manager' ? managerTemplates : teamTemplates;
+        let templates = [];
+        if (assigneeType === 'manager') {
+            templates = managerTemplates;
+        } else if (assigneeType === 'chairperson') {
+            templates = chairpersonTemplates;
+        } else {
+            templates = teamTemplates;
+        }
+        
         templateSelect.innerHTML = '<option value="">No template</option>';
         templates.forEach(template => {
             const option = document.createElement('option');
@@ -348,10 +434,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const d = date || new Date().toISOString().split('T')[0];
         const a = assignee || 'team';
         
-        modalDateInput.value = d;
         modalDateDisplay.value = d;
-        modalAssigneeInput.value = a;
         modalAssigneeDisplay.value = a;
+        modalEndDate.value = ''; // Reset end date
         
         // Set form action to include date parameter so it's passed on submit
         const form = modal.querySelector('form');
@@ -368,13 +453,8 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.classList.add('hidden');
     };
     
-    // Sync proxies back to hidden real inputs
-    modalDateDisplay.addEventListener('change', (e) => {
-        modalDateInput.value = e.target.value;
-    });
+    // Update template dropdown when assignee type changes
     modalAssigneeDisplay.addEventListener('change', (e) => {
-        modalAssigneeInput.value = e.target.value;
-        // Update template dropdown when assignee type changes
         updateTemplateDropdown(e.target.value);
         // Clear instructions when template changes
         instructionsText.value = '';
@@ -388,7 +468,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    document.querySelector('.open-modal-btn').addEventListener('click', () => openModal());
+    document.querySelectorAll('.open-modal-btn').forEach(btn => {
+        btn.addEventListener('click', () => openModal());
+    });
     
     // Close modal buttons
     document.querySelectorAll('.close-modal-btn').forEach(btn => {

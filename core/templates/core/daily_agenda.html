@@ -58,6 +58,9 @@
                                 {% else %}
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 uppercase tracking-wide">No Section</span>
                                 {% endif %}
+                                {% if task.group_id %}
+                                <span class="material-symbols-outlined text-xs text-slate-400" title="Part of a series">layers</span>
+                                {% endif %}
                             </div>
                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ task.assignee_type|title }}</span>
                         </div>

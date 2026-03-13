@@ -1,4 +1,4 @@
-**Generated on:** 2026-03-11 15:56:28
+**Generated on:** 2026-03-13 10:02:07
 
 ### File Structure
 ```
@@ -16,6 +16,8 @@
         └── commands
             └── cleanup_photos.py
     └── models.py
+    └── services
+        └── task_services.py
     └── templates
         └── core
             └── daily_agenda.html
@@ -30,14 +32,19 @@
             └── task_template_confirm_delete.html
             └── task_template_form.html
             └── task_template_list.html
+            └── task_type_confirm_delete.html
+            └── task_type_form.html
+            └── task_type_list.html
             └── visit_log_form.html
             └── visit_log_list.html
             └── weekly_planner.html
     └── templatetags
         └── __init__.py
         └── custom_filters.py
+    └── tests_chairperson.py
     └── tests_dashboard.py
     └── tests_monthly.py
+    └── tests_task_series.py
     └── tests_weeding.py
     └── urls.py
     └── views.py
@@ -56,6 +63,7 @@
 └── Prep_Sheets_2026-02-18.pdf
 └── product
     └── backlog.md
+    └── backlog_v1.md
     └── context
         └── learnings.md
         └── project_overview.md
@@ -88,10 +96,16 @@
         └── weeding_data.md
         └── weekly_planner_navigation.md
     └── prompts
+        └── arch.md
+        └── PM.md
         └── po.md
     └── refinement
+        └── chairperson_role.md
+        └── data_export_excel.md
         └── edit_completed_task.md
         └── mobile_responsive_implementation.md
+        └── multi_day_tasks.md
+        └── rolling_todo_list.md
 └── requirements.txt
 └── river
     └── .env
@@ -170,6 +184,9 @@ class PhotoAdmin(admin.ModelAdmin):
 class SectionForm(forms.ModelForm):  # Binds to model: Section
     # ... implementation hidden ...
 
+class TaskTypeForm(forms.ModelForm):  # Binds to model: TaskType
+    # ... implementation hidden ...
+
 class TaskTemplateForm(forms.ModelForm):  # Binds to model: TaskTemplate
     # ... implementation hidden ...
 
@@ -194,6 +211,18 @@ class BasePhotoFormSet(forms.BaseInlineFormSet):
 
 #### `SUMMARY: core/models.py`
 ```python
+class TaskType(models.Model):
+    ASSIGNEE_CHOICES = [('team', 'Team'), ('manager', 'Manager'), ('chairperson', 'Chairperson'), ('all', 'All')]
+    name = models.CharField(max_length=50, unique=True)
+    code = models.CharField(max_length=20, unique=True, help_text="Short code used internally (e.g., 'litter_run', 'weeding')")
+    description = models.TextField(blank=True, help_text='Optional description of this task type')
+    applicable_to = models.CharField(max_length=15, choices=ASSIGNEE_CHOICES, default='all', help_text='Which assignee types this task type is applicable to')
+    is_active = models.BooleanField(default=True, help_text='Only active task types are shown in dropdowns')
+    position = models.PositiveIntegerField(default=0, help_text='Order in which task types appear')
+    icon_name = models.CharField(max_length=50, default='task', help_text="Material Symbols icon name (e.g., 'delete_sweep', 'grass', 'forest')")
+    color_class = models.CharField(max_length=50, default='bg-slate-50 text-slate-600 border-slate-100', help_text="Tailwind CSS classes for styling (e.g., 'bg-amber-50 text-amber-600 border-amber-100')")
+    created_at = models.DateTimeField(auto_now_add=True)
+
 class Status(models.Model):
     name = models.CharField(max_length=50, unique=True)
     color_code = models.CharField(max_length=7, default='#808080', help_text='Hex color code for visual distinction')
@@ -215,29 +244,29 @@ class Section(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class TaskTemplate(models.Model):
-    TASK_TYPE_CHOICES = [('litter_run', 'Litter Run'), ('weeding', 'Weeding'), ('planting', 'Planting'), ('admin', 'Admin')]
-    ASSIGNEE_TYPE_CHOICES = [('team', 'Team'), ('manager', 'Manager')]
+    ASSIGNEE_TYPE_CHOICES = [('team', 'Team'), ('manager', 'Manager'), ('chairperson', 'Chairperson')]
     name = models.CharField(max_length=100)
-    task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES)
-    assignee_type = models.CharField(max_length=10, choices=ASSIGNEE_TYPE_CHOICES, default='team')
+    task_type = models.ForeignKey(TaskType, on_delete=models.SET_NULL, null=True, blank=True, help_text='Category of task', related_name='templates')
+    assignee_type = models.CharField(max_length=15, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     default_instructions = models.TextField()
     is_active = models.BooleanField(default=True, help_text='Inactive templates are hidden from task creation but preserved for existing tasks')
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Task(models.Model):
-    ASSIGNEE_TYPE_CHOICES = [('team', 'Team'), ('manager', 'Manager')]
+    ASSIGNEE_TYPE_CHOICES = [('team', 'Team'), ('manager', 'Manager'), ('chairperson', 'Chairperson')]
     date = models.DateField()
     section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True)
-    assignee_type = models.CharField(max_length=10, choices=ASSIGNEE_TYPE_CHOICES, default='team')
+    assignee_type = models.CharField(max_length=15, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     instructions = models.TextField()
     is_completed = models.BooleanField(default=False)
     template = models.ForeignKey(TaskTemplate, on_delete=models.SET_NULL, null=True, blank=True)
+    group_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Links tasks created as a series')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 class VisitLog(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True, blank=True)
-    section = models.ForeignKey(Section, on_delete=models.CASCADE)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True, help_text='River section where activity took place (optional for general logs)')
     date = models.DateField()
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -331,6 +360,22 @@ class TaskTemplateDeleteView(LoginRequiredMixin, DeleteView):  # Renders: core/t
 class VisitLogListView(LoginRequiredMixin, ListView):  # Renders: core/visit_log_list.html
     """Master Activity Log - comprehensive view of all visit logs with search and filtering."""
     # ... implementation hidden ...
+
+class TaskTypeListView(LoginRequiredMixin, ListView):  # Renders: core/task_type_list.html
+    # ... implementation hidden ...
+
+class TaskTypeCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):  # Renders: core/task_type_form.html
+    # ... implementation hidden ...
+
+class TaskTypeUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):  # Renders: core/task_type_form.html
+    # ... implementation hidden ...
+
+class TaskTypeDeleteView(LoginRequiredMixin, DeleteView):  # Renders: core/task_type_confirm_delete.html
+    # ... implementation hidden ...
+
+class DataExportView(LoginRequiredMixin, View):
+    """View to generate a comprehensive multi-sheet Excel export."""
+    # ... implementation hidden ...
 ```
 
 #### `SUMMARY: river/core/tests.py`
@@ -403,11 +448,20 @@ urlpatterns = [
     path('visit-logs/create/', views.VisitLogCreateView.as_view(), name='visit_log_create'),
     path('visit-logs/<int:pk>/edit/', views.VisitLogUpdateView.as_view(), name='visit_log_edit'),
 
+    # Data Export URLs
+    path('export/', views.DataExportView.as_view(), name='data_export'),
+
     # Task Template Management URLs
     path('templates/', views.TaskTemplateListView.as_view(), name='task_template_list'),
     path('templates/create/', views.TaskTemplateCreateView.as_view(), name='task_template_create'),
     path('templates/<int:pk>/edit/', views.TaskTemplateUpdateView.as_view(), name='task_template_edit'),
     path('templates/<int:pk>/delete/', views.TaskTemplateDeleteView.as_view(), name='task_template_delete'),
+
+    # Task Type Management URLs
+    path('task-types/', views.TaskTypeListView.as_view(), name='task_type_list'),
+    path('task-types/create/', views.TaskTypeCreateView.as_view(), name='task_type_create'),
+    path('task-types/<int:pk>/edit/', views.TaskTypeUpdateView.as_view(), name='task_type_edit'),
+    path('task-types/<int:pk>/delete/', views.TaskTypeDeleteView.as_view(), name='task_type_delete'),
 ]
 
 ```
