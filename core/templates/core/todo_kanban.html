@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="flex flex-col h-screen max-h-screen overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between p-4 bg-white border-b border-slate-200">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-slate-100 rounded-lg">
+                <span class="material-symbols-outlined text-slate-600">view_kanban</span>
+            </div>
+            <div>
+                <h1 class="text-xl font-semibold text-slate-800">Rolling To-Do List</h1>
+                <p class="text-sm text-slate-500">Manage high-priority administrative tasks</p>
+            </div>
+        </div>
+        <button onclick="openCreateModal()" class="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+            <span class="material-symbols-outlined text-sm">add</span>
+            <span>New Task</span>
+        </button>
+    </div>
+
+    <!-- Board Container -->
+    <div class="flex-1 overflow-x-auto p-6 bg-slate-50">
+        <div class="flex space-x-6 h-full min-w-max">
+            <!-- To Do Column -->
+            <div class="flex flex-col w-80 bg-slate-100/50 rounded-xl border border-slate-200 shadow-sm">
+                <div class="p-4 flex items-center justify-between border-b border-slate-200">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        <h2 class="font-semibold text-slate-700 uppercase text-xs tracking-wider">To Do</h2>
+                        <span class="px-2 py-0.5 bg-slate-200 text-slate-600 rounded-full text-xs font-medium">{{ todo_tasks|length }}</span>
+                    </div>
+                </div>
+                <div id="todo" class="flex-1 p-3 space-y-3 overflow-y-auto kanban-column">
+                    {% for task in todo_tasks %}
+                        {% include 'core/includes/todo_card.html' with task=task %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Doing Column -->
+            <div class="flex flex-col w-80 bg-slate-100/50 rounded-xl border border-slate-200 shadow-sm">
+                <div class="p-4 flex items-center justify-between border-b border-slate-200">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        <h2 class="font-semibold text-slate-700 uppercase text-xs tracking-wider">Doing</h2>
+                        <span class="px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">{{ doing_tasks|length }}</span>
+                    </div>
+                </div>
+                <div id="doing" class="flex-1 p-3 space-y-3 overflow-y-auto kanban-column">
+                    {% for task in doing_tasks %}
+                        {% include 'core/includes/todo_card.html' with task=task %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Done Column -->
+            <div class="flex flex-col w-80 bg-slate-100/50 rounded-xl border border-slate-200 shadow-sm">
+                <div class="p-4 flex items-center justify-between border-b border-slate-200">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        <h2 class="font-semibold text-slate-700 uppercase text-xs tracking-wider">Done</h2>
+                        <span class="px-2 py-0.5 bg-green-100 text-green-600 rounded-full text-xs font-medium">{{ done_tasks|length }}</span>
+                    </div>
+                </div>
+                <div id="done" class="flex-1 p-3 space-y-3 overflow-y-auto kanban-column">
+                    {% for task in done_tasks %}
+                        {% include 'core/includes/todo_card.html' with task=task %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Form Modal -->
+<div id="taskModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <form action="{% url 'task_create' %}" method="post" id="taskForm">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'todo_kanban' %}">
+            <input type="hidden" name="is_rolling" value="True">
+            
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h3 class="text-lg font-semibold text-slate-800" id="modalTitle">New Rolling Task</h3>
+                <button type="button" onclick="closeModal()" class="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                    <span class="material-symbols-outlined text-slate-500">close</span>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+                <!-- Assignee Type Selection -->
+                <div class="grid grid-cols-3 gap-3">
+                    <label class="relative group cursor-pointer">
+                        <input type="radio" name="assignee_type" value="team" checked class="peer sr-only" onchange="updateTemplates('team')">
+                        <div class="p-3 text-center border-2 border-slate-100 rounded-xl peer-checked:border-primary peer-checked:bg-primary/5 hover:border-slate-200 transition-all">
+                            <span class="block text-sm font-medium text-slate-600 peer-checked:text-primary">Team</span>
+                        </div>
+                    </label>
+                    <label class="relative group cursor-pointer">
+                        <input type="radio" name="assignee_type" value="manager" class="peer sr-only" onchange="updateTemplates('manager')">
+                        <div class="p-3 text-center border-2 border-slate-100 rounded-xl peer-checked:border-primary peer-checked:bg-primary/5 hover:border-slate-200 transition-all">
+                            <span class="block text-sm font-medium text-slate-600 peer-checked:text-primary">Manager</span>
+                        </div>
+                    </label>
+                    <label class="relative group cursor-pointer">
+                        <input type="radio" name="assignee_type" value="chairperson" class="peer sr-only" onchange="updateTemplates('chairperson')">
+                        <div class="p-3 text-center border-2 border-slate-100 rounded-xl peer-checked:border-rose-500 peer-checked:bg-rose-50 hover:border-slate-200 transition-all">
+                            <span class="block text-sm font-medium text-slate-600 peer-checked:text-rose-600">Chair</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Template Selection -->
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-slate-700 flex items-center space-x-2">
+                        <span class="material-symbols-outlined text-sm">bookmark</span>
+                        <span>Task Template</span>
+                    </label>
+                    <div class="relative">
+                        <select name="template" id="templateSelect" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 outline-none">
+                            <option value="">No template (Custom task)</option>
+                        </select>
+                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <span class="material-symbols-outlined text-sm">list_alt</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Selection (Optional) -->
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-slate-700 flex items-center space-x-2">
+                        <span class="material-symbols-outlined text-sm">location_on</span>
+                        <span>Section (Optional)</span>
+                    </label>
+                    <div class="relative">
+                        <select name="section" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 outline-none">
+                            <option value="">No specific section</option>
+                            {% for section in sections %}
+                                <option value="{{ section.id }}">{{ section.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <span class="material-symbols-outlined text-sm">map</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-slate-700 flex items-center space-x-2">
+                        <span class="material-symbols-outlined text-sm">description</span>
+                        <span>Task Instructions</span>
+                    </label>
+                    <textarea name="instructions" id="instructionsText" required rows="3" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 outline-none resize-none"></textarea>
+                </div>
+
+                <!-- Options -->
+                <div class="flex items-center space-x-6 p-3 bg-slate-50 rounded-xl">
+                    <label class="flex items-center space-x-3 cursor-pointer group">
+                        <input type="checkbox" name="is_urgent" class="w-5 h-5 rounded border-slate-300 text-rose-500 focus:ring-rose-500 transition-all cursor-pointer">
+                        <span class="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Mark as Urgent</span>
+                    </label>
+                </div>
+                
+                <input type="hidden" name="todo_status" value="todo">
+            </div>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-3">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium transition-colors">Cancel</button>
+                <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium shadow-sm transition-all">Create Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script id="templateData" type="application/json">
+{
+    "team": [
+        {% for t in team_task_templates %}
+        {"id": {{ t.id }}, "name": "{{ t.name }}", "instructions": "{{ t.default_instructions|escapejs }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "manager": [
+        {% for t in manager_task_templates %}
+        {"id": {{ t.id }}, "name": "{{ t.name }}", "instructions": "{{ t.default_instructions|escapejs }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "chairperson": [
+        {% for t in chairperson_task_templates %}
+        {"id": {{ t.id }}, "name": "{{ t.name }}", "instructions": "{{ t.default_instructions|escapejs }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+}
+</script>
+
+<script>
+    const columns = document.querySelectorAll('.kanban-column');
+    const updateUrl = "{% url 'todo_update' %}";
+    
+    columns.forEach(column => {
+        new Sortable(column, {
+            group: 'tasks',
+            animation: 150,
+            ghostClass: 'bg-slate-200',
+            dragClass: 'shadow-lg',
+            onEnd: function (evt) {
+                const taskId = evt.item.dataset.taskId;
+                const newStatus = evt.to.id;
+                const newIndex = evt.newIndex;
+                
+                updateTaskStatus(taskId, newStatus, newIndex);
+            }
+        });
+    });
+
+    function updateTaskStatus(taskId, status, index) {
+        fetch(updateUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                task_id: taskId,
+                status: status,
+                index: index
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Failed to update task. Please try again.');
+                window.location.reload();
+            }
+        });
+    }
+
+    // Modal Logic
+    const modal = document.getElementById('taskModal');
+    const templateData = JSON.parse(document.getElementById('templateData').textContent);
+    const templateSelect = document.getElementById('templateSelect');
+    const instructionsText = document.getElementById('instructionsText');
+
+    function openCreateModal() {
+        modal.classList.remove('hidden');
+        updateTemplates('team');
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+    }
+
+    function updateTemplates(assigneeType) {
+        const templates = templateData[assigneeType];
+        templateSelect.innerHTML = '<option value="">No template (Custom task)</option>';
+        
+        templates.forEach(t => {
+            const option = document.createElement('option');
+            option.value = t.id;
+            option.textContent = t.name;
+            option.dataset.instructions = t.instructions;
+            templateSelect.appendChild(option);
+        });
+    }
+
+    templateSelect.addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        if (selected.value) {
+            instructionsText.value = selected.dataset.instructions;
+        }
+    });
+</script>
+
+<style>
+    .kanban-column {
+        min-height: 200px;
+    }
+</style>
+{% endblock %}

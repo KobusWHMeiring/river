@@ -17,12 +17,14 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from collections import defaultdict
 from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo, SectionStageHistory
 from .forms import SectionForm, TaskForm, TaskTemplateForm, TaskTypeForm, VisitLogForm, MetricFormSet, PhotoFormSet
-from .services.task_services import create_task_series, update_task_series, delete_task_series
+from .services.task_services import create_task_series, update_task_series, delete_task_series, move_todo_task
 
 from django.db.models import Sum, Q
 from django.utils import timezone
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponseForbidden
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 
 @login_required
@@ -42,6 +44,49 @@ def section_reorder_view(request):
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+class TodoKanbanView(LoginRequiredMixin, ListView):
+    model = Task
+    template_name = 'core/todo_kanban.html'
+    context_object_name = 'tasks'
+
+    def get_queryset(self):
+        return Task.objects.filter(is_rolling=True).select_related('section', 'template', 'template__task_type').order_by('todo_position')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tasks = context['tasks']
+        
+        # Group tasks by status
+        context['todo_tasks'] = [t for t in tasks if t.todo_status == 'todo']
+        context['doing_tasks'] = [t for t in tasks if t.todo_status == 'doing']
+        context['done_tasks'] = [t for t in tasks if t.todo_status == 'done']
+        
+        # For task creation modal
+        context['sections'] = Section.objects.all()
+        context['team_task_templates'] = TaskTemplate.objects.filter(assignee_type='team', is_active=True)
+        context['manager_task_templates'] = TaskTemplate.objects.filter(assignee_type='manager', is_active=True)
+        context['chairperson_task_templates'] = TaskTemplate.objects.filter(assignee_type='chairperson', is_active=True)
+        context['task_form'] = TaskForm(initial={'is_rolling': True})
+        
+        return context
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TodoUpdateAPI(LoginRequiredMixin, View):
+    """AJAX endpoint to handle Kanban drag-and-drop updates."""
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            task_id = data.get('task_id')
+            new_status = data.get('status')
+            new_index = data.get('index')
+            
+            if task_id and new_status in ['todo', 'doing', 'done'] and new_index is not None:
+                move_todo_task(task_id, new_status, new_index)
+                return JsonResponse({'success': True})
+            return JsonResponse({'success': False, 'error': 'Invalid data'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 class GlobalDashboardView(LoginRequiredMixin, ListView):
     model = VisitLog
@@ -194,8 +239,8 @@ class SectionDetailView(LoginRequiredMixin, DetailView):
         else:
             days_in_stage = (timezone.now() - section.created_at).days
 
-        today_tasks = Task.objects.filter(section=section, date=today)
-        future_tasks = Task.objects.filter(section=section, date__gt=today, is_completed=False).order_by('date')
+        today_tasks = Task.objects.filter(section=section, date=today, is_rolling=False)
+        future_tasks = Task.objects.filter(section=section, date__gt=today, is_completed=False, is_rolling=False).order_by('date')
 
         # Combine visits and stage history for timeline
         timeline_items = []
@@ -275,7 +320,7 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
             start_of_week = today - timedelta(days=today.weekday())
 
         end_of_week = start_of_week + timedelta(days=6)
-        return Task.objects.filter(date__range=[start_of_week, end_of_week])
+        return Task.objects.filter(date__range=[start_of_week, end_of_week], is_rolling=False)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -350,7 +395,8 @@ class MonthlyPlannerView(LoginRequiredMixin, ListView):
         last_day = month_days[-1][-1]
 
         return Task.objects.filter(
-            date__range=[first_day, last_day]
+            date__range=[first_day, last_day],
+            is_rolling=False
         ).select_related('section')
 
     def get_context_data(self, **kwargs):
@@ -438,11 +484,13 @@ class DailyAgendaView(LoginRequiredMixin, ListView):
         target_date = self.get_target_date()
         try:
             return Task.objects.filter(
-                date=target_date
+                date=target_date,
+                is_rolling=False
             ).order_by('assignee_type', 'section__name')
         except Exception:
             return Task.objects.filter(
-                date=target_date
+                date=target_date,
+                is_rolling=False
             ).order_by('section__name')
     
     def get_context_data(self, **kwargs):
@@ -480,6 +528,8 @@ class TaskCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
         if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
             return next_url
+        if self.object and self.object.is_rolling:
+            return reverse_lazy('todo_kanban')
         return reverse_lazy('weekly_planner')
 
     def form_valid(self, form):

@@ -3,7 +3,7 @@ from datetime import timedelta, date
 from django.db import transaction
 from ..models import Task
 
-def create_task_series(base_task_data, start_date, end_date, exclude_weekends=True):
+def create_task_series(base_task_data: dict, start_date: date, end_date: date, exclude_weekends: bool = True) -> int:
     """
     Creates a series of tasks for a date range.
     """
@@ -34,7 +34,7 @@ def create_task_series(base_task_data, start_date, end_date, exclude_weekends=Tr
             
     return len(tasks_to_create)
 
-def update_task_series(group_id, update_data, update_all=False, current_task_id=None):
+def update_task_series(group_id: uuid.UUID, update_data: dict, update_all: bool = False, current_task_id: int = None) -> int:
     """
     Updates a single task or an entire series.
     Only certain fields are synced across a series to preserve historical integrity.
@@ -56,7 +56,7 @@ def update_task_series(group_id, update_data, update_all=False, current_task_id=
         
     return updated_count
 
-def delete_task_series(group_id, delete_all=False, current_task_id=None):
+def delete_task_series(group_id: uuid.UUID, delete_all: bool = False, current_task_id: int = None) -> int:
     """
     Deletes a single task or an entire series.
     """
@@ -70,3 +70,37 @@ def delete_task_series(group_id, delete_all=False, current_task_id=None):
         deleted_count, _ = Task.objects.filter(group_id=group_id).delete()
         
     return deleted_count
+
+def move_todo_task(task_id: int, new_status: str, new_index: int) -> None:
+    """
+    Updates the status and position of a rolling task and re-indexes
+    both source and target status columns if necessary.
+    """
+    with transaction.atomic():
+        task = Task.objects.select_for_update().get(id=task_id)
+        old_status = task.todo_status
+        
+        # Re-index target column (includes the task being moved)
+        target_tasks = list(Task.objects.filter(
+            is_rolling=True, 
+            todo_status=new_status
+        ).exclude(id=task_id).order_by('todo_position'))
+        
+        target_tasks.insert(new_index, task)
+        
+        for i, t in enumerate(target_tasks):
+            if t.id == task_id:
+                Task.objects.filter(id=t.id).update(todo_status=new_status, todo_position=i)
+            elif t.todo_position != i:
+                Task.objects.filter(id=t.id).update(todo_position=i)
+        
+        # Re-index source column if it's different from target
+        if old_status != new_status:
+            source_tasks = Task.objects.filter(
+                is_rolling=True, 
+                todo_status=old_status
+            ).exclude(id=task_id).order_by('todo_position')
+            
+            for i, t in enumerate(source_tasks):
+                if t.todo_position != i:
+                    Task.objects.filter(id=t.id).update(todo_position=i)

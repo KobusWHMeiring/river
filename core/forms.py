@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 from django.core.validators import MinLengthValidator
-from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo
+from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo, Status
 
 class SectionForm(forms.ModelForm):
     class Meta:
@@ -18,7 +18,6 @@ class SectionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Only show active statuses in the dropdown
-        from .models import Status
         self.fields['status'].queryset = Status.objects.filter(is_active=True)
 
 class TaskTypeForm(forms.ModelForm):
@@ -110,16 +109,21 @@ class TaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = ['date', 'section', 'assignee_type', 'instructions', 'template']
+        fields = ['date', 'section', 'assignee_type', 'instructions', 'template', 'is_rolling', 'is_urgent', 'todo_status']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
             'instructions': forms.Textarea(attrs={'rows': 4}),
+            'is_rolling': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary', 'id': 'id_is_rolling'}),
+            'is_urgent': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded border-slate-300 text-rose-500 focus:ring-rose-500', 'id': 'id_is_urgent'}),
+            'todo_status': forms.Select(attrs={'class': 'w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Set the queryset for template field - only show active templates
         self.fields['template'].queryset = TaskTemplate.objects.filter(is_active=True)
+        self.fields['date'].required = False  # Set at runtime to bypass ModelForm default
+        self.fields['todo_status'].required = False
 
         if 'template' in self.data and self.data['template']:
             try:
@@ -139,7 +143,11 @@ class TaskForm(forms.ModelForm):
         cleaned_data = super().clean()
         start_date = cleaned_data.get('date')
         end_date = cleaned_data.get('end_date')
+        is_rolling = cleaned_data.get('is_rolling')
         
+        if not is_rolling and not start_date:
+            self.add_error('date', 'Date is required for non-rolling tasks.')
+            
         if end_date:
             if not start_date:
                 self.add_error('date', 'Start date is required for a series.')

@@ -25,6 +25,10 @@ urlpatterns = [
     path('daily-agenda/', views.DailyAgendaView.as_view(), name='daily_agenda'),
     path('tasks/<int:pk>/complete/', views.task_complete_view, name='task_complete'),
     
+    # Kanban Board URLs
+    path('todo/', views.TodoKanbanView.as_view(), name='todo_kanban'),
+    path('todo/update/', views.TodoUpdateAPI.as_view(), name='todo_update'),
+    
     # Visit Log URLs
     path('visit-logs/', views.VisitLogListView.as_view(), name='visit_log_list'),
     path('visit-logs/create/', views.VisitLogCreateView.as_view(), name='visit_log_create'),

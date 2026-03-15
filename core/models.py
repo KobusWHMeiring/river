@@ -153,26 +153,57 @@ class Task(models.Model):
         ('chairperson', 'Chairperson'),
     ]
     
-    date = models.DateField()
+    TODO_STATUS_CHOICES = [
+        ('todo', 'To Do'),
+        ('doing', 'Doing'),
+        ('done', 'Done'),
+    ]
+    
+    date = models.DateField(null=True, blank=True)
     section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True)
     assignee_type = models.CharField(max_length=15, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     instructions = models.TextField()
     is_completed = models.BooleanField(default=False)
     template = models.ForeignKey(TaskTemplate, on_delete=models.SET_NULL, null=True, blank=True)
     group_id = models.UUIDField(null=True, blank=True, db_index=True, help_text="Links tasks created as a series")
+    
+    # Rolling To-Do Fields
+    is_rolling = models.BooleanField(default=False, db_index=True)
+    is_urgent = models.BooleanField(default=False)
+    todo_status = models.CharField(
+        max_length=10, 
+        choices=TODO_STATUS_CHOICES, 
+        default='todo', 
+        db_index=True
+    )
+    todo_position = models.PositiveIntegerField(default=0)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         section_name = self.section.name if self.section else "No Section"
         assignee_display = dict(self.ASSIGNEE_TYPE_CHOICES).get(str(self.assignee_type), str(self.assignee_type))
+        if self.is_rolling:
+            return f"[Rolling] {self.instructions[:30]} - {section_name}"
         return f"{self.date} - {section_name} - {assignee_display}"
     
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not self.is_rolling and not self.date:
+            raise ValidationError({'date': 'Date is required for non-rolling tasks.'})
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
     class Meta:
-        ordering = ['date']
+        ordering = ['date', 'todo_position']
         indexes = [
             models.Index(fields=['date']),
             models.Index(fields=['is_completed']),
+            models.Index(fields=['is_rolling']),
+            models.Index(fields=['todo_status']),
         ]
 
 class VisitLog(models.Model):

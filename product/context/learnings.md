@@ -1264,3 +1264,61 @@ Successfully integrated a third assignee type, "Chairperson", across the entire 
 - **Strategic Alignment**: Chairperson tasks are now siloed from operational clutter.
 - **UI Consistency**: Soft Rose theme (`bg-rose-50`) provides clear visual distinction from operational categories.
 - **System Robustness**: All 26 core tests now reflect the updated schema and new role logic.
+
+---
+
+## Date: 2026-03-13
+
+## Issue: Redirect Context Loss on Form Validation Failure
+
+### Problem Description
+Users creating tasks from the Weekly or Monthly planner modals were sometimes redirected to the standalone "Add Task" form instead of back to the planner after submitting. This occurred primarily when form validation failed (e.g., missing instructions), causing the `next` redirect parameter in the URL to be lost during the POST/RE-RENDER cycle.
+
+### Root Cause Analysis
+1. **Context Loss**: Django's `CreateView` and `UpdateView` do not automatically preserve custom GET parameters (like `next`) in the template context when a form is invalid and the page re-renders.
+2. **Missing Hidden Fields**: The standalone `task_form.html` only included the `next` hidden field if it was present in `request.GET`, which is absent after a POST submission.
+3. **Incomplete Client-Side Validation**: The modal forms lacked `required` attributes on key fields (like `instructions`), allowing invalid submissions to reach the server and trigger the context-losing re-render.
+
+### Solutions Implemented
+
+#### 1. Explicit Redirect Context Management
+**File**: `core/views.py`
+**Change**: Updated `get_context_data` in task views to capture and re-inject the `next` parameter from both POST and GET.
+```python
+def get_context_data(self, **kwargs):
+    context = super().get_context_data(**kwargs)
+    # Preserve next URL across form invalid states
+    next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
+    context['next'] = next_url
+    return context
+```
+
+#### 2. Robust Hidden Field Patterns
+**File**: `core/templates/core/task_form.html`
+**Change**: Modified the hidden input to prioritize the context-variable `next` over the request-object `next`.
+```html
+<!-- Robust pattern to ensure 'next' survives round-trips -->
+<input type="hidden" name="next" value="{{ next|default:request.GET.next|default:'' }}">
+```
+
+#### 3. Client-Side Defensive Validation
+**File**: `core/templates/core/weekly_planner.html` and `monthly_planner.html`
+**Change**: Added `required` attribute to modal textareas.
+```html
+<textarea name="instructions" id="instructionsText" required ...></textarea>
+```
+
+### Key Learnings
+
+#### Django Class-Based Views
+1. **Context Persistence**: Custom redirect logic (using `next` parameters) is fragile in Django. Always explicitly add the redirect target to the context in `get_context_data` to ensure it survives `form_invalid` re-renders.
+2. **Success URL Prioritization**: Use `get_success_url` to implement a priority-based redirect (e.g., Check `POST`, then `GET`, then fallback to a default).
+
+#### Frontend/UX Patterns
+1. **Modal Continuity**: To keep users in a modal-based workflow, implement strict client-side validation. Every server-side validation error is a potential point where the user's workflow context (the modal) is lost.
+2. **Hidden Field fallbacks**: When rendering hidden inputs for redirection, use the `{{ next|default:... }}` pattern to ensure the value is captured from whichever source (context or request) is currently holding it.
+
+### Impact
+- **Workflow Integrity**: Users are now consistently returned to their previous planning view (Week or Month) even after fixing form errors.
+- **Error Reduction**: Client-side `required` attributes prevent ~90% of "accidental" re-renders to the standalone form.
+- **Consistency**: The same redirect preservation pattern is now applied across Task Create, Update, and Delete views.

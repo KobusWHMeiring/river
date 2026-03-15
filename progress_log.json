@@ -1,0 +1,34 @@
+{
+  "project_name": "River Rehabilitation Management System (Liesbeek)",
+  "current_milestone": "Milestone 2 - Enhanced Planning & Reporting",
+  "completed_tasks": [
+    "Defined Build Principles",
+    "Section Management & Spatial Mapping (Leaflet.js)",
+    "Weekly & Monthly Planners",
+    "Daily Agenda & Completion Tracking",
+    "Context-Aware Visit Logging (Smart Forms)",
+    "Task Template Management",
+    "Global Dashboard with Aggregated Metrics",
+    "Stage Tracking History",
+    "Performance Optimization (Font Subsetting)",
+    "Mobile Responsive Implementation",
+    "Chairperson Role Integration",
+    "Multi-Day Task Series Creation & Management",
+    "Data Export to Excel (Multi-sheet)",
+    "Fixed Redirect Context Loss on Form Errors",
+    "Global Rolling To-Do List (Kanban Board)"
+  ],
+  "stalled_tasks": [],
+  "next_three_steps": [
+    "Implement Playwright for end-to-end integration testing",
+    "Enhanced Weeding Data Capture (Species tracking)",
+    "Time-Stamped Stage Tracking Visualization"
+  ],
+  "architectural_concerns": [
+    "Preserving redirect context (next parameter) across form validation cycles.",
+    "Handling high-density data in Monthly Planner without UI clutter.",
+    "Lite GIS approach using JSONField instead of PostGIS for simplicity.",
+    "Decided on Playwright for future integration testing.",
+    "Integer-based todo_position re-indexing for Kanban drag-and-drop."
+  ]
+}

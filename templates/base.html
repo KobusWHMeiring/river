@@ -99,6 +99,9 @@
         <a href="{% url 'daily_agenda' %}" class="{% if request.resolver_match.url_name == 'daily_agenda' %}active{% endif %}">
             <span class="material-symbols-outlined">view_agenda</span>
         </a>
+        <a href="{% url 'todo_kanban' %}" class="{% if request.resolver_match.url_name == 'todo_kanban' %}active{% endif %}">
+            <span class="material-symbols-outlined">view_kanban</span>
+        </a>
         <a href="{% url 'section_list' %}" class="{% if request.resolver_match.url_name == 'section_list' %}active{% endif %}">
             <span class="material-symbols-outlined">grid_view</span>
         </a>
@@ -156,6 +159,10 @@
                 <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'daily_agenda' %}sidebar-item-active{% endif %}" href="{% url 'daily_agenda' %}">
                     <span class="material-symbols-outlined">view_agenda</span>
                     <span class="text-sm font-medium">Daily Agenda</span>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'todo_kanban' %}sidebar-item-active{% endif %}" href="{% url 'todo_kanban' %}">
+                    <span class="material-symbols-outlined">view_kanban</span>
+                    <span class="text-sm font-medium">Rolling To-Dos</span>
                 </a>
                 <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors {% if request.resolver_match.url_name == 'section_list' %}sidebar-item-active{% endif %}" href="{% url 'section_list' %}">
                     <span class="material-symbols-outlined">grid_view</span>
