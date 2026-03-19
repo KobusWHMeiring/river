@@ -95,7 +95,7 @@ def revert_template_task_types(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0028_fix_tasktype_applicable_to_data'),
+        ('core', '0029_create_missing_tasktypes'),
     ]
 
     operations = [
