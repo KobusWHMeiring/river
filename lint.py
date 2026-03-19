@@ -91,23 +91,23 @@ def call_gemini_api(prompt: str) -> str:
         return f"ERROR: AI Linting failed - {str(e)}"
 
 def main():
-    print("🔍 [River Project] Running AiLint on staged changes...")
+    print("[River Project] Running AiLint on staged changes...")
     load_env()
 
     # 1. Get staged changes
     try:
         diff = subprocess.check_output(["git", "diff", "--cached"], text=True, encoding="utf-8")
         if not diff.strip():
-            print("✅ No staged changes to lint. Run `git add .` first.")
+            print("[OK] No staged changes to lint. Run `git add .` first.")
             sys.exit(0)
     except subprocess.CalledProcessError:
-        print("❌ Error reading git diff.")
+        print("[ERROR] Error reading git diff.")
         sys.exit(1)
 
     # 2. Load Build Principles
     principles_path = Path("product/context/build_principles.md")
     if not principles_path.exists():
-        print(f"❌ Could not find {principles_path}")
+        print(f"[ERROR] Could not find {principles_path}")
         sys.exit(1)
 
     principles = principles_path.read_text(encoding="utf-8")
@@ -129,7 +129,7 @@ Your ONLY job is to compare the provided CODE DIFF against our BUILD PRINCIPLES.
    - They check data integrity (e.g., "date is required if not rolling")
    - They do NOT belong in services - they belong in models/forms
    - **IF YOU SEE A METHOD NAMED `clean(self)` IN A MODEL OR FORM - DO NOT FLAG IT EVER**
-   - Example: `def clean(self): if not self.is_rolling and not self.date: raise ValidationError(...)` ✅ CORRECT - DO NOT FLAG
+   - Example: `def clean(self): if not self.is_rolling and not self.date: raise ValidationError(...)` [CORRECT] - DO NOT FLAG
 
 2. **Field Definitions and Widgets - NEVER FLAG THESE:**
    - Model fields: `todo_position = models.PositiveIntegerField(default=0)`
@@ -172,35 +172,35 @@ The line numbers in the diff are relative to the hunk, not absolute file positio
 """
 
     # 4. Execute AI check
-    print(f"📊 Diff Size: {len(diff)} characters")
+    print(f"[INFO] Diff Size: {len(diff)} characters")
     print("-" * 20 + " PROMPT START " + "-" * 20)
     print(prompt)
     print("-" * 20 + " PROMPT END " + "-" * 20)
 
     # Try Gemini first if key exists, then fallback to Kimi
     if os.getenv("GEMINI_API_KEY"):
-        print(f"⏳ Waiting for {os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')} Audit...")
+        print(f"[WAITING] Waiting for {os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')} Audit...")
         result = call_gemini_api(prompt)
     else:
-        print(f"⏳ Waiting for {os.getenv('KIMI_MODEL', 'kimi-k2.5')} Audit...")
+        print(f"[WAITING] Waiting for {os.getenv('KIMI_MODEL', 'kimi-k2.5')} Audit...")
         result = call_kimi_api(prompt)
 
     print("\n" + "="*40)
     if result.strip().upper() == "PASS":
-        print("✅ AiLint PASSED. You may now `git commit`.")
+        print("[PASS] AiLint PASSED. You may now `git commit`.")
         sys.exit(0)
     else:
-        print("🚨 [River Project] POTENTIAL ARCHITECTURAL VIOLATIONS DETECTED:\n")
+        print("[ALERT] [River Project] POTENTIAL ARCHITECTURAL VIOLATIONS DETECTED:\n")
         print(result)
         print("\n" + "="*40)
-        print("⚠️  IMPORTANT - REVIEW CAREFULLY:")
+        print("[WARNING] IMPORTANT - REVIEW CAREFULLY:")
         print("   The AI may flag false positives for:")
         print("   • Model.clean() and Form.clean() methods (these are VALIDATION, not business logic)")
         print("   • Field definitions and widget configurations")
         print("   • Import statements")
         print("   • Type hints that ARE present")
         print("\n   If violations appear incorrect, review the actual code before fixing.")
-        print("👉 If legitimate violations exist, feed them to your Dev AI before committing.")
+        print(">>> If legitimate violations exist, feed them to your Dev AI before committing.")
         sys.exit(1)
 
 if __name__ == "__main__":
