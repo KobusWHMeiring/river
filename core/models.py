@@ -30,7 +30,7 @@ class TaskType(models.Model):
         help_text="Material Symbols icon name (e.g., 'delete_sweep', 'grass', 'forest')"
     )
     color_class = models.CharField(
-        max_length=50,
+        max_length=150,
         default='bg-slate-50 text-slate-600 border-slate-100',
         help_text="Tailwind CSS classes for styling (e.g., 'bg-amber-50 text-amber-600 border-amber-100')"
     )
