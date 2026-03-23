@@ -170,9 +170,15 @@
                                 <div class="flex-1 space-y-3">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-3">
+                                            {% if visit.section %}
                                             <a href="{% url 'section_detail' visit.section.pk %}" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border transition-all" style="background-color: {{ visit.section.color_code }}10; border-color: {{ visit.section.color_code }}30; color: {{ visit.section.color_code }};">
                                                 {{ visit.section.name }}
                                             </a>
+                                            {% else %}
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-slate-200 text-slate-400">
+                                                General
+                                            </span>
+                                            {% endif %}
                                             {% if visit.task %}
                                             <span class="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
                                                 <span class="material-symbols-outlined text-xs">assignment_turned_in</span> Planned
