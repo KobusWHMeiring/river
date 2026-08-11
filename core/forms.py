@@ -161,10 +161,11 @@ class TaskForm(forms.ModelForm):
 class VisitLogForm(forms.ModelForm):
     class Meta:
         model = VisitLog
-        fields = ['task', 'section', 'date', 'notes']
+        fields = ['task', 'section', 'date', 'notes', 'participant_count']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
+            'participant_count': forms.NumberInput(attrs={'min': 0}),
         }
     
     def __init__(self, *args, **kwargs):
