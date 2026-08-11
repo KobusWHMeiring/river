@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>River — Planner Insights & Gap Analysis</title>
+<style>
+  :root {
+    --green: #166534; --green-bg: #dcfce7; --green-border: #86efac;
+    --amber: #92400e; --amber-bg: #fef3c7; --amber-border: #fcd34d;
+    --red: #991b1b; --red-bg: #fee2e2; --red-border: #fca5a5;
+    --blue: #1e40af; --blue-bg: #dbeafe; --blue-border: #93c5fd;
+    --slate: #475569; --slate-bg: #f1f5f9;
+    --bg: #fafafa; --card: #fff; --text: #1e293b; --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  h1 { font-size: 2rem; color: var(--green); border-bottom: 3px solid var(--green); padding-bottom: 0.5rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.3rem; color: var(--blue); margin-top: 2.5rem; margin-bottom: 1rem; }
+  h3 { font-size: 1rem; color: var(--slate); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+  /* KPI cards */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1.5rem 0; }
+  .kpi { background: var(--card); border-radius: 10px; padding: 1.25rem; border: 1px solid #e2e8f0; text-align: center; }
+  .kpi .num { font-size: 2rem; font-weight: 700; }
+  .kpi .lbl { font-size: 0.78rem; color: var(--muted); margin-top: 0.25rem; }
+  .kpi.red .num { color: var(--red); }
+  .kpi.amber .num { color: var(--amber); }
+  .kpi.blue .num { color: var(--blue); }
+  .kpi.green .num { color: var(--green); }
+
+  /* Comparison table */
+  .compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .compare .col { background: var(--card); border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; }
+  .compare .col h4 { font-size: 0.95rem; margin-bottom: 0.75rem; }
+  .compare table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+  .compare td { padding: 0.4rem 0; border-bottom: 1px solid #f1f5f9; }
+  .compare td:last-child { text-align: right; font-weight: 600; }
+
+  /* Insight callouts */
+  .callout { border-left: 4px solid; padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 0.75rem 0; font-size: 0.9rem; }
+  .callout.red { background: var(--red-bg); border-color: var(--red); }
+  .callout.amber { background: var(--amber-bg); border-color: var(--amber); }
+  .callout.blue { background: var(--blue-bg); border-color: var(--blue); }
+
+  /* Proposal cards */
+  .proposal { background: var(--card); border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  .proposal .tag { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; text-transform: uppercase; margin-right: 0.5rem; }
+  .tag-vis { background: var(--blue-bg); color: var(--blue); }
+  .tag-fric { background: var(--amber-bg); color: var(--amber); }
+  .proposal h4 { font-size: 1rem; margin: 0.5rem 0 0.25rem; }
+  .proposal p { font-size: 0.85rem; color: var(--muted); }
+
+  /* Data section */
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--card); border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+  table.data th { background: var(--green); color: #fff; padding: 0.6rem 0.75rem; text-align: left; font-size: 0.78rem; text-transform: uppercase; }
+  table.data td { padding: 0.5rem 0.75rem; border-top: 1px solid #f1f5f9; }
+  table.data tr:hover { background: #f8fafc; }
+
+  /* Questions */
+  .question { background: var(--blue-bg); border: 1px solid var(--blue-border); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; }
+  .question h3 { margin-top: 0; }
+
+  @media (max-width: 700px) {
+    body { padding: 1rem; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .compare { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>📊 River Planner — Insights &amp; Gap Analysis</h1>
+<p class="subtitle">
+  <strong>Date:</strong> 2026-08-11 &nbsp;|&nbsp;
+  <strong>Data pulled from:</strong> Production database &nbsp;|&nbsp;
+  <strong>Prepared for:</strong> Sarah
+</p>
+
+<p style="margin-bottom:1.5rem; font-size:0.9rem; color: var(--muted);">
+  Hi Sarah! We pulled the production data to understand how the planner is being used. 
+  The export feature you requested (item #6) is built — but looking at the data raised some 
+  bigger questions we&rsquo;d like your input on before diving into the next features. 
+  <strong>This is not a list of things to fix — it&rsquo;s a conversation starter.</strong>
+</p>
+
+<!-- ═══════════ KPI HEADLINE ═══════════ -->
+<div class="kpi-grid">
+  <div class="kpi red">
+    <div class="num">9.2%</div>
+    <div class="lbl">All-time completion rate<br>(29 of 316 tasks)</div>
+  </div>
+  <div class="kpi amber">
+    <div class="num">133</div>
+    <div class="lbl">Days with tasks planned<br>but zero visit logs</div>
+  </div>
+  <div class="kpi blue">
+    <div class="num">3 weeks</div>
+    <div class="lbl">Since last visit log<br>(July 22 → today)</div>
+  </div>
+  <div class="kpi green">
+    <div class="num">11 sections</div>
+    <div class="lbl">Active river sections<br>in the system</div>
+  </div>
+</div>
+
+<!-- ═══════════ MONTH COMPARISON ═══════════ -->
+<h2>July vs August at a Glance</h2>
+
+<div class="compare">
+  <div class="col">
+    <h4>July 2026</h4>
+    <table>
+      <tr><td>Tasks planned</td><td>42</td></tr>
+      <tr><td>Completed</td><td style="color:var(--amber)">5 (11.9%)</td></tr>
+      <tr><td>Visit logs</td><td>5</td></tr>
+      <tr><td>Team tasks</td><td>21</td></tr>
+      <tr><td>Manager tasks</td><td>16</td></tr>
+      <tr><td>Chair tasks</td><td>5</td></tr>
+    </table>
+  </div>
+  <div class="col">
+    <h4>August 2026 (so far)</h4>
+    <table>
+      <tr><td>Tasks planned</td><td>17</td></tr>
+      <tr><td>Completed</td><td style="color:var(--red)">0 (0%)</td></tr>
+      <tr><td>Visit logs</td><td>0</td></tr>
+      <tr><td>Team tasks</td><td>6</td></tr>
+      <tr><td>Manager tasks</td><td>9</td></tr>
+      <tr><td>Chair tasks</td><td>2</td></tr>
+    </table>
+  </div>
+  <div class="col">
+    <h4>All Time</h4>
+    <table>
+      <tr><td>Tasks planned</td><td>316</td></tr>
+      <tr><td>Completed</td><td style="color:var(--red)">29 (9.2%)</td></tr>
+      <tr><td>Visit logs</td><td>30</td></tr>
+      <tr><td>Linked to task</td><td>28</td></tr>
+      <tr><td>Unplanned logs</td><td>2</td></tr>
+      <tr><td>Date range</td><td>Jan–Sep 2026</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════ WHAT THE DATA SAYS ═══════════ -->
+<h2>Three Patterns We Noticed</h2>
+
+<div class="callout red">
+  <strong>① Tasks are planned but rarely completed.</strong><br>
+  Only 29 of 316 planned tasks were ever marked done. 133 days had planned tasks on the calendar 
+  but zero visit logs were created on those days. The planner is being used as a wishlist, not a 
+  work-tracking tool.
+</div>
+
+<div class="callout amber">
+  <strong>② Almost all logging goes through tasks — but that adds friction.</strong><br>
+  28 of 30 visit logs are linked to a pre-existing task. Only 2 logs were created "unplanned" 
+  from the New Log button. This means the team is creating tasks just to log work, or not logging 
+  at all if there&rsquo;s no task. The Quick Log feature (already on the backlog) could help.
+</div>
+
+<div class="callout blue">
+  <strong>③ Admin dominates the planner, field work is underrepresented.</strong><br>
+  In August: 10 admin tasks vs 3 weeding, 2 planting, 1 litter run. In July: 16 admin vs 19 
+  field tasks combined. Either admin genuinely consumes most time, or field tasks aren&rsquo;t 
+  being entered into the planner.
+</div>
+
+<!-- ═══════════ SECTION BREAKDOWN ═══════════ -->
+<h2>Section Activity — August 2026</h2>
+<table class="data">
+  <thead>
+    <tr><th>Section</th><th>Tasks Planned</th><th>Completed</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Rosebank</td><td>4</td><td>0</td><td>—</td></tr>
+    <tr><td>Observatory Wetland</td><td>2</td><td>0</td><td>—</td></tr>
+    <tr><td>Rondebosch</td><td>1</td><td>0</td><td>—</td></tr>
+    <tr><td>Mowbray</td><td>1</td><td>0</td><td>—</td></tr>
+    <tr><td>Fynbos Snake</td><td>1</td><td>0</td><td>—</td></tr>
+    <tr><td style="color:var(--muted)">6 other sections</td><td style="color:var(--muted)">0</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">No tasks planned</td></tr>
+  </tbody>
+</table>
+
+<p style="font-size:0.82rem; color: var(--muted); margin-top: 0.5rem;">
+  In July, Observatory Wetland had 7 tasks planned (the most of any section) with 0 completed.
+  Rosebank had the most tasks in August (4) — is that section a priority right now?
+</p>
+
+<!-- ═══════════ PROPOSED APPROACHES ═══════════ -->
+<h2>Proposed Ideas to Address the Gaps</h2>
+<p style="font-size:0.88rem; color: var(--muted); margin-bottom: 1rem;">
+  These are <strong>not commitments</strong> — they&rsquo;re starting points to discuss. 
+  Which of these would actually change how the team uses the app?
+</p>
+
+<div class="proposal">
+  <span class="tag tag-vis">Visibility</span>
+  <h4>A. Planner Health Indicator</h4>
+  <p>Add a simple counter at the top of the planner and dashboard: <em>"This week: 8 tasks planned, 2 completed, 3 logs recorded."</em> 
+  Makes the planning-to-execution gap visible without changing how anyone works. No new workflow — just a number.</p>
+</div>
+
+<div class="proposal">
+  <span class="tag tag-vis">Visibility</span>
+  <h4>B. Section Activity Staleness</h4>
+  <p>On the sections list and dashboard, show when each section was last active: <em>"Rosebank — last activity 22 July"</em>. 
+  Sections with no recent activity get a subtle amber highlight. Observatory Wetland with 7 planned, 0 done would be immediately visible.</p>
+</div>
+
+<div class="proposal">
+  <span class="tag tag-vis">Visibility</span>
+  <h4>C. Overdue Task Highlighting</h4>
+  <p>Tasks past their date that are still incomplete get a red/amber tint in the planner. A task from July sitting incomplete 
+  in August is invisible right now. This creates visual urgency without nagging.</p>
+</div>
+
+<div class="proposal">
+  <span class="tag tag-fric">Reduces Friction</span>
+  <h4>D. Quick Log from Planner (Jess&rsquo;s request)</h4>
+  <p>The New Log button already exists on the planner, but unplanned logs are rare (2 of 30). Should the Quick Log flow 
+  be simpler? Pre-fill the date from the planner view, skip the task selection step, and let the team log field work 
+  in one click.</p>
+</div>
+
+<div class="proposal">
+  <span class="tag tag-fric">Reduces Friction</span>
+  <h4>E. Tick-to-Complete on Planner (Your request #3)</h4>
+  <p>Complete a task directly from the planner with one click — no need to open a form, create a visit log, and mark 
+  it complete through three steps. A single ✓ on the planner card marks it done.</p>
+</div>
+
+<!-- ═══════════ QUESTIONS FOR SARAH ═══════════ -->
+<h2>Questions for You</h2>
+
+<div class="question">
+  <h3>1. Is the planner the right fit?</h3>
+  <p style="font-size:0.88rem; color: var(--muted);">
+    With 9.2% completion, we&rsquo;re wondering: is the weekly/monthly planner the right way to 
+    manage the team&rsquo;s work? Or does the way work actually happens (ad-hoc, weather-dependent, 
+    volunteer-driven) not fit a pre-planned calendar model? Would a simpler daily log-first approach 
+    work better — where field work is recorded <em>after</em> it happens, and the planner is secondary?
+  </p>
+</div>
+
+<div class="question">
+  <h3>2. What&rsquo;s happening with admin tasks?</h3>
+  <p style="font-size:0.88rem; color: var(--muted);">
+    59% of August&rsquo;s planned tasks are admin. Is that accurate — is admin genuinely half the 
+    workload? Or are admin tasks easier to plan (they have fixed dates) while field tasks happen 
+    spontaneously and don&rsquo;t make it onto the planner?
+  </p>
+</div>
+
+<div class="question">
+  <h3>3. Which friction point matters most?</h3>
+  <p style="font-size:0.88rem; color: var(--muted);">
+    We&rsquo;ve identified two types of friction: (a) the planner doesn&rsquo;t reflect reality 
+    — tasks are planned but not done, and (b) logging completed work takes too many steps. 
+    Would fixing the logging flow (Quick Log, tick-to-complete) actually increase how much 
+    work gets logged? Or is the real issue that work happens differently than how the planner expects?
+  </p>
+</div>
+
+<div class="question">
+  <h3>4. Do you want more visibility, or less friction?</h3>
+  <p style="font-size:0.88rem; color: var(--muted);">
+    Items A–C are pure visibility — they surface what&rsquo;s already in the data. Items D–E 
+    change how people interact with the app. Which direction should we invest in first? 
+    Or should we do one of each?
+  </p>
+</div>
+
+<p style="font-size:0.78rem; color: var(--muted); margin-top: 3rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+  Generated from production data via <code>sync_from_prod.py</code> on 2026-08-11. 
+  Raw data available in the planner export at <code>/export/planner/</code>.
+</p>
+
+</div>
+</body>
+</html>

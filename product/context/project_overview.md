@@ -1,6 +1,6 @@
 # Project Overview: Liesbeek River Rehabilitation Management System
 
-**Last Updated:** 2026-02-19
+**Last Updated:** 2026-08-11
 
 ## 1. Project Purpose
 
@@ -8,13 +8,14 @@ A comprehensive web-based management system for coordinating river rehabilitatio
 
 ## 2. Current State Summary
 
-The application is **feature-complete for core functionality** with a solid foundation for future enhancements. All critical features from the initial backlog have been implemented and are operational.
+The application is **in active production use** by a small field operations team. All core features from the initial backlog have been implemented and are operational. The current focus is on foundation stabilization (documentation, enforcement, logging, performance budgets) before tackling the next wave of user-facing features.
 
 ### Application Status
 - **Core Features:** ✅ Complete
 - **Database:** Populated with real-world task templates (19 templates) and example sections (8 sections)
-- **Testing:** Comprehensive test coverage for monthly and dashboard views
-- **Deployment:** Production-ready with deployment scripts configured
+- **Testing:** Unit test coverage for monthly and dashboard views; Playwright E2E planned
+- **Deployment:** Live in production with deployment scripts configured
+- **Production Feedback:** First week of real-world use captured in `backlog_v1.md`
 
 ## 3. Tech Stack
 
@@ -73,6 +74,33 @@ The application is **feature-complete for core functionality** with a solid foun
 - **Lifecycle History:** Track section stage transitions over time
 - **Historical Log:** Timestamped record of all stage changes
 - **Timeline Visualization:** View progress through rehabilitation phases
+
+### ✅ Multi-Day Task Series
+- **Date Ranges:** Tasks can span multiple days via start/end dates
+- **Bulk Creation:** Tasks auto-generated for each day in the range
+- **Group Tracking:** Linked via shared `group_id` UUID
+
+### ✅ Data Export
+- **Excel Export:** Multi-sheet Excel workbook export
+- **Sections + Tasks:** Separate sheets for sections and tasks data
+- **Dashboard Integration:** Export accessible from dashboard
+
+### ✅ Rolling To-Do List (Kanban)
+- **Drag-and-Drop:** Kanban board with To Do / In Progress / Done columns
+- **Position Tracking:** Integer-based position re-indexing for ordering
+- **Global View:** Tasks not tied to specific dates or sections
+
+### ✅ Chairperson Role
+- **Role Support:** Chairperson assignee type alongside Team and Manager
+- **Planner Integration:** Chairperson-specific rows in weekly/monthly planners
+
+### ✅ Mobile Responsive
+- **Responsive Layout:** All views adapt to mobile screen sizes
+- **Touch-Friendly:** Kanban drag-and-drop and form controls work on mobile
+
+### ✅ Redirect Context Preservation
+- **next Parameter:** Redirect context preserved across form validation cycles
+- **Form Errors:** Users return to correct view after correcting validation errors
 
 ## 5. Data Model Overview
 
@@ -147,13 +175,20 @@ Photo (Visual Documentation)
 
 ## 8. Remaining Backlog
 
-The following features have been identified for future development:
+The following features are planned for upcoming sprints. See `product/backlog.md` for the authoritative, prioritized list.
 
-### Pending Features
-1. **Enhanced Weeding Data Capture** - Implement removal interface mirroring planting interface (species tracking)
-2. **Time-Stamped Stage Tracking Visualization** - Complete timeline visualization for section stage history
+### Next Sprint (from `progress_log.json`)
+1. **Playwright E2E Testing** — End-to-end integration tests for complex UI flows (planners, modals, Kanban)
+2. **Enhanced Weeding Data Capture** — Species-specific removal tracking mirroring the planting interface
+3. **Stage Tracking Visualization** — Polished timeline visualization for section stage history
 
-**Note:** Many items from the original backlog have been completed and moved to `product/Done/`.
+### Production Feedback (from Jess, via `backlog_v1.md`)
+- Quick Log from Planner — Log unplanned activities without navigating away
+- Participant count on Impact Dashboard
+- Tick-to-complete on planner tasks
+- Typeable litter bag counts on dashboard
+- Planner activity reflected in section/lifecycle boxes
+- Export planner to Excel
 
 ## 9. File Structure Overview
 
@@ -179,12 +214,15 @@ river/
 └── templates/                 # Base templates
 ```
 
-## 10. Next Steps
+## 10. Current Sprint (2026-08-11)
 
-1. **Testing:** Continue expanding test coverage (currently have monthly and dashboard tests)
-2. **Documentation:** Keep product documentation updated as features evolve
-3. **Enhancement:** Review refinement folder for UX improvements
-4. **Future Features:** Select from backlog for next development phase
+**Foundation Stabilization Sprint** — see `product/context/prinicples/consolidated-sprint-plan.html` for the full plan.
+
+1. **Context Hygiene:** Refresh docs, register in composing-context, clean up backlog
+2. **Code Quality:** Fix `save()` in loop → `bulk_create()`, add `@transaction.atomic`
+3. **Bug Fix:** Kanban to-do items snapping back from Done
+4. **Ops:** `sync_from_prod.py` management command for pulling production DB
+5. **Enforcement:** `.select_related()` on list views, performance budgets, structured logging
 
 ---
 

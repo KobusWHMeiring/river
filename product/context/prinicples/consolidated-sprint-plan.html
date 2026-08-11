@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>River Project — Consolidated Foundation Sprint Plan</title>
+<style>
+  :root {
+    --green: #1a7a3a; --green-bg: #e8f5e9; --green-border: #a5d6a7;
+    --amber: #e65100; --amber-bg: #fff3e0; --amber-border: #ffcc80;
+    --red: #b71c1c; --red-bg: #ffebee; --red-border: #ef9a9a;
+    --blue: #1565c0; --blue-bg: #e3f2fd; --blue-border: #90caf9;
+    --gray: #455a64; --gray-bg: #eceff1;
+    --bg: #fafafa; --card: #fff; --text: #263238; --muted: #607d8b; --border: #cfd8dc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  h1 { font-size: 2rem; color: var(--green); border-bottom: 3px solid var(--green); padding-bottom: 0.5rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.4rem; color: var(--blue); margin-top: 2.5rem; margin-bottom: 0.75rem; padding-bottom: 0.2rem; border-bottom: 2px solid var(--blue-border); }
+  h3 { font-size: 1.1rem; color: var(--gray); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+  .phase { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .phase h3 { margin-top: 0; display: flex; align-items: center; gap: 0.5rem; }
+  .phase h3 .tag { font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 4px; text-transform: uppercase; font-weight: 700; }
+  .tag-p0 { background: var(--red-bg); color: var(--red); }
+  .tag-p1 { background: var(--amber-bg); color: var(--amber); }
+  .tag-p2 { background: var(--blue-bg); color: var(--blue); }
+
+  .task { display: grid; grid-template-columns: 1fr 100px 80px; gap: 1rem; padding: 0.75rem 0; border-top: 1px solid var(--border); align-items: start; }
+  .task:first-of-type { border-top: none; }
+  .task .desc { font-size: 0.9rem; }
+  .task .desc strong { display: block; margin-bottom: 0.15rem; }
+  .task .desc .files { font-size: 0.78rem; color: var(--muted); font-family: 'Cascadia Code', 'Fira Code', monospace; }
+  .task .effort { font-size: 0.82rem; color: var(--muted); text-align: right; align-self: center; }
+  .task .risk { text-align: right; align-self: center; }
+  .risk-lo { color: var(--green); font-weight: 600; font-size: 0.82rem; }
+  .risk-md { color: var(--amber); font-weight: 600; font-size: 0.82rem; }
+  .risk-hi { color: var(--red); font-weight: 600; font-size: 0.82rem; }
+
+  .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 2rem 0; }
+  .strip-card { background: var(--card); border-radius: 8px; padding: 1rem; text-align: center; border: 1px solid var(--border); }
+  .strip-card .num { font-size: 2.2rem; font-weight: 700; }
+  .strip-card .lbl { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .goal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .goal-card { background: var(--card); border-radius: 8px; padding: 1.25rem; border: 1px solid var(--border); }
+  .goal-card h4 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .goal-card p { font-size: 0.85rem; color: var(--muted); }
+
+  .deps { font-size: 0.78rem; color: var(--amber); font-style: italic; }
+
+  .done { text-decoration: line-through; color: var(--muted); }
+
+  .note { background: var(--blue-bg); border-left: 4px solid var(--blue); padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 1rem 0; font-size: 0.88rem; }
+  .warn { background: var(--amber-bg); border-left: 4px solid var(--amber); padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 1rem 0; font-size: 0.88rem; }
+
+  @media (max-width: 800px) {
+    body { padding: 1rem; }
+    .summary-strip { grid-template-columns: repeat(2, 1fr); }
+    .goal-grid { grid-template-columns: 1fr; }
+    .task { grid-template-columns: 1fr; }
+    .task .effort, .task .risk { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🏗️ River Project — Foundation Stabilization Sprint</h1>
+<p class="subtitle">
+  <strong>Date:</strong> 2026-08-11 &nbsp;|&nbsp;
+  <strong>Duration:</strong> ~2 days &nbsp;|&nbsp;
+  <strong>Goal:</strong> Stabilize foundations, close quality gaps, prepare for feature work
+  <br><strong>Sources:</strong> Composing Context Skill &middot; Abseil-vs-Build-Principles &middot; Homtini ArchGuard &middot; Homtini Performance Suite
+</p>
+
+<!-- ─── GOALS ─── -->
+<div class="goal-grid">
+  <div class="goal-card">
+    <h4>🧹 Stabilize Foundations</h4>
+    <p>Fix stale context docs, register River in composing-context skill, create ADR directory, regenerate CURRENT_STATE.md.</p>
+  </div>
+  <div class="goal-card">
+    <h4>📋 Add Enforcement</h4>
+    <p>Codify Abseil-derived performance principles, add deterministic ArchGuard scanning, add per-endpoint query budgets.</p>
+  </div>
+  <div class="goal-card">
+    <h4>📊 Improve Logging/Uptime</h4>
+    <p>Structured logging config, Sentry integration, request ID middleware, log-guard in loops, known-issues tracking.</p>
+  </div>
+</div>
+
+<!-- ─── SUMMARY ─── -->
+<div class="summary-strip">
+  <div class="strip-card"><div class="num" style="color:var(--red)">5</div><div class="lbl">P0 Tasks (Today)</div></div>
+  <div class="strip-card"><div class="num" style="color:var(--amber)">7</div><div class="lbl">P1 Tasks (Tomorrow)</div></div>
+  <div class="strip-card"><div class="num" style="color:var(--blue)">4</div><div class="lbl">P2 Tasks (Later)</div></div>
+  <div class="strip-card"><div class="num" style="color:var(--green)">~12h</div><div class="lbl">Total Estimated Effort</div></div>
+</div>
+
+<!-- ═══════════════════ PHASE 0 ═══════════════════ -->
+<div class="phase">
+  <h3><span class="tag tag-p0">P0</span> Phase 0 — Context Hygiene &amp; Compliance (Today, ~2.5h)</h3>
+  <p style="color:var(--muted); font-size:0.85rem; margin-bottom:1rem;">
+    Fix what's stale. Register the project. Codify what we learned from Abseil. Fix known violations.
+    <strong>No behavioral changes to the application.</strong>
+  </p>
+
+  <div class="task">
+    <div class="desc">
+      <strong>0.1 Register River in Composing-Context Skill</strong>
+      Add a "River" routing table to <code>C:\Users\Kobus Meiring\.agents\skills\composing-context\SKILL.md</code> with task signals, modes, sub-skills, and first docs matching the existing Harvester/Homtini patterns.
+      <div class="files">composing-context/SKILL.md</div>
+    </div>
+    <div class="effort">10 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>0.2 Refresh project_overview.md</strong>
+      Update "Current State Summary" and "Completed Features" to include: Chairperson role, Multi-day tasks, Excel Export, Rolling To-Do list, Mobile responsive, Redirect context fix. Update "Remaining Backlog" to match <code>progress_log.json</code> next_three_steps.
+      <div class="files">product/context/project_overview.md</div>
+    </div>
+    <div class="effort">20 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>0.3 Clean Up backlog.md + Consolidate backlog_v1.md</strong>
+      Archive all completed features from main backlog. Merge remaining items from <code>backlog_v1.md</code>. Mark items in progress (Quick Log, Multi-Day, Export, Rolling To-Do) with their actual status. The authoritative backlog should be one file.
+      <div class="files">product/backlog.md, product/backlog_v1.md</div>
+    </div>
+    <div class="effort">15 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>0.4 Add §VI Performance Patterns to build_principles.md</strong>
+      Six new principles from the Abseil cross-pollination analysis:
+      <br>① Bulk Over Loop — never <code>.save()</code> in a loop (→ RU-013)
+      <br>② Use <code>.only()</code>/<code>.defer()</code> for list contexts (→ Abseil S2)
+      <br>③ Prefer <code>.values()</code>/<code>.values_list()</code> for read-only rendering (→ Abseil S3)
+      <br>④ Guard log calls in loops with <code>isEnabledFor()</code> (→ RU-014)
+      <br>⑤ Precompute once, pass via context (→ Abseil S5)
+      <br>⑥ Always <code>.select_related()</code> in list views (→ RU-005)
+      <br>Also: strengthen §II "Silent Errors" to include the logging guard.
+      <div class="files">product/context/build_principles.md</div>
+    </div>
+    <div class="effort">15 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>0.5 Fix create_task_series() — Replace .save() in Loop with bulk_create()</strong>
+      The one confirmed RU-013 violation. Audit Task model for signal handlers and custom save() logic that <code>bulk_create()</code> would skip. Add <code>@transaction.atomic</code>. Update any callers. Run existing task series tests.
+      <div class="files">core/services/task_services.py, core/tests/test_task_series.py</div>
+    </div>
+    <div class="effort">45 min</div>
+    <div class="risk"><span class="risk-md">Med</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>0.6 Add @transaction.atomic to Multi-Write Paths</strong>
+      Audit <code>core/views.py</code> for <code>form_valid()</code> methods that save multiple related objects (VisitLog + Metrics + Photos). Add <code>with transaction.atomic():</code> to prevent partial writes on failure.
+      <div class="files">core/views.py (VisitLogCreateView, VisitLogUpdateView)</div>
+    </div>
+    <div class="effort">20 min</div>
+    <div class="risk"><span class="risk-lo">Low</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>0.7 Regenerate CURRENT_STATE.md</strong>
+      Run <code>python summarise.py</code> to refresh the auto-generated codebase summary.
+      <div class="files">product/context/CURRENT_STATE.md</div>
+    </div>
+    <div class="effort">1 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PHASE 1 ═══════════════════ -->
+<div class="phase">
+  <h3><span class="tag tag-p1">P1</span> Phase 1 — Enforcement &amp; Logging (Tomorrow, ~6h)</h3>
+  <p style="color:var(--muted); font-size:0.85rem; margin-bottom:1rem;">
+    Add deterministic enforcement of the principles we just codified. Set up structured logging.
+    Establish performance budgets. Create ADR trail.
+  </p>
+
+  <div class="task">
+    <div class="desc">
+      <strong>1.1 Add .select_related() to All List Views</strong>
+      Systematic audit of every view in <code>core/views.py</code>. For each view rendering lists with FK relations, add the appropriate <code>.select_related()</code> calls. Target views: SectionListView, WeeklyPlannerView, MonthlyPlannerView, DailyAgendaView, VisitLogListView, TaskTemplateListView, TaskTypeListView, SectionDetailView.
+      <div class="deps">⬅ Unlocks: 1.2 (Discovery will show lower numbers), 1.8 (fewer queries to budget)</div>
+      <div class="files">core/views.py</div>
+    </div>
+    <div class="effort">1.5 hr</div>
+    <div class="risk"><span class="risk-lo">Very Low</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>1.2 Run Performance Discovery</strong>
+      Create <code>core/tests/performance/test_discovery.py</code> and <code>conftest.py</code>. Hit all 12 critical endpoints, capture query counts. This gives you the real baseline for budget setting. Run after 1.1 to get post-optimization numbers.
+      <div class="deps">⬅ Depends on: 1.1</div>
+      <div class="files">core/tests/performance/conftest.py, core/tests/performance/test_discovery.py</div>
+    </div>
+    <div class="effort">30 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>1.3 Set Up Structured Logging</strong>
+      Add Django <code>LOGGING</code> dict to <code>settings.py</code> with console + rotating file handlers. Verify Sentry DSN integration works. Add request-ID middleware for log correlation across requests. Add <code>logger.isEnabledFor()</code> guard pattern to DEV prompt.
+      <div class="files">river/settings.py, river/middleware.py (new), product/prompts/DEV.md</div>
+    </div>
+    <div class="effort">2 hr</div>
+    <div class="risk"><span class="risk-md">Med</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>1.4 Add Type Hints to task_services.py</strong>
+      Add return type annotations to all public functions. Compliance with build_principles.md §II. Zero behavioral change — annotations only.
+      <div class="files">core/services/task_services.py</div>
+    </div>
+    <div class="effort">15 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>1.5 Create docs/adr/ Directory + Seed ADRs</strong>
+      Build principles mandate ADRs but the directory doesn't exist. Create it and seed with decisions from <code>progress_log.json</code> architectural_concerns: Lite GIS with JSONField, redirect context preservation, high-density monthly planner, Playwright for E2E, Kanban position re-indexing.
+      <div class="files">docs/adr/0001-lite-gis-jsonfield.md, 0002-redirect-context.md, 0003-high-density-planner.md, 0004-playwright-e2e.md, 0005-kanban-positioning.md</div>
+    </div>
+    <div class="effort">45 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>1.6 Create Budget Assertion Tests for 12 Endpoints</strong>
+      Use query counts from Discovery (1.2) to set initial budgets. One test per endpoint. All tests pass (budgets set from actuals). Creates the CI safety net.
+      <div class="deps">⬅ Depends on: 1.2</div>
+      <div class="files">core/tests/performance/test_budgets.py</div>
+    </div>
+    <div class="effort">45 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>1.7 Create Known Issues Tracker</strong>
+      If Discovery reveals any endpoints significantly over expected budget, add them to <code>known_issues.py</code> with cap (actual + 2), ticket reference, and a note. This makes technical debt visible and tracked.
+      <div class="deps">⬅ Depends on: 1.2</div>
+      <div class="files">core/tests/performance/known_issues.py</div>
+    </div>
+    <div class="effort">15 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>1.8 Archive/Update DEVELOPER_HANDOVER.md</strong>
+      Mark as superseded by <code>product/context/</code> docs. Either archive to <code>docs/archive/</code> or update to point to the context files as authoritative. Remove references to Bootstrap 5 and old URL patterns.
+      <div class="files">DEVELOPER_HANDOVER.md</div>
+    </div>
+    <div class="effort">10 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PHASE 2 ═══════════════════ -->
+<div class="phase">
+  <h3><span class="tag tag-p2">P2</span> Phase 2 — Advanced Enforcement &amp; Growth Tests (Next Sprint, ~7h)</h3>
+  <p style="color:var(--muted); font-size:0.85rem; margin-bottom:1rem;">
+    Adapt the ArchGuard engine. Add N+1 growth tests. Add query-count to CI. Add TOC to learnings.
+    These are high-value but can be deferred if feature work is urgent.
+  </p>
+
+  <div class="task">
+    <div class="desc">
+      <strong>2.1 Adapt ArchGuard Engine for River</strong>
+      Clone from <code>product/context/prinicples/archguard/</code>. Change SRC_ROOT to <code>core/</code>. Update path checks (<code>_is_in_views</code>, <code>_is_in_services</code>) for River's flat structure. Add River-specific exemptions (Leaflet CDN, hard deletes). Run in WARNING-only advisory mode. Add to <code>Makefile</code> or <code>lint.py</code> as a pre-AI deterministic pass.
+      <div class="deps">⬅ Depends on: 0.4 (principles must be codified first)</div>
+      <div class="files">scripts/archguard/ (new), lint.py</div>
+    </div>
+    <div class="effort">5 hr</div>
+    <div class="risk"><span class="risk-md">Med</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>2.2 Add N+1 Growth Tests</strong>
+      For 5 data-sensitive endpoints (Weekly Planner, Monthly Planner, Section List, Visit Log List, Dashboard), create tests that add bulk data and assert query count doesn't grow with data volume. Catches the silent N+1 degradations that code review misses.
+      <div class="deps">⬅ Depends on: 1.6</div>
+      <div class="files">core/tests/performance/test_n1_growth.py</div>
+    </div>
+    <div class="effort">1.5 hr</div>
+    <div class="risk"><span class="risk-lo">Low</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>2.3 Add Performance Tests to CI</strong>
+      Wire <code>pytest core/tests/performance/ --reuse-db -x</code> into CI pipeline. Performance budgets become gating. Fail the build if any endpoint exceeds budget.
+      <div class="deps">⬅ Depends on: 1.6</div>
+      <div class="files">.github/workflows/ (or equivalent CI config)</div>
+    </div>
+    <div class="effort">20 min</div>
+    <div class="risk"><span class="risk-lo">Low</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>2.4 Add Table of Contents to learnings.md</strong>
+      Current file is 58KB / 1,324 lines with no navigation. Add a TOC at the top with dated anchors. Group entries by domain (Django Patterns, Frontend, GIS, Performance, Debugging).
+      <div class="files">product/context/learnings.md</div>
+    </div>
+    <div class="effort">20 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+
+  <div class="task">
+    <div class="desc">
+      <strong>2.5 Update progress_log.json</strong>
+      After all P0/P1 tasks, update to reflect the sprint's completion. Move "Implement Playwright" from next_three_steps if we haven't started it, add ArchGuard adaptation and performance testing as completed infrastructure tasks.
+      <div class="files">progress_log.json</div>
+    </div>
+    <div class="effort">10 min</div>
+    <div class="risk"><span class="risk-lo">None</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ DEPENDENCY GRAPH ═══════════════════ -->
+<h2>Dependency Graph</h2>
+<div class="note">
+<pre style="font-size:0.82rem; line-height:1.8; overflow-x:auto;">
+P0 (parallel — no dependencies between items)
+├── 0.1 Register Composing Context Skill
+├── 0.2 Refresh project_overview.md
+├── 0.3 Clean up backlog.md
+├── 0.4 Add §VI Performance Patterns ────────────────→ 2.1 (ArchGuard needs codified principles)
+├── 0.5 Fix create_task_series() bulk_create
+├── 0.6 Add @transaction.atomic
+└── 0.7 Regenerate CURRENT_STATE.md
+
+P1 (sequential within, parallel across)
+├── 1.1 Add .select_related() to all list views ─────→ 1.2 (Discovery needs optimized baseline)
+├── 1.2 Run Performance Discovery ───────────────────→ 1.6, 1.7 (budgets + known issues)
+├── 1.3 Set Up Structured Logging
+├── 1.4 Add Type Hints to task_services.py
+├── 1.5 Create docs/adr/ + seed ADRs
+├── 1.6 Create Budget Assertion Tests ───────────────→ 2.2, 2.3 (N+1 growth + CI)
+├── 1.7 Create Known Issues Tracker
+└── 1.8 Archive/Update DEVELOPER_HANDOVER.md
+
+P2 (depends on P1 completions)
+├── 2.1 Adapt ArchGuard Engine ────────────────────── depends on 0.4
+├── 2.2 Add N+1 Growth Tests ──────────────────────── depends on 1.6
+├── 2.3 Add Performance Tests to CI ───────────────── depends on 1.6
+├── 2.4 Add TOC to learnings.md
+└── 2.5 Update progress_log.json ─────────────────── depends on all above
+</pre>
+</div>
+
+<!-- ═══════════════════ RISK REGISTER ═══════════════════ -->
+<h2>Risk Register</h2>
+
+<div class="phase">
+  <h3>Risk: bulk_create() Skips Model.save() Hooks</h3>
+  <div class="warn">
+    <strong>Severity:</strong> Medium &nbsp;|&nbsp; <strong>Task:</strong> 0.5 &nbsp;|&nbsp; <strong>Mitigation:</strong> Audit Task model for signal handlers and custom save() logic before switching. If post_save signals are critical, trigger them manually after bulk_create, or use transaction.atomic instead.
+  </div>
+
+  <h3>Risk: Structured Logging Leaks Sensitive Data</h3>
+  <div class="warn">
+    <strong>Severity:</strong> Medium &nbsp;|&nbsp; <strong>Task:</strong> 1.3 &nbsp;|&nbsp; <strong>Mitigation:</strong> Configure Sentry PII scrubbing. Review log messages for user data. Use Django's SensitivePostParameters in forms. Log at INFO level by default, DEBUG only in development.
+  </div>
+
+  <h3>Risk: ArchGuard False Positives Disrupt Workflow</h3>
+  <div class="warn">
+    <strong>Severity:</strong> Medium &nbsp;|&nbsp; <strong>Task:</strong> 2.1 &nbsp;|&nbsp; <strong>Mitigation:</strong> Run in WARNING-only advisory mode (exit 0) for the first sprint. Review every flagged item. Tune exemptions before promoting to gating ERROR.
+  </div>
+
+  <h3>Risk: Adding .select_related() Breaks Lazy-Loading Assumptions</h3>
+  <div class="warn">
+    <strong>Severity:</strong> Low &nbsp;|&nbsp; <strong>Task:</strong> 1.1 &nbsp;|&nbsp; <strong>Mitigation:</strong> select_related() is purely additive — it JOINs at query time. If a template accesses an FK that's NOT in select_related(), Django lazy-loads it as before. No breakage possible. Only risk is over-fetching unused columns (mitigate by only selecting the FK fields actually used in templates).
+  </div>
+
+  <h3>Risk: Performance Tests Flake on CI</h3>
+  <div class="warn">
+    <strong>Severity:</strong> Low &nbsp;|&nbsp; <strong>Task:</strong> 2.3 &nbsp;|&nbsp; <strong>Mitigation:</strong> Use <code>--reuse-db</code> for consistent test DB state. Set budgets with 2-query headroom above Discovery actuals. Known-issues suppression for endpoints that legitimately vary (export).
+  </div>
+</div>
+
+<!-- ═══════════════════ WHAT'S NOT IN SCOPE ═══════════════════ -->
+<h2>Explicitly Out of Scope (This Sprint)</h2>
+
+<div class="phase">
+  <table class="rules" style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+    <thead><tr><th style="text-align:left;padding:0.5rem 0;">Item</th><th style="text-align:left;padding:0.5rem 0;">Reason</th></tr></thead>
+    <tbody>
+      <tr><td style="padding:0.5rem 0;"><strong>Migrate existing views to services (RU-002)</strong></td><td style="padding:0.5rem 0;">High risk, limited benefit at current scale. Enforce on new code. Consider extracting shared query patterns without touching views.</td></tr>
+      <tr><td style="padding:0.5rem 0;"><strong>Add soft-deletes (RU-004)</strong></td><td style="padding:0.5rem 0;">Hard deletes are appropriate for River's domain. Don't add complexity you don't need.</td></tr>
+      <tr><td style="padding:0.5rem 0;"><strong>Remove Leaflet CDN (RU-007)</strong></td><td style="padding:0.5rem 0;">Mapping is a core feature. Self-hosting Leaflet adds maintenance burden. Exempt this CDN.</td></tr>
+      <tr><td style="padding:0.5rem 0;"><strong>Extract planner partials (RU-009)</strong></td><td style="padding:0.5rem 0;">High-density calendar grid is sensitive. Wait for Playwright E2E to catch visual regressions.</td></tr>
+      <tr><td style="padding:0.5rem 0;"><strong>New features (Playwright, Weeding, Stage Viz)</strong></td><td style="padding:0.5rem 0;">This sprint is foundations. The <code>next_three_steps</code> from progress_log are next sprint.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════ AFTER THIS SPRINT ═══════════════════ -->
+<h2>What You'll Have After This Sprint</h2>
+
+<div class="summary-strip" style="grid-template-columns: repeat(3, 1fr);">
+  <div class="strip-card" style="text-align:left;">
+    <div style="font-weight:700; color:var(--green); margin-bottom:0.5rem;">✅ Context Is Current</div>
+    <div style="font-size:0.82rem; color:var(--muted);">
+      • Composing-context routes River<br>
+      • project_overview.md refreshed<br>
+      • backlog.md cleaned up<br>
+      • CURRENT_STATE.md regenerated<br>
+      • ADR directory seeded<br>
+      • learnings.md has TOC
+    </div>
+  </div>
+  <div class="strip-card" style="text-align:left;">
+    <div style="font-weight:700; color:var(--amber); margin-bottom:0.5rem;">🔒 Principles Are Enforced</div>
+    <div style="font-size:0.82rem; color:var(--muted);">
+      • 6 new performance principles codified<br>
+      • bulk_create() replaces save-in-loop<br>
+      • @transaction.atomic on multi-writes<br>
+      • .select_related() on all list views<br>
+      • Type hints on all service functions<br>
+      • ArchGuard engine adapted (P2)
+    </div>
+  </div>
+  <div class="strip-card" style="text-align:left;">
+    <div style="font-weight:700; color:var(--blue); margin-bottom:0.5rem;">📊 Performance Is Measured</div>
+    <div style="font-size:0.82rem; color:var(--muted);">
+      • Structured logging active<br>
+      • 12 endpoints have query budgets<br>
+      • Discovery baseline captured<br>
+      • Known issues tracked with tickets<br>
+      • N+1 growth tests (P2)<br>
+      • CI gates query-count regressions (P2)
+    </div>
+  </div>
+</div>
+
+<div class="note" style="margin-top:1.5rem;">
+  <strong>Next sprint:</strong> With foundations stable, you can confidently tackle the <code>next_three_steps</code>
+  (Playwright E2E, Enhanced Weeding Data, Stage Tracking Visualization) knowing that context is current,
+  principles are enforced, and any performance regression will be caught by CI.
+</div>
+
+<p style="font-size:0.78rem; color:var(--muted); margin-top:2rem; border-top:1px solid var(--border); padding-top:1rem;">
+  <strong>Generated from:</strong>
+  <code>product/context/prinicples/abseil-vs-build-principles-comparison.html</code> &middot;
+  <code>product/context/prinicples/archguard/</code> &middot;
+  <code>product/context/prinicples/performance-testing.md</code> &middot;
+  <code>product/refinement/performance-testing-backlog.md</code> &middot;
+  <code>product/context/prinicples/river-archguard-assessment.html</code>
+</p>
+
+</div><!-- /container -->
+</body>
+</html>

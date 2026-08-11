@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planner Activity Indicators — Design Options</title>
+<style>
+  :root {
+    --litter: #ef4444; --litter-bg: #fef2f2;
+    --weed: #f59e0b;  --weed-bg: #fffbeb;
+    --plant: #22c55e; --plant-bg: #f0fdf4;
+    --admin: #6366f1; --admin-bg: #eef2ff;
+    --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #94a3b8;
+    --border: #e2e8f0; --primary: #166534;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; }
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  h1 { font-size: 1.8rem; color: var(--primary); margin-bottom: 0.25rem; }
+  .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 2rem; }
+
+  /* ── Layout: 3 columns for the 3 options ── */
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  @media (max-width: 1100px) { .options-grid { grid-template-columns: 1fr; } }
+
+  .option-col {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .option-col h2 {
+    font-size: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: #f1f5f9;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .option-col h2 .tag {
+    font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .tag-a { background: #dbeafe; color: #1d4ed8; }
+  .tag-b { background: #fce7f3; color: #be185d; }
+  .tag-c { background: #d1fae5; color: #047857; }
+
+  /* ── Mock Dashboard Sections ── */
+  .mock-section {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .mock-section:last-child { border-bottom: none; }
+  .mock-section h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .mock-section h3 .material-symbols-outlined { font-size: 1.1rem; }
+
+  /* ── Active Sections List ── */
+  .section-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.35rem;
+    transition: background 0.15s;
+  }
+  .section-row:hover { background: #f8fafc; }
+  .section-color-bar {
+    width: 4px; height: 36px; border-radius: 99px; flex-shrink: 0;
+  }
+  .section-info { flex: 1; min-width: 0; }
+  .section-info .name { font-size: 0.85rem; font-weight: 600; }
+  .section-info .meta { font-size: 0.72rem; color: var(--muted); }
+  .section-count {
+    font-size: 0.72rem; font-weight: 700; color: var(--muted);
+    background: #f1f5f9; padding: 0.15rem 0.5rem; border-radius: 4px;
+  }
+
+  /* ── INDICATOR STYLES ── */
+
+  /* Option A: Icon Row */
+  .indicator-icons {
+    display: flex; align-items: center; gap: 2px;
+  }
+  .indicator-icons .icn {
+    font-size: 0.95rem;
+    display: flex; align-items: center;
+  }
+  .icn-litter { color: var(--litter); }
+  .icn-weed   { color: var(--weed); }
+  .icn-plant  { color: var(--plant); }
+  .icn-admin  { color: var(--admin); }
+
+  /* Option B: Colored Dot Badges */
+  .indicator-dots {
+    display: flex; gap: 4px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 99px; flex-shrink: 0;
+  }
+  .dot-litter { background: var(--litter); }
+  .dot-weed   { background: var(--weed); }
+  .dot-plant  { background: var(--plant); }
+  .dot-admin  { background: var(--admin); }
+  .indicator-dots .dot-label {
+    font-size: 0.65rem; color: var(--muted); margin-left: 1px;
+  }
+
+  /* Option C: Compact Text Tags */
+  .indicator-tags {
+    display: flex; flex-wrap: wrap; gap: 3px;
+  }
+  .tag-sm {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    padding: 1px 5px; border-radius: 3px; letter-spacing: 0.03em;
+  }
+  .tag-litter { background: var(--litter-bg); color: var(--litter); }
+  .tag-weed   { background: var(--weed-bg);  color: var(--weed); }
+  .tag-plant  { background: var(--plant-bg); color: var(--plant); }
+  .tag-admin  { background: var(--admin-bg); color: var(--admin); }
+
+  /* ── Lifecycle Progress Boxes ── */
+  .stage-row {
+    margin-bottom: 0.85rem;
+  }
+  .stage-row .stage-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 0.3rem;
+  }
+  .stage-row .stage-header .label { color: var(--text); }
+  .stage-row .stage-header .count { color: var(--muted); }
+  .stage-bar {
+    height: 8px; background: #f1f5f9; border-radius: 99px; overflow: hidden;
+    margin-bottom: 0.25rem;
+  }
+  .stage-bar .fill { height: 100%; border-radius: 99px; }
+
+  /* Stage activity indicator variants */
+  .stage-activity-icons {
+    display: flex; gap: 2px; font-size: 0.82rem; margin-bottom: 4px;
+  }
+  .stage-activity-dots {
+    display: flex; gap: 4px; margin-bottom: 4px;
+  }
+  .stage-activity-tags {
+    display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 4px;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; gap: 1.25rem; margin: 1rem 0;
+    font-size: 0.72rem; align-items: center; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.35rem; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 99px; }
+  .legend-icon { font-size: 1rem; }
+
+  /* ── Comparison Table ── */
+  .comparison { margin-top: 2rem; }
+  .comparison h2 { font-size: 1.2rem; color: var(--primary); margin-bottom: 1rem; }
+  .comparison table {
+    width: 100%; border-collapse: collapse; font-size: 0.82rem;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .comparison th {
+    text-align: left; padding: 0.6rem 0.75rem;
+    background: #f1f5f9; font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--muted);
+  }
+  .comparison td { padding: 0.6rem 0.75rem; border-top: 1px solid var(--border); }
+  .comparison tr:first-child td { border-top: none; }
+  .check { color: #16a34a; font-weight: 700; }
+  .warn  { color: #d97706; }
+  .cross { color: #dc2626; }
+
+  .note {
+    background: #eff6ff; border-left: 4px solid #3b82f6;
+    padding: 0.75rem 1rem; border-radius: 0 6px 6px 0;
+    margin: 1rem 0; font-size: 0.82rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🌊 Planner Activity → Section/Lifecycle Indicators</h1>
+<p class="subtitle">
+  <strong>Feature #8</strong> &mdash; Sarah's request &middot;
+  Target: Dashboard &middot; Active Sections list + Lifecycle Progress bars
+  <br>Each option shows mock data for 5 sections across 4 task types this week.
+</p>
+
+<!-- Legend -->
+<div class="legend">
+  <span style="font-weight:600;font-size:0.78rem;margin-right:0.5rem;">Task types:</span>
+  <span class="legend-item"><span class="legend-icon" style="color:var(--litter)">🗑️</span> Litter Run</span>
+  <span class="legend-item"><span class="legend-icon" style="color:var(--weed)">🌿</span> Weeding</span>
+  <span class="legend-item"><span class="legend-icon" style="color:var(--plant)">🌱</span> Planting</span>
+  <span class="legend-item"><span class="legend-icon" style="color:var(--admin)">📋</span> Admin</span>
+</div>
+
+<!-- ═══════════════ OPTIONS ═══════════════ -->
+<div class="options-grid">
+
+  <!-- ── OPTION A: Icon Row ── -->
+  <div class="option-col">
+    <h2><span class="tag tag-a">Option A</span> Icon Row</h2>
+
+    <!-- Active Sections -->
+    <div class="mock-section">
+      <h3><span class="material-symbols-outlined">location_on</span> Active Sections</h3>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#ef4444;"></div>
+        <div class="section-info"><div class="name">Oakdale</div><div class="meta">Last visited 2 days ago</div></div>
+        <div class="indicator-icons">
+          <span class="icn icn-litter">🗑️</span>
+          <span class="icn icn-plant">🌱</span>
+        </div>
+        <div class="section-count">3</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#3b82f6;"></div>
+        <div class="section-info"><div class="name">Newlands</div><div class="meta">Last visited 5 days ago</div></div>
+        <div class="indicator-icons">
+          <span class="icn icn-plant">🌱</span>
+          <span class="icn icn-weed">🌿</span>
+          <span class="icn icn-litter">🗑️</span>
+        </div>
+        <div class="section-count">5</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#22c55e;"></div>
+        <div class="section-info"><div class="name">Bishopscourt</div><div class="meta">Last visited 1 day ago</div></div>
+        <div class="indicator-icons">
+          <span class="icn icn-plant">🌱</span>
+        </div>
+        <div class="section-count">2</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#6366f1;"></div>
+        <div class="section-info"><div class="name">Rondebosch</div><div class="meta">Last visited 12 days ago</div></div>
+        <div class="indicator-icons">
+          <span class="icn icn-litter">🗑️</span>
+          <span class="icn icn-admin">📋</span>
+        </div>
+        <div class="section-count">1</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#a855f7;"></div>
+        <div class="section-info"><div class="name">Claremont</div><div class="meta">Last visited 18 days ago</div></div>
+        <div class="indicator-icons">
+          <span class="icn icn-admin">📋</span>
+        </div>
+        <div class="section-count">1</div>
+      </div>
+    </div>
+
+    <!-- Lifecycle Progress -->
+    <div class="mock-section">
+      <h3><span class="material-symbols-outlined">leaderboard</span> Lifecycle Progress</h3>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Mitigation</span><span class="count">2 Sections</span></div>
+        <div class="stage-activity-icons">
+          <span class="icn icn-litter">🗑️</span>
+          <span class="icn icn-admin">📋</span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:25%;background:var(--litter);"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Clearing</span><span class="count">2 Sections</span></div>
+        <div class="stage-activity-icons">
+          <span class="icn icn-litter">🗑️</span>
+          <span class="icn icn-weed">🌿</span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:25%;background:#3b82f6;"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Planting</span><span class="count">3 Sections</span></div>
+        <div class="stage-activity-icons">
+          <span class="icn icn-plant">🌱</span>
+          <span class="icn icn-weed">🌿</span>
+          <span class="icn icn-litter">🗑️</span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:38%;background:var(--plant);"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Follow-up</span><span class="count">1 Section</span></div>
+        <div class="stage-activity-icons">
+          <span class="icn icn-weed">🌿</span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:12%;background:#10b981;"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OPTION B: Colored Dot Badges ── -->
+  <div class="option-col">
+    <h2><span class="tag tag-b">Option B</span> Colored Dots</h2>
+
+    <!-- Active Sections -->
+    <div class="mock-section">
+      <h3><span class="material-symbols-outlined">location_on</span> Active Sections</h3>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#ef4444;"></div>
+        <div class="section-info"><div class="name">Oakdale</div><div class="meta">Last visited 2 days ago</div></div>
+        <div class="indicator-dots">
+          <span class="dot dot-litter" title="Litter Run"></span>
+          <span class="dot dot-plant" title="Planting"></span>
+        </div>
+        <div class="section-count">3</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#3b82f6;"></div>
+        <div class="section-info"><div class="name">Newlands</div><div class="meta">Last visited 5 days ago</div></div>
+        <div class="indicator-dots">
+          <span class="dot dot-plant" title="Planting"></span>
+          <span class="dot dot-weed" title="Weeding"></span>
+          <span class="dot dot-litter" title="Litter Run"></span>
+        </div>
+        <div class="section-count">5</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#22c55e;"></div>
+        <div class="section-info"><div class="name">Bishopscourt</div><div class="meta">Last visited 1 day ago</div></div>
+        <div class="indicator-dots">
+          <span class="dot dot-plant" title="Planting"></span>
+        </div>
+        <div class="section-count">2</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#6366f1;"></div>
+        <div class="section-info"><div class="name">Rondebosch</div><div class="meta">Last visited 12 days ago</div></div>
+        <div class="indicator-dots">
+          <span class="dot dot-litter" title="Litter Run"></span>
+          <span class="dot dot-admin" title="Admin"></span>
+        </div>
+        <div class="section-count">1</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#a855f7;"></div>
+        <div class="section-info"><div class="name">Claremont</div><div class="meta">Last visited 18 days ago</div></div>
+        <div class="indicator-dots">
+          <span class="dot dot-admin" title="Admin"></span>
+        </div>
+        <div class="section-count">1</div>
+      </div>
+    </div>
+
+    <!-- Lifecycle Progress -->
+    <div class="mock-section">
+      <h3><span class="material-symbols-outlined">leaderboard</span> Lifecycle Progress</h3>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Mitigation</span><span class="count">2 Sections</span></div>
+        <div class="stage-activity-dots">
+          <span class="dot dot-litter"></span>
+          <span class="dot dot-admin"></span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:25%;background:var(--litter);"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Clearing</span><span class="count">2 Sections</span></div>
+        <div class="stage-activity-dots">
+          <span class="dot dot-litter"></span>
+          <span class="dot dot-weed"></span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:25%;background:#3b82f6;"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Planting</span><span class="count">3 Sections</span></div>
+        <div class="stage-activity-dots">
+          <span class="dot dot-plant"></span>
+          <span class="dot dot-weed"></span>
+          <span class="dot dot-litter"></span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:38%;background:var(--plant);"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Follow-up</span><span class="count">1 Section</span></div>
+        <div class="stage-activity-dots">
+          <span class="dot dot-weed"></span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:12%;background:#10b981;"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── OPTION C: Compact Text Tags ── -->
+  <div class="option-col">
+    <h2><span class="tag tag-c">Option C</span> Text Tags</h2>
+
+    <!-- Active Sections -->
+    <div class="mock-section">
+      <h3><span class="material-symbols-outlined">location_on</span> Active Sections</h3>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#ef4444;"></div>
+        <div class="section-info"><div class="name">Oakdale</div><div class="meta">Last visited 2 days ago</div></div>
+        <div class="indicator-tags">
+          <span class="tag-sm tag-litter">Litter</span>
+          <span class="tag-sm tag-plant">Plant</span>
+        </div>
+        <div class="section-count">3</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#3b82f6;"></div>
+        <div class="section-info"><div class="name">Newlands</div><div class="meta">Last visited 5 days ago</div></div>
+        <div class="indicator-tags">
+          <span class="tag-sm tag-plant">Plant</span>
+          <span class="tag-sm tag-weed">Weed</span>
+          <span class="tag-sm tag-litter">Litter</span>
+        </div>
+        <div class="section-count">5</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#22c55e;"></div>
+        <div class="section-info"><div class="name">Bishopscourt</div><div class="meta">Last visited 1 day ago</div></div>
+        <div class="indicator-tags">
+          <span class="tag-sm tag-plant">Plant</span>
+        </div>
+        <div class="section-count">2</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#6366f1;"></div>
+        <div class="section-info"><div class="name">Rondebosch</div><div class="meta">Last visited 12 days ago</div></div>
+        <div class="indicator-tags">
+          <span class="tag-sm tag-litter">Litter</span>
+          <span class="tag-sm tag-admin">Admin</span>
+        </div>
+        <div class="section-count">1</div>
+      </div>
+
+      <div class="section-row">
+        <div class="section-color-bar" style="background:#a855f7;"></div>
+        <div class="section-info"><div class="name">Claremont</div><div class="meta">Last visited 18 days ago</div></div>
+        <div class="indicator-tags">
+          <span class="tag-sm tag-admin">Admin</span>
+        </div>
+        <div class="section-count">1</div>
+      </div>
+    </div>
+
+    <!-- Lifecycle Progress -->
+    <div class="mock-section">
+      <h3><span class="material-symbols-outlined">leaderboard</span> Lifecycle Progress</h3>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Mitigation</span><span class="count">2 Sections</span></div>
+        <div class="stage-activity-tags">
+          <span class="tag-sm tag-litter">Litter</span>
+          <span class="tag-sm tag-admin">Admin</span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:25%;background:var(--litter);"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Clearing</span><span class="count">2 Sections</span></div>
+        <div class="stage-activity-tags">
+          <span class="tag-sm tag-litter">Litter</span>
+          <span class="tag-sm tag-weed">Weed</span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:25%;background:#3b82f6;"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Planting</span><span class="count">3 Sections</span></div>
+        <div class="stage-activity-tags">
+          <span class="tag-sm tag-plant">Plant</span>
+          <span class="tag-sm tag-weed">Weed</span>
+          <span class="tag-sm tag-litter">Litter</span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:38%;background:var(--plant);"></div></div>
+      </div>
+
+      <div class="stage-row">
+        <div class="stage-header"><span class="label">Follow-up</span><span class="count">1 Section</span></div>
+        <div class="stage-activity-tags">
+          <span class="tag-sm tag-weed">Weed</span>
+        </div>
+        <div class="stage-bar"><div class="fill" style="width:12%;background:#10b981;"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════ COMPARISON ═══════════════ -->
+<div class="comparison">
+  <h2>📊 Comparison</h2>
+  <table>
+    <thead>
+      <tr><th>Dimension</th><th>Option A: Icons</th><th>Option B: Dots</th><th>Option C: Tags</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Scan speed</strong></td>
+        <td class="check">Fast — emoji are recognizable</td>
+        <td class="check">Very fast — smallest visual weight</td>
+        <td class="warn">Medium — requires reading text</td>
+      </tr>
+      <tr>
+        <td><strong>Space efficiency</strong></td>
+        <td class="warn">Medium — full-size emoji chars</td>
+        <td class="check">Excellent — 8px dots</td>
+        <td class="warn">Low — text+bg padding per tag</td>
+      </tr>
+      <tr>
+        <td><strong>Accessibility</strong></td>
+        <td class="cross">Poor — emoji only, no text</td>
+        <td class="check">Good — title attributes provide text</td>
+        <td class="check">Best — readable text, color bonus</td>
+      </tr>
+      <tr>
+        <td><strong>Matches existing UI</strong></td>
+        <td class="check">Yes — planners use emoji icons</td>
+        <td class="warn">Sort of — new pattern for dashboard</td>
+        <td class="check">Yes — dashboard already uses colored badges</td>
+      </tr>
+      <tr>
+        <td><strong>When 3+ types active</strong></td>
+        <td class="warn">Row gets wide, may wrap</td>
+        <td class="check">Still compact, maybe 24px total</td>
+        <td class="cross">Tags wrap, takes vertical space</td>
+      </tr>
+      <tr>
+        <td><strong>Works on Lifecycle bars</strong></td>
+        <td class="check">Works well above bar</td>
+        <td class="check">Works well above bar</td>
+        <td class="warn">Cluttered at small scale</td>
+      </tr>
+      <tr>
+        <td><strong>Implementation</strong></td>
+        <td>TaskType.code → emoji map</td>
+        <td>TaskType.code → CSS class map</td>
+        <td>TaskType.code → label + color map</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note" style="margin-top:1rem;">
+    <strong>Recommendation:</strong> <strong>Option B (Colored Dots)</strong> for the Active Sections list — most space-efficient, works well when sections have many activity types, and accessible via title attributes. <strong>Option C (Text Tags)</strong> is a close second if accessibility is prioritized. Option A (Icon Row) is visually appealing but harder to parse at small sizes and poor for screen readers.
+  </div>
+</div>
+
+<!-- ═══════════════ EDGE CASES ═══════════════ -->
+<h2 style="margin-top:2rem; color: var(--primary);">🔍 Edge Cases & Open Questions</h2>
+
+<div class="note" style="margin-top:0.5rem;">
+  <strong>Still to resolve:</strong>
+  <ol style="margin:0.5rem 0 0 1.25rem; font-size:0.85rem; line-height:1.8;">
+    <li><strong>Tasks with no template:</strong> Skip them? Or show a generic "custom" dot? Likely skip — no type = nothing to indicate.</li>
+    <li><strong>Rolling to-do items:</strong> Exclude entirely — they have no date and aren't planner-scheduled.</li>
+    <li><strong>Completed tasks:</strong> Should completed tasks still show as indicators? Yes — the activity is still planned/scheduled even if done.</li>
+    <li><strong>Sections with zero tasks this week:</strong> Show nothing (empty indicator area) — consistent with "no activity to report."</li>
+    <li><strong>TaskType.code values that aren't litter_run/weeding/planting/admin:</strong> Future task types should gracefully show a neutral dot or be silently skipped.</li>
+    <li><strong>Lifecycle stages with no active sections:</strong> Show progress bar as usual, no activity indicators.</li>
+    <li><strong>Admin tasks on Lifecycle bars:</strong> Are admin tasks meaningful here? Probably skip admin and only show field task types (litter, weed, plant) on lifecycle bars.</li>
+  </ol>
+</div>
+
+<p style="font-size:0.75rem; color: var(--muted); margin-top:2rem; border-top:1px solid var(--border); padding-top:1rem;">
+  Generated 2026-08-11 &middot; River Project &middot; Feature #8 — Planner Activity Indicators
+</p>
+
+</div>
+</body>
+</html>

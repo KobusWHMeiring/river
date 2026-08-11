@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>River Project — ArchGuard Readiness Assessment &amp; Refactor Prioritization</title>
+<style>
+  :root {
+    --pass: #1b5e20; --pass-bg: #e8f5e9; --pass-border: #a5d6a7;
+    --fail: #b71c1c; --fail-bg: #ffebee; --fail-border: #ef9a9a;
+    --warn: #e65100; --warn-bg: #fff3e0; --warn-border: #ffcc80;
+    --na: #546e7a;   --na-bg: #eceff1;   --na-border: #b0bec5;
+    --info: #1565c0; --info-bg: #e3f2fd; --info-border: #90caf9;
+    --bg: #fafafa; --card-bg: #fff; --text: #263238; --text-muted: #607d8b; --border: #cfd8dc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; }
+  .container { max-width: 1300px; margin: 0 auto; }
+
+  h1 { font-size: 2rem; color: #1a7a3a; border-bottom: 3px solid #1a7a3a; padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.5rem; color: var(--info); margin-top: 2.5rem; margin-bottom: 1rem; padding-bottom: 0.25rem; border-bottom: 2px solid var(--info-border); }
+  h3 { font-size: 1.1rem; color: var(--na); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 1.5rem; }
+
+  /* Score banner */
+  .score-banner {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;
+  }
+  .score-card {
+    background: var(--card-bg); border-radius: 8px; padding: 1.25rem; text-align: center; border: 1px solid var(--border);
+  }
+  .score-card .num { font-size: 2.5rem; font-weight: 700; }
+  .score-card .label { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.25rem; }
+  .score-card.pass .num { color: var(--pass); }
+  .score-card.fail .num { color: var(--fail); }
+  .score-card.warn .num { color: var(--warn); }
+  .score-card.na .num { color: var(--na); }
+
+  /* Rule table */
+  table.rules { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 2rem; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table.rules thead th { background: #1a7a3a; color: #fff; padding: 0.75rem; text-align: left; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  table.rules tbody td { padding: 0.75rem; vertical-align: top; border-top: 1px solid var(--border); }
+  table.rules tbody tr:hover { background: #f5f5f5; }
+
+  .badge {
+    display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 4px; text-transform: uppercase; white-space: nowrap;
+  }
+  .badge-pass { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass-border); }
+  .badge-fail { background: var(--fail-bg); color: var(--fail); border: 1px solid var(--fail-border); }
+  .badge-warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+  .badge-na   { background: var(--na-bg); color: var(--na); border: 1px solid var(--na-border); }
+
+  .prio { float: right; font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: 3px; text-transform: uppercase; }
+  .prio-p0 { background: #b71c1c; color: #fff; }
+  .prio-p1 { background: #e65100; color: #fff; }
+  .prio-p2 { background: #f9a825; color: #263238; }
+  .prio-p3 { background: #cfd8dc; color: #455a64; }
+
+  /* Risk callout */
+  .risk { margin: 0.75rem 0; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; }
+  .risk-high { background: #ffebee; border-left: 4px solid #c62828; }
+  .risk-med  { background: #fff3e0; border-left: 4px solid #ef6c00; }
+  .risk-low  { background: #e8f5e9; border-left: 4px solid #2e7d32; }
+
+  .action-card {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .action-card h4 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--info); }
+
+  .summary-box { background: var(--card-bg); border: 2px solid #1a7a3a; border-radius: 8px; padding: 1.5rem; margin-top: 2rem; }
+  .summary-box h2 { margin-top: 0; border-bottom-color: #1a7a3a; }
+
+  .toc { margin-bottom: 2rem; }
+  .toc details { margin-bottom: 0.4rem; }
+  .toc summary { cursor: pointer; font-weight: 600; color: var(--info); }
+  .toc ol { padding-left: 1.5rem; font-size: 0.9rem; }
+  .toc li { margin-bottom: 0.15rem; }
+  .toc a { color: var(--info); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .gap-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 1rem 0; background: var(--card-bg); }
+  .gap-table th { background: var(--info-bg); color: var(--info); padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; font-size: 0.78rem; }
+  .gap-table td { padding: 0.5rem 0.75rem; border-top: 1px solid var(--border); vertical-align: top; }
+
+  .note { background: var(--info-bg); border-left: 4px solid var(--info); padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 1rem 0; font-size: 0.9rem; }
+
+  @media (max-width: 900px) {
+    body { padding: 1rem; }
+    .score-banner { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🏗️ River Project — ArchGuard Readiness Assessment</h1>
+<p class="subtitle">
+  Mapping Homtini's ArchGuard rule set against the River codebase to identify gaps, prioritize refactors,
+  and assess risks before stabilization work begins.
+  <br><strong>Date:</strong> 2026-08-11 &nbsp;|&nbsp;
+  <strong>Sources:</strong> Homtini ArchGuard (RU-001→RU-014) &nbsp;|&nbsp;
+  Abseil-vs-Build-Principles Analysis &nbsp;|&nbsp;
+  River <code>build_principles.md</code> + <code>lint.py</code>
+</p>
+
+<!-- ═══════════════════ TOC ═══════════════════ -->
+<div class="toc">
+<details open>
+<summary><strong>Table of Contents</strong></summary>
+<ol>
+  <li><a href="#scorecard">Scorecard Overview</a></li>
+  <li><a href="#archguard-explained">What Is ArchGuard?</a></li>
+  <li><a href="#rule-table">Rule-by-Rule Assessment</a></li>
+  <li><a href="#gap-analysis">Gap Analysis: What River Lacks</a></li>
+  <li><a href="#prioritization">Prioritized Action Plan</a></li>
+  <li><a href="#risks">Risk Assessment per Refactor</a></li>
+  <li><a href="#recommendations">Summary &amp; Recommendations</a></li>
+</ol>
+</details>
+</div>
+
+<!-- ═══════════════════ SCORECARD ═══════════════════ -->
+<h2 id="scorecard">1. Scorecard Overview</h2>
+
+<div class="score-banner">
+  <div class="score-card pass">
+    <div class="num">3</div>
+    <div class="label">Already Compliant</div>
+  </div>
+  <div class="score-card fail">
+    <div class="num">6</div>
+    <div class="label">Failing / Missing</div>
+  </div>
+  <div class="score-card warn">
+    <div class="num">3</div>
+    <div class="label">Partial / Implicit</div>
+  </div>
+  <div class="score-card na">
+    <div class="num">5</div>
+    <div class="label">Not Applicable</div>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Total rules assessed:</strong> 17 (RU-001 through RU-014 + 3 CSS/JS delegation rules).
+  River has a working <code>lint.py</code> (AI-based, not deterministic AST) and a hand-maintained
+  <code>build_principles.md</code>. It <em>does not</em> have the ArchGuard static analysis engine.
+</div>
+
+<!-- ═══════════════════ WHAT IS ARCHGUARD ═══════════════════ -->
+<h2 id="archguard-explained">2. What Is ArchGuard?</h2>
+
+<p>
+  ArchGuard is Homtini's <strong>deterministic, AST-based static analysis engine</strong> that enforces
+  Build Principles mechanically. It scans <code>src/</code> Python files, templates, and CSS/JS using
+  a plugin architecture of registered rules. Each rule is a standalone function decorated with
+  <code>@rule("RU-XXX", severity="ERROR"|"WARNING")</code> that returns <code>Violation</code> objects.
+</p>
+
+<h3>Architecture</h3>
+<table class="gap-table">
+  <thead>
+    <tr><th>Component</th><th>File</th><th>Role</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>CLI Entry</strong></td><td><code>__main__.py</code></td><td>Discovers rules, runs them, writes audit .md, exits 0/1</td></tr>
+    <tr><td><strong>Rule Registry</strong></td><td><code>rules/__init__.py</code></td><td><code>@rule()</code> decorator, <code>discover()</code> function</td></tr>
+    <tr><td><strong>Python Rules</strong></td><td><code>rules/python_ast.py</code></td><td>RU-001 through RU-014 — AST-walking checks</td></tr>
+    <tr><td><strong>Template Rules</strong></td><td><code>rules/templates.py</code></td><td>RU-007 (CDN), RU-009 (nesting depth)</td></tr>
+    <tr><td><strong>CSS/JS Rules</strong></td><td><code>rules/css_js.py</code></td><td>Delegates to external checker scripts</td></tr>
+    <tr><td><strong>Violation Model</strong></td><td><code>violation.py</code></td><td>Dataclass: rule_id, severity, category, file, line, message, snippet</td></tr>
+    <tr><td><strong>Audit Writer</strong></td><td><code>audit_writer.py</code></td><td>Writes <code>docs/audits/&lt;slug&gt;.md</code> with structured report</td></tr>
+    <tr><td><strong>Self-Tests</strong></td><td><code>tests/test_rules.py</code></td><td>Temp-project tests verifying each rule's detection</td></tr>
+  </tbody>
+</table>
+
+<h3>How It Differs From River's lint.py</h3>
+<table class="gap-table">
+  <thead>
+    <tr><th>Aspect</th><th>River <code>lint.py</code></th><th>Homtini ArchGuard</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Method</strong></td><td>AI API call (Kimi/Gemini) on staged diff</td><td>Deterministic AST pattern matching</td></tr>
+    <tr><td><strong>Scope</strong></td><td>Only staged git changes</td><td>Entire codebase (skipping migrations/tests)</td></tr>
+    <tr><td><strong>Cost</strong></td><td>API calls per run</td><td>Free, local</td></tr>
+    <tr><td><strong>Reliability</strong></td><td>Probabilistic — false positives common</td><td>Deterministic — no false positives</td></tr>
+    <tr><td><strong>Extensibility</strong></td><td>Prompt engineering</td><td>Add new Python functions</td></tr>
+    <tr><td><strong>Phase tracking</strong></td><td>None</td><td>Per-phase audit trail in <code>docs/audits/</code></td></tr>
+    <tr><td><strong>Self-testing</strong></td><td>None</td><td>Pytest suite verifying rules detect violations</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Key insight:</strong> River's <code>lint.py</code> and Homtini's ArchGuard are complementary, not competing.
+  <code>lint.py</code> catches <em>semantic</em> violations (business logic in wrong layer) that AST can't see.
+  ArchGuard catches <em>structural</em> violations (missing prefetch, save-in-loop) deterministically.
+  Together they'd give River defense-in-depth.
+</div>
+
+<!-- ═══════════════════ RULE TABLE ═══════════════════ -->
+<h2 id="rule-table">3. Rule-by-Rule Assessment</h2>
+
+<table class="rules">
+<thead>
+  <tr><th style="width:8%">Rule</th><th style="width:10%">Severity</th><th style="width:10%">Domain</th><th style="width:12%">River Status</th><th style="width:25%">What It Checks</th><th style="width:35%">River Assessment</th></tr>
+</thead>
+<tbody>
+
+<!-- RU-001 -->
+<tr>
+  <td><strong>RU-001</strong></td>
+  <td><span class="badge badge-fail">ERROR</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-warn">PARTIAL</span></td>
+  <td>Silenced exceptions — bare <code>except: pass</code></td>
+  <td>
+    <strong>Build principles mandate it</strong> (§II: "Never use bare <code>except: pass</code>"), and
+    <code>lint.py</code> prompts check for it. But there's <strong>no deterministic enforcement</strong> —
+    AI-based lint could miss a bare except in unstaged code. Existing code should be scanned.
+    <br><span style="color:var(--warn)">Risk: LOW</span> — adding an AST scan is ~20 lines.
+  </td>
+</tr>
+
+<!-- RU-002 -->
+<tr>
+  <td><strong>RU-002</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-fail">FAILING</span></td>
+  <td>Views touching Model.objects / .save() directly</td>
+  <td>
+    <strong>Major gap.</strong> River has only one service file (<code>core/services/task_services.py</code>).
+    All 25+ views hit the DB directly via <code>Task.objects.filter()</code>, <code>Section.objects.all()</code>,
+    etc. The <code>build_principles.md</code> §I says "Business logic must live in <code>services/</code>" but
+    this is almost entirely unenforced. The ArchGuard rule has sophisticated exemptions
+    (form.save(), serializer.save(), simple lookups, update_fields, setattr patterns).
+    <br><span style="color:var(--fail)">Risk: HIGH</span> — migrating views to services is a large refactor.
+  </td>
+</tr>
+
+<!-- RU-003 -->
+<tr>
+  <td><strong>RU-003</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-warn">PARTIAL</span></td>
+  <td>Multiple DB writes without <code>@transaction.atomic</code></td>
+  <td>
+    River's operations are mostly single-write (one form.save() per view). The task_services.py
+    does have multi-write operations (creating task series) that <em>should</em> use atomic but don't.
+    <code>VisitLogCreateView.form_valid()</code> saves a VisitLog + metrics + photos in one go without
+    explicit atomic (Django's default per-request transaction partially covers this).
+    <br><span style="color:var(--warn)">Risk: MEDIUM</span> — adding atomic to existing multi-write paths is safe.
+  </td>
+</tr>
+
+<!-- RU-004 -->
+<tr>
+  <td><strong>RU-004</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>Bare <code>.delete()</code> — use soft-delete instead</td>
+  <td>
+    Homtini uses <code>is_obsolete=True</code> for immutable audit trails. River uses Django's
+    DeleteView which does hard deletes. <strong>This is intentional</strong> for a small field-operations
+    app — deleting a mistakenly created task is a valid operation, not an audit concern.
+    <br><span style="color:var(--na)">Verdict:</span> Not applicable. Hard deletes are appropriate at River's scale.
+  </td>
+</tr>
+
+<!-- RU-005 -->
+<tr>
+  <td><strong>RU-005</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-fail">FAILING</span></td>
+  <td>QuerySets missing <code>.select_related()</code> / <code>.prefetch_related()</code></td>
+  <td>
+    <strong>Significant gap.</strong> The learnings document <em>documents</em> the need for
+    <code>select_related</code> (MonthlyView implementation, §2 of learnings) and some views use it,
+    but it's inconsistent. Many list views fetch sections/tasks without prefetching related fields.
+    The build principles don't mention it. The ArchGuard rule is sophisticated — it:
+    <ul style="margin:0.3rem 0 0 1rem; font-size:0.82rem;">
+      <li>Skips <code>.all()</code> on lookup tables</li>
+      <li>Skips chains ending in <code>.values()</code>/<code>.exists()</code></li>
+      <li>Skips scalar-only filters (no <code>__</code> joins)</li>
+      <li>Detects prefetch via variable reassignment</li>
+    </ul>
+    <br><span style="color:var(--fail)">Risk: MEDIUM</span> — adding prefetch is safe and improves performance.
+  </td>
+</tr>
+
+<!-- RU-006 -->
+<tr>
+  <td><strong>RU-006</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-fail">FAILING</span></td>
+  <td>Service functions missing return type annotations</td>
+  <td>
+    <strong>Build principles mandate it</strong> (§II: "All Service functions must have Python type hints").
+    <code>task_services.py</code> has 3 functions — do they have type hints? The principle says they must,
+    but there's no enforcement. River's views have no type hints at all (Django CBVs don't require them).
+    <br><span style="color:var(--warn)">Risk: LOW</span> — adding type hints is purely additive, zero behavioral risk.
+  </td>
+</tr>
+
+<!-- RU-007 -->
+<tr>
+  <td><strong>RU-007</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Template</td>
+  <td><span class="badge badge-warn">PARTIAL</span></td>
+  <td>CDN references in templates</td>
+  <td>
+    Homtini's "Total Isolation" principle (Pi offline operation) mandates zero CDNs. River is a web app
+    and deliberately uses CDN for Leaflet.js (mapping) and Material Symbols (icons). The icon font is
+    already subsetted (~60KB). Leaflet is loaded from CDN — this is <strong>acceptable for a web app</strong>.
+    <br><span style="color:var(--na)">Verdict:</span> Rule would flag Leaflet CDN. This is a false positive for River's context.
+    If adopted, add a Leaflet exemption or change severity to INFO.
+  </td>
+</tr>
+
+<!-- RU-008 -->
+<tr>
+  <td><strong>RU-008</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>Cross-domain service imports</td>
+  <td>
+    River has <strong>one domain</strong> — a single <code>core</code> app. No cross-domain coupling possible.
+    This rule would only become relevant if River grows to multiple Django apps.
+    <br><span style="color:var(--na)">Verdict:</span> Not applicable at current scale.
+  </td>
+</tr>
+
+<!-- RU-009 -->
+<tr>
+  <td><strong>RU-009</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Template</td>
+  <td><span class="badge badge-warn">PARTIAL</span></td>
+  <td>Template nesting depth &gt; 2</td>
+  <td>
+    River's templates have moderate nesting. The weekly/monthly planners have 3-4 levels in some areas
+    (calendar grid inside day cells with Team/Manager splits). This rule would flag those.
+    <br><span style="color:var(--warn)">Risk: MEDIUM</span> — extracting partials could break the high-density
+    layout that's core to the planner UX. Template restructuring needs visual QA.
+  </td>
+</tr>
+
+<!-- RU-010 -->
+<tr>
+  <td><strong>RU-010</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-warn">PARTIAL</span></td>
+  <td><code>print()</code> calls in production code</td>
+  <td>
+    <code>lint.py</code> catches this for staged changes. The learnings document shows debug prints were
+    used and later removed (a healthy practice). Management commands use print legitimately.
+    <br><span style="color:var(--warn)">Risk: LOW</span> — scan is trivial to add. Management commands should be
+    exempted (ArchGuard already skips <code>management/commands/</code>).
+  </td>
+</tr>
+
+<!-- RU-011 -->
+<tr>
+  <td><strong>RU-011</strong></td>
+  <td><span class="badge badge-fail">ERROR</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-pass">PASSING</span></td>
+  <td>Eager <code>getattr()</code> default evaluation</td>
+  <td>
+    This is a subtle N+1 trap: <code>getattr(obj, 'cache', obj.expensive)</code> evaluates
+    <code>obj.expensive</code> eagerly even when <code>cache</code> exists. River's codebase is
+    unlikely to hit this — it's a pattern Homtini discovered through real pain. Adding the scan
+    is safe and costs nothing.
+    <br><span style="color:var(--pass)">Verdict:</span> Likely no violations, but check is cheap insurance.
+  </td>
+</tr>
+
+<!-- RU-012 -->
+<tr>
+  <td><strong>RU-012</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-pass">PASSING</span></td>
+  <td>Model @property accesses relations not in view prefetch</td>
+  <td>
+    Sophisticated cross-analysis: scans model @property methods for related manager accesses,
+    then checks view QuerySets for matching <code>select_related</code>/<code>prefetch_related</code>.
+    River's models don't have @property methods that hit relations — they're data containers.
+    <br><span style="color:var(--pass)">Verdict:</span> No violations expected. Safe to add as a forward-looking guard.
+  </td>
+</tr>
+
+<!-- RU-013 -->
+<tr>
+  <td><strong>RU-013</strong></td>
+  <td><span class="badge badge-fail">ERROR</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-fail">FAILING</span></td>
+  <td><code>.save()</code> / <code>.create()</code> inside loops</td>
+  <td>
+    <strong>#1 priority from Abseil analysis.</strong> River's <code>task_services.py</code>
+    <code>create_task_series()</code> function loops over dates calling <code>Task.objects.create()</code>
+    — this is exactly the pattern RU-013 catches. The rule has smart exemptions
+    (transaction.atomic() wrap, form.save(), serializer.save(), service-named calls).
+    <br><span style="color:var(--fail)">Risk: LOW-MEDIUM</span> — changing to <code>bulk_create</code> is a
+    mechanical refactor with clear performance upside and low behavioral risk.
+  </td>
+</tr>
+
+<!-- RU-014 -->
+<tr>
+  <td><strong>RU-014</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>Python</td>
+  <td><span class="badge badge-fail">FAILING</span></td>
+  <td>Expensive log formatting in loops</td>
+  <td>
+    <strong>Directly relevant to your logging goal.</strong> River has minimal logging infrastructure
+    (settings.py has SENTRY_DSN but no structured logging config). This rule would catch f-string
+    log calls inside loops — a pattern that should be guarded as logging is improved.
+    <br><span style="color:var(--warn)">Risk: LOW</span> — adding the scan is safe; actually improving logging
+    infrastructure is a separate, larger task.
+  </td>
+</tr>
+
+<!-- CSS-LAYOUT -->
+<tr>
+  <td><strong>CSS-LAYOUT</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>CSS</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>Layout utility classes defined in CSS</td>
+  <td>
+    Delegates to <code>check_layout_utilities.py</code> (Homtini-specific). River uses Tailwind via CDN,
+    not custom CSS utilities. The check scripts don't exist.
+    <br><span style="color:var(--na)">Verdict:</span> Not applicable. Replace with a Tailwind-specific check if needed.
+  </td>
+</tr>
+
+<!-- CSS-CLASSES -->
+<tr>
+  <td><strong>CSS-CLASSES</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>CSS</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>CSS class naming conventions</td>
+  <td>
+    Delegates to <code>check_css_classes.py</code> (Homtini-specific). River uses Tailwind utility classes.
+    <br><span style="color:var(--na)">Verdict:</span> Not applicable.
+  </td>
+</tr>
+
+<!-- CSS-JS-DELEGATE -->
+<tr>
+  <td><strong>CSS-JS-*</strong></td>
+  <td><span class="badge badge-warn">WARNING</span></td>
+  <td>CSS/JS</td>
+  <td><span class="badge badge-na">N/A</span></td>
+  <td>Delegated CSS/JS checker fallback</td>
+  <td>
+    Fallback when delegated checker scripts are missing.
+    <br><span style="color:var(--na)">Verdict:</span> Not applicable.
+  </td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════ GAP ANALYSIS ═══════════════════ -->
+<h2 id="gap-analysis">4. Gap Analysis: What River Lacks vs. ArchGuard</h2>
+
+<p>Beyond individual rules, there are structural gaps between River's current quality tooling and ArchGuard:</p>
+
+<table class="gap-table">
+  <thead>
+    <tr><th style="width:25%">Capability</th><th style="width:20%">River Has It?</th><th style="width:55%">Gap Description</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Rule registry + discovery</strong></td>
+      <td>❌</td>
+      <td>No plugin architecture. <code>lint.py</code> is a monolithic prompt-based checker.</td>
+    </tr>
+    <tr>
+      <td><strong>Deterministic AST scanning</strong></td>
+      <td>❌</td>
+      <td>Only AI-based lint. No Python AST walker for structural patterns.</td>
+    </tr>
+    <tr>
+      <td><strong>Template scanning</strong></td>
+      <td>❌</td>
+      <td>No regex-based template linting (nesting depth, CDN checks).</td>
+    </tr>
+    <tr>
+      <td><strong>Per-phase audit trail</strong></td>
+      <td>❌</td>
+      <td>No <code>docs/audits/</code> directory. No phase-gated enforcement.</td>
+    </tr>
+    <tr>
+      <td><strong>Violation data model</strong></td>
+      <td>❌</td>
+      <td>No structured violation type — <code>lint.py</code> outputs raw AI text.</td>
+    </tr>
+    <tr>
+      <td><strong>Self-testing rules</strong></td>
+      <td>❌</td>
+      <td>AI-based lint can't be unit-tested. ArchGuard rules each have temp-project tests.</td>
+    </tr>
+    <tr>
+      <td><strong>CI-compatible exit codes</strong></td>
+      <td>✅</td>
+      <td><code>lint.py</code> exits 0/1 based on AI response. ArchGuard also exits 0/1.</td>
+    </tr>
+    <tr>
+      <td><strong>Configurable severity</strong></td>
+      <td>❌</td>
+      <td>Each ArchGuard rule declares ERROR vs WARNING. <code>lint.py</code> has no tiering.</td>
+    </tr>
+    <tr>
+      <td><strong>Directory exclusions</strong></td>
+      <td>✅ (implicit)</td>
+      <td><code>lint.py</code> only scans git staged changes. ArchGuard has explicit skip lists.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════ PRIORITIZATION ═══════════════════ -->
+<h2 id="prioritization">5. Prioritized Action Plan</h2>
+
+<p>Actions ordered by <strong>impact × urgency ÷ effort</strong>. Each references the relevant Abseil insight
+(from the comparison analysis) and the ArchGuard rule it maps to.</p>
+
+<!-- P0 -->
+<div class="action-card">
+  <h4><span class="prio prio-p0">P0 — NOW</span> Add Missing Build Principles</h4>
+  <p><strong>Effort:</strong> 15 min &nbsp;|&nbsp; <strong>Risk:</strong> Zero (documentation only)</p>
+  <p>Add a new §VI "Performance Patterns" section to <code>build_principles.md</code> covering:</p>
+  <ul>
+    <li><strong>Bulk Over Loop</strong> — Never <code>.save()</code> in a loop (→ RU-013, Abseil S1)</li>
+    <li><strong>Fetch Only What You Need</strong> — Use <code>.only()</code>/<code>.defer()</code> for list contexts (→ Abseil S2)</li>
+    <li><strong>Flat Over Fat for Rendering</strong> — Prefer <code>.values()</code> for read-only (→ Abseil S3)</li>
+    <li><strong>Guard Log Calls in Loops</strong> — Check <code>logger.isEnabledFor()</code> before f-string formatting (→ RU-014, Abseil S4)</li>
+    <li><strong>Precompute Once, Use Many</strong> — Compute at view level, pass via context (→ Abseil S5)</li>
+    <li><strong>Always Prefetch Relations</strong> — <code>.select_related()</code> for FK, <code>.prefetch_related()</code> for M2M/reverse FK in every list view (→ RU-005)</li>
+  </ul>
+</div>
+
+<div class="action-card">
+  <h4><span class="prio prio-p0">NOW</span> Fix <code>create_task_series()</code> — .save() in Loop</h4>
+  <p><strong>Effort:</strong> 30 min &nbsp;|&nbsp; <strong>Risk:</strong> Low</p>
+  <p>The one confirmed RU-013 violation: <code>core/services/task_services.py</code> loops over dates calling
+  <code>Task.objects.create()</code>. Replace with <code>Task.objects.bulk_create([...])</code>.
+  This is the #1 Abseil-recommended fix and directly improves DB performance.</p>
+</div>
+
+<div class="action-card">
+  <h4><span class="prio prio-p0">NOW</span> Add <code>@transaction.atomic</code> to Multi-Write Operations</h4>
+  <p><strong>Effort:</strong> 20 min &nbsp;|&nbsp; <strong>Risk:</strong> Low</p>
+  <p>Audit <code>create_task_series()</code> and <code>VisitLogCreateView.form_valid()</code> for
+  multi-write paths lacking explicit atomicity. Add <code>@transaction.atomic</code> decorator or
+  <code>with transaction.atomic():</code> blocks. This prevents partial writes on failure (→ RU-003).</p>
+</div>
+
+<!-- P1 -->
+<div class="action-card">
+  <h4><span class="prio prio-p1">P1 — THIS SPRINT</span> Add <code>.select_related()</code> to All List Views</h4>
+  <p><strong>Effort:</strong> 1–2 hours &nbsp;|&nbsp; <strong>Risk:</strong> Very Low</p>
+  <p>Systematic audit of all views in <code>core/views.py</code> that render lists of objects with FK relations.
+  Add <code>.select_related('section')</code>, <code>.select_related('template')</code>, etc.
+  This is a pure performance improvement with zero behavioral change (→ RU-005, Abseil S2).</p>
+</div>
+
+<div class="action-card">
+  <h4><span class="prio prio-p1">THIS SPRINT</span> Set Up Structured Logging</h4>
+  <p><strong>Effort:</strong> 2–3 hours &nbsp;|&nbsp; <strong>Risk:</strong> Low (additive)</p>
+  <p>River has SENTRY_DSN in settings but no LOGGING config. Add:</p>
+  <ul>
+    <li>Django LOGGING dict with console + file handlers</li>
+    <li>Sentry integration via <code>sentry_sdk</code> (already in settings)</li>
+    <li>Request ID middleware for log correlation</li>
+    <li>RU-014 guard (log formatting in loops) as a code review checklist item</li>
+  </ul>
+  <p>This directly addresses the "improve logging/uptime management" goal.</p>
+</div>
+
+<div class="action-card">
+  <h4><span class="prio prio-p1">THIS SPRINT</span> Add Type Hints to <code>task_services.py</code></h4>
+  <p><strong>Effort:</strong> 15 min &nbsp;|&nbsp; <strong>Risk:</strong> Zero (annotations only)</p>
+  <p>Build principles §II already mandates this. Just add the missing <code>-> ReturnType</code> annotations.
+  This is low-hanging compliance (→ RU-006).</p>
+</div>
+
+<!-- P2 -->
+<div class="action-card">
+  <h4><span class="prio prio-p2">P2 — NEXT SPRINT</span> Adapt ArchGuard for River</h4>
+  <p><strong>Effort:</strong> 4–6 hours &nbsp;|&nbsp; <strong>Risk:</strong> Medium (infrastructure change)</p>
+  <p>Clone the ArchGuard engine from Homtini and adapt it for River's directory structure:</p>
+  <ul>
+    <li>Change <code>SRC_ROOT</code> from <code>src/</code> to <code>core/</code></li>
+    <li>Add River-specific exemptions (Leaflet CDN, hard deletes)</li>
+    <li>Remove unused rules (RU-008 cross-domain, CSS delegation)</li>
+    <li>Wire into River's <code>lint.py</code> as a pre-AI deterministic pass</li>
+    <li>Create <code>docs/audits/</code> directory for phase tracking</li>
+  </ul>
+  <p>The ArchGuard engine is ~500 lines of well-tested code. Adapting it is mostly configuration.
+  Once in place, you get <strong>free, deterministic, CI-gated enforcement</strong> of every principle.</p>
+</div>
+
+<!-- P3 -->
+<div class="action-card">
+  <h4><span class="prio prio-p3">P3 — LATER</span> Extract Planner Templates to Partials</h4>
+  <p><strong>Effort:</strong> 3–5 hours &nbsp;|&nbsp; <strong>Risk:</strong> Medium</p>
+  <p>Address RU-009 (template nesting &gt; 2) by extracting repeated patterns from
+  <code>weekly_planner.html</code> and <code>monthly_planner.html</code> into includes.
+  The risk is breaking the high-density grid layout — needs visual QA per browser (→ RU-009).</p>
+</div>
+
+<div class="action-card">
+  <h4><span class="prio prio-p3">LATER</span> Add Query-Count Regression Tests</h4>
+  <p><strong>Effort:</strong> 1–2 days &nbsp;|&nbsp; <strong>Risk:</strong> Low</p>
+  <p>Add <code>django-querycount</code> or <code>pytest-django</code> assertions on query counts for
+  top 5 endpoints (dashboard, weekly planner, monthly planner, daily agenda, visit log list).
+  Makes performance a CI-gated property (→ Abseil S6).</p>
+</div>
+
+<!-- ═══════════════════ RISK ASSESSMENT ═══════════════════ -->
+<h2 id="risks">6. Risk Assessment per Refactor Category</h2>
+
+<h3>6A. Adding Build Principles (Documentation)</h3>
+<div class="risk risk-low">
+  <strong>Risk: NEGLIGIBLE.</strong> Documentation changes have zero behavioral impact.
+  The only "risk" is the principles becoming aspirational rather than enforced — mitigate by
+  adding ArchGuard rules in the next sprint.
+</div>
+
+<h3>6B. Adding <code>.select_related()</code> / <code>.prefetch_related()</code></h3>
+<div class="risk risk-low">
+  <strong>Risk: VERY LOW.</strong> Adding prefetch is a pure performance optimization. It doesn't
+  change query results, only how they're fetched. The main risks are:
+  <ul>
+    <li><strong>Over-fetching:</strong> <code>.select_related()</code> JOINs all specified tables.
+      On models with many FK fields, pick only the ones actually used in the template.</li>
+    <li><strong>Template breakage:</strong> If a template accesses <code>{{ task.section.name }}</code>
+      but section isn't prefetched, it still works (Django lazy-loads). Prefetch just makes it faster.
+      No template breakage possible.</li>
+  </ul>
+</div>
+
+<h3>6C. Replacing <code>.save()</code> in Loops with <code>bulk_create()</code></h3>
+<div class="risk risk-med">
+  <strong>Risk: LOW-MEDIUM.</strong> <code>bulk_create()</code> has different semantics from
+  <code>.save()</code> in a loop:
+  <ul>
+    <li><strong>No <code>.save()</code> hooks:</strong> <code>bulk_create()</code> doesn't call
+      <code>Model.save()</code>, signals (<code>post_save</code>), or <code>clean()</code>. If River
+      has signal handlers or custom <code>save()</code> logic on Task, these won't fire.</li>
+    <li><strong>No auto-now fields:</strong> <code>auto_now_add</code> works, but
+      <code>auto_now</code> does not get updated per-object with <code>bulk_create</code>.</li>
+    <li><strong>No PK assignment in SQLite:</strong> SQLite with <code>bulk_create</code> doesn't set
+      PKs on returned objects unless the model has a single AutoField.</li>
+    <li><strong>Mitigation:</strong> Audit Task model for signal handlers and custom save() logic
+      before making the switch. If signals are critical, use <code>bulk_create</code> + manually
+      trigger signals, or wrap in <code>transaction.atomic</code> instead.</li>
+  </ul>
+</div>
+
+<h3>6D. Adding <code>@transaction.atomic</code></h3>
+<div class="risk risk-low">
+  <strong>Risk: LOW.</strong> Adding atomicity is strictly correctness-preserving:
+  <ul>
+    <li>The existing code without atomic can partially fail (some writes succeed, some don't).</li>
+    <li>Adding atomic ensures all-or-nothing — strictly better.</li>
+    <li>The only risk is <strong>nested atomic blocks</strong> (Django uses savepoints, which have
+      minor overhead). Don't wrap an already-atomic view in another atomic decorator.</li>
+  </ul>
+</div>
+
+<h3>6E. Setting Up Structured Logging</h3>
+<div class="risk risk-med">
+  <strong>Risk: LOW-MEDIUM.</strong> Logging is additive — it doesn't change behavior. Risks are:
+  <ul>
+    <li><strong>Disk I/O on Pi-like hardware:</strong> Not applicable (River runs on a standard server).
+      File-based logging with rotation is safe.</li>
+    <li><strong>Sensitive data leakage:</strong> Ensure log messages don't include user data, passwords,
+      or PII. Add a log sanitizer or use Sentry's PII scrubbing.</li>
+    <li><strong>Sentry quota:</strong> If using Sentry's free tier, verbose logging could exhaust
+      the event budget. Sample errors at an appropriate rate.</li>
+  </ul>
+</div>
+
+<h3>6F. Adapting ArchGuard for River</h3>
+<div class="risk risk-med">
+  <strong>Risk: MEDIUM.</strong> Adapting static analysis infrastructure requires care:
+  <ul>
+    <li><strong>False positives:</strong> Rules written for Homtini's patterns may flag legitimate
+      River patterns. The RU-002 exemptions (form.save(), setattr patterns) need tuning for River's
+      class-based-view style.</li>
+    <li><strong>CI gate friction:</strong> If ArchGuard exits 1 on ERROR, devs can't commit until
+      violations are fixed. This gates feature work. Start with all rules as WARNING, then escalate
+      to ERROR once the codebase is clean.</li>
+    <li><strong>Directory structure mismatch:</strong> ArchGuard expects <code>src/</code> with
+      <code>src/core/views/</code>, <code>src/core/services/</code>. River uses flat
+      <code>core/views.py</code>, <code>core/services/task_services.py</code>. The path checks
+      (<code>_is_in_views</code>, <code>_is_in_services</code>) need updating.</li>
+    <li><strong>Mitigation:</strong> Run ArchGuard in advisory mode (WARNING-only, exit 0) for the
+      first sprint while tuning exemptions. Then promote to gating.</li>
+  </ul>
+</div>
+
+<h3>6G. Migrating Views to Services (RU-002)</h3>
+<div class="risk risk-high">
+  <strong>Risk: HIGH.</strong> This is the largest refactor. River's 25+ CBVs directly access the ORM.
+  Moving query logic to services would touch every view:
+  <ul>
+    <li><strong>Regression risk:</strong> Every view touched is a potential regression. River's test
+      coverage is incomplete (5 test files, mostly planner/dashboard). Need to add tests before refactoring.</li>
+    <li><strong>Scope creep:</strong> A "move everything to services" refactor could take a full sprint
+      and block feature work.</li>
+    <li><strong>Limited benefit at current scale:</strong> At ~25 views in a single app, the service
+      layer abstraction adds indirection without the multi-domain coupling it prevents in Homtini.</li>
+    <li><strong>Recommendation:</strong> <em>Don't migrate existing views.</em> Apply the service-layer
+      rule to <strong>new code only</strong>. Existing views are stable. The principle is prophylactic,
+      not curative — enforce on new features, don't rewrite working code.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════ SUMMARY ═══════════════════ -->
+<div class="summary-box" id="recommendations">
+  <h2>7. Summary &amp; Recommendations</h2>
+
+  <h3>What To Do This Sprint</h3>
+  <ol style="font-size:0.92rem; line-height:2;">
+    <li>
+      <strong>Update <code>build_principles.md</code></strong> — add §VI Performance Patterns
+      (bulk-over-loop, only/defer, values-over-model, log-guard, precompute-once, always-prefetch).
+      <em>15 minutes. Zero risk.</em>
+    </li>
+    <li>
+      <strong>Fix <code>create_task_series()</code></strong> — replace <code>.save()</code> in loop
+      with <code>bulk_create()</code>. Add <code>@transaction.atomic</code>.
+      <em>30 minutes. Low risk.</em>
+    </li>
+    <li>
+      <strong>Add <code>.select_related()</code> to list views</strong> — systematic audit of views
+      displaying FK-related data. <em>1–2 hours. Very low risk.</em>
+    </li>
+    <li>
+      <strong>Add type hints to <code>task_services.py</code></strong> — compliance with existing
+      build principle. <em>15 minutes. Zero risk.</em>
+    </li>
+    <li>
+      <strong>Set up structured logging</strong> — LOGGING dict, Sentry integration, request IDs.
+      <em>2–3 hours. Low risk.</em>
+    </li>
+    <li>
+      <strong>Regenerate <code>CURRENT_STATE.md</code></strong> — run <code>python summarise.py</code>.
+      <em>1 minute. Zero risk.</em>
+    </li>
+  </ol>
+
+  <h3>What To Do Next Sprint</h3>
+  <ol start="7" style="font-size:0.92rem; line-height:2;">
+    <li>
+      <strong>Adapt ArchGuard for River</strong> — clone engine, update paths, tune exemptions,
+      run in WARNING-only advisory mode. <em>4–6 hours. Medium risk (manageable with advisory mode).</em>
+    </li>
+    <li>
+      <strong>Add query-count regression tests</strong> — top 5 endpoints. <em>1–2 days. Low risk.</em>
+    </li>
+  </ol>
+
+  <h3>What NOT To Do (Yet)</h3>
+  <ul style="font-size:0.92rem; line-height:2;">
+    <li>
+      <strong>❌ Don't migrate existing views to services.</strong> Too high risk for too little
+      benefit at current scale. Enforce on new code. Consider extracting shared query patterns
+      (e.g., "get tasks for date range with sections") to service functions without touching views.
+    </li>
+    <li>
+      <strong>❌ Don't add soft-deletes (RU-004).</strong> Hard deletes are appropriate for River's
+      domain. Don't add complexity you don't need.
+    </li>
+    <li>
+      <strong>❌ Don't remove Leaflet CDN (RU-007).</strong> Mapping is a core feature. Self-hosting
+      Leaflet adds maintenance burden with no user-facing benefit for a web app.
+    </li>
+    <li>
+      <strong>❌ Don't extract planner partials (RU-009) without visual QA.</strong> The high-density
+      calendar grid is sensitive. Wait until you have Playwright E2E tests to catch regressions.
+    </li>
+  </ul>
+
+  <h3>The Big Picture</h3>
+  <p style="font-size:0.92rem; margin-top:0.5rem;">
+    River's build principles are <strong>good</strong> but <strong>unenforced</strong>. The ArchGuard
+    code sitting in <code>product/context/prinicples/archguard/</code> is a working, tested engine that
+    can close that gap. The adaptation cost is low (~half a day) and the payoff — deterministic,
+    CI-gated enforcement of every principle — is high.
+  </p>
+  <p style="font-size:0.92rem; margin-top:0.5rem;">
+    The priority order is: <strong>document principles → fix known violations → add enforcement →
+    add measurement.</strong> This creates a quality stack that Homtini has proven works: write-time
+    principles → static enforcement → runtime measurement. Start with P0 actions this sprint, and
+    you'll have a dramatically stronger foundation before adding any new features.
+  </p>
+
+  <p style="font-size:0.8rem; color:var(--text-muted); margin-top:1.5rem; border-top:1px solid var(--border); padding-top:1rem;">
+    <strong>References:</strong>
+    <code>product/context/prinicples/archguard/</code> (Homtini ArchGuard engine) &nbsp;|&nbsp;
+    <code>product/context/prinicples/abseil-vs-build-principles-comparison.html</code> &nbsp;|&nbsp;
+    <code>product/context/build_principles.md</code> &nbsp;|&nbsp;
+    <code>lint.py</code> &nbsp;|&nbsp;
+    <code>progress_log.json</code>
+  </p>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

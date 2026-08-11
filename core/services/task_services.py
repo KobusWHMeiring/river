@@ -76,31 +76,52 @@ def move_todo_task(task_id: int, new_status: str, new_index: int) -> None:
     Updates the status and position of a rolling task and re-indexes
     both source and target status columns if necessary.
     """
+    import logging
+    log = logging.getLogger(__name__)
+
     with transaction.atomic():
+        task_id = int(task_id)  # JSON sends strings
         task = Task.objects.select_for_update().get(id=task_id)
         old_status = task.todo_status
-        
+        log.info(f'move_todo_task: task={task_id} old={old_status} -> new={new_status} index={new_index}')
+        print(f'[DEBUG move_todo_task] task={task_id} old={old_status} -> new={new_status} index={new_index}')
+
+        # Short-circuit: no change needed
+        if old_status == new_status:
+            log.info(f'move_todo_task: same status, skipping')
+            print(f'[DEBUG move_todo_task] same status, skipping')
+            return
+
         # Re-index target column (includes the task being moved)
         target_tasks = list(Task.objects.filter(
-            is_rolling=True, 
+            is_rolling=True,
             todo_status=new_status
         ).exclude(id=task_id).order_by('todo_position'))
-        
+
         target_tasks.insert(new_index, task)
-        
+        print(f'[DEBUG move_todo_task] target column has {len(target_tasks)} tasks after insert')
+
         for i, t in enumerate(target_tasks):
             if t.id == task_id:
-                Task.objects.filter(id=t.id).update(todo_status=new_status, todo_position=i)
+                updated = Task.objects.filter(id=t.id).update(todo_status=new_status, todo_position=i)
+                print(f'[DEBUG move_todo_task] UPDATED task {t.id}: status={new_status} pos={i} rows={updated}')
+                log.info(f'move_todo_task: updated task {t.id} to status={new_status} pos={i}')
             elif t.todo_position != i:
-                Task.objects.filter(id=t.id).update(todo_position=i)
-        
-        # Re-index source column if it's different from target
-        if old_status != new_status:
-            source_tasks = Task.objects.filter(
-                is_rolling=True, 
-                todo_status=old_status
-            ).exclude(id=task_id).order_by('todo_position')
-            
-            for i, t in enumerate(source_tasks):
-                if t.todo_position != i:
-                    Task.objects.filter(id=t.id).update(todo_position=i)
+                updated = Task.objects.filter(id=t.id).update(todo_position=i)
+                print(f'[DEBUG move_todo_task] reindex task {t.id}: pos {t.todo_position} -> {i} rows={updated}')
+
+        # Re-index source column
+        source_tasks = Task.objects.filter(
+            is_rolling=True,
+            todo_status=old_status
+        ).exclude(id=task_id).order_by('todo_position')
+
+        for i, t in enumerate(source_tasks):
+            if t.todo_position != i:
+                updated = Task.objects.filter(id=t.id).update(todo_position=i)
+                print(f'[DEBUG move_todo_task] source reindex task {t.id}: pos {t.todo_position} -> {i} rows={updated}')
+
+        # Verify the update actually landed
+        task.refresh_from_db()
+        print(f'[DEBUG move_todo_task] VERIFY: task {task.id} now has status={task.todo_status} pos={task.todo_position}')
+        log.info(f'move_todo_task: verified task {task.id} status={task.todo_status}')

@@ -36,6 +36,10 @@ urlpatterns = [
 
     # Data Export URLs
     path('export/', views.DataExportView.as_view(), name='data_export'),
+    path('export/planner/', views.PlannerExportView.as_view(), name='planner_export'),
+
+    # Insights page (temporary, for Sarah review)
+    path('insights/', views.planner_insights_view, name='planner_insights'),
 
     # Task Template Management URLs
     path('templates/', views.TaskTemplateListView.as_view(), name='task_template_list'),

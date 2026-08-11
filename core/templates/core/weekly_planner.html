@@ -68,6 +68,10 @@
                 <span class="material-symbols-outlined text-base align-middle leading-none">chevron_right</span>
             </a>
         </div>
+        <a href="{% url 'planner_export' %}?week={{ week_days.0|date:'Y-m-d' }}" class="hidden md:flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-5 py-2 rounded-xl text-sm font-medium shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95">
+            <span class="material-symbols-outlined text-lg">download</span>
+            Export
+        </a>
         <a href="{% url 'visit_log_create' %}?next={{ request.get_full_path|urlencode }}" class="hidden md:flex items-center gap-2 bg-emerald-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-emerald-700 hover:shadow-md transition-all active:scale-95">
             <span class="material-symbols-outlined text-lg">note_add</span>
             New Log

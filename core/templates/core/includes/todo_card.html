@@ -55,6 +55,11 @@
                     <span class="material-symbols-outlined text-sm">check_circle</span>
                     <span class="text-[10px] font-bold uppercase">Completed</span>
                 </div>
+            {% else %}
+                <button type="button" class="move-to-done-btn flex items-center space-x-1 px-2 py-1 text-green-600 hover:bg-green-50 rounded-lg transition-all text-[10px] font-bold uppercase" title="Move to Done">
+                    <span class="material-symbols-outlined text-sm">check</span>
+                    <span>Done</span>
+                </button>
             {% endif %}
         </div>
     </div>

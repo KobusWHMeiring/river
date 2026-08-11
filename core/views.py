@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.views import View
 from django.urls import reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -849,17 +849,26 @@ class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
 def task_complete_view(request, pk):
     task = get_object_or_404(Task, pk=pk)
-    task.is_completed = True
-    task.save()
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-    # Create a visit log for the completed task
-    VisitLog.objects.create(
+    if task.is_completed:
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': 'already_completed'})
+        return redirect('daily_agenda')
+
+    # Create VisitLog BEFORE marking complete (atomicity by ordering)
+    visit_log = VisitLog.objects.create(
         task=task,
         section=task.section,
         date=timezone.now().date(),
         notes=f"Task completed: {task.instructions}"
     )
 
+    task.is_completed = True
+    task.save()
+
+    if is_ajax:
+        return JsonResponse({'success': True})
     return redirect('daily_agenda')
 
 
@@ -1356,3 +1365,12 @@ class PlannerExportView(LoginRequiredMixin, View):
         )
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
+
+
+def planner_insights_view(request):
+    """Serve the planner insights page for Sarah's review."""
+    import os
+    from django.conf import settings
+    path = os.path.join(settings.BASE_DIR, 'product', 'Ready', 'planner-insights-gap-analysis.html')
+    with open(path, encoding='utf-8') as f:
+        return HttpResponse(f.read())

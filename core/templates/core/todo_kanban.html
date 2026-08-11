@@ -217,6 +217,9 @@
     });
 
     function updateTaskStatus(taskId, status, index) {
+        const card = document.querySelector(`[data-task-id="${taskId}"]`);
+        if (card) card.style.opacity = '0.5';
+
         fetch(updateUrl, {
             method: 'POST',
             headers: {
@@ -229,14 +232,36 @@
                 index: index
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+            return response.json();
+        })
         .then(data => {
+            if (card) card.style.opacity = '1';
             if (!data.success) {
-                alert('Failed to update task. Please try again.');
+                alert('Failed to update task: ' + (data.error || 'Unknown error'));
                 window.location.reload();
             }
+        })
+        .catch(error => {
+            console.error('Kanban update failed:', error);
+            alert('Failed to update task. The page will reload.');
+            window.location.reload();
         });
     }
+
+    // Click-to-move buttons: immediately move a card to Done
+    document.querySelectorAll('.move-to-done-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const card = this.closest('[data-task-id]');
+            const taskId = card.dataset.taskId;
+            const doneCol = document.getElementById('done');
+            const newIndex = doneCol.children.length;
+            doneCol.appendChild(card);
+            updateTaskStatus(taskId, 'done', newIndex);
+        });
+    });
 
     // Modal Logic
     const modal = document.getElementById('taskModal');

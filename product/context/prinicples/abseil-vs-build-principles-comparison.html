@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abseil Performance Hints vs Project Mycelium Build Principles &amp; Guards — Cross-Pollination Analysis</title>
+<style>
+  :root {
+    --green: #1a7a3a;
+    --green-light: #e8f5e9;
+    --amber: #b8860b;
+    --amber-light: #fff8e1;
+    --red: #c62828;
+    --red-light: #ffebee;
+    --blue: #1565c0;
+    --blue-light: #e3f2fd;
+    --gray: #546e7a;
+    --gray-light: #eceff1;
+    --bg: #fafafa;
+    --card-bg: #ffffff;
+    --text: #263238;
+    --text-muted: #607d8b;
+    --border: #cfd8dc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  h1 {
+    font-size: 2rem;
+    color: var(--green);
+    border-bottom: 3px solid var(--green);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+    color: var(--blue);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid var(--blue-light);
+  }
+  h3 {
+    font-size: 1.15rem;
+    color: var(--gray);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+  }
+
+  /* META SUMMARY CARD */
+  .meta-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .meta-card .side {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+  .meta-card .side h3 { margin-top: 0; }
+  .meta-card .side ul { padding-left: 1.25rem; font-size: 0.9rem; }
+  .meta-card .side li { margin-bottom: 0.3rem; }
+
+  /* OVERLAP VENN NOTE */
+  .venn-note {
+    background: var(--blue-light);
+    border-left: 4px solid var(--blue);
+    padding: 1rem 1.25rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 2rem;
+    font-size: 0.92rem;
+  }
+
+  /* SECTION: COMPARISON TABLE */
+  table.comp {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    margin-bottom: 2rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.comp thead th {
+    background: var(--green);
+    color: #fff;
+    padding: 0.75rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  table.comp tbody td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border-top: 1px solid var(--border);
+  }
+  table.comp tbody tr:hover { background: #f5f5f5; }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.3rem;
+    text-transform: uppercase;
+  }
+  .tag-green  { background: var(--green-light); color: var(--green); }
+  .tag-amber  { background: var(--amber-light); color: var(--amber); }
+  .tag-red    { background: var(--red-light); color: var(--red); }
+  .tag-blue   { background: var(--blue-light); color: var(--blue); }
+  .tag-gray   { background: var(--gray-light); color: var(--gray); }
+
+  /* SUGGESTION BLOCKS */
+  .suggestion {
+    background: var(--green-light);
+    border: 1px solid #a5d6a7;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  .suggestion.amber { background: var(--amber-light); border-color: #ffe082; }
+  .suggestion.red   { background: var(--red-light); border-color: #ef9a9a; }
+
+  .suggestion h4 {
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+    color: var(--green);
+  }
+  .suggestion.amber h4 { color: var(--amber); }
+  .suggestion.red   h4 { color: var(--red); }
+
+  .suggestion .prio {
+    float: right;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .prio-high { background: var(--red-light); color: var(--red); }
+  .prio-med  { background: var(--amber-light); color: var(--amber); }
+  .prio-low  { background: var(--gray-light); color: var(--gray); }
+
+  .summary-box {
+    background: var(--card-bg);
+    border: 2px solid var(--green);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+  .summary-box h2 { margin-top: 0; border-bottom-color: var(--green); }
+
+  .toc { margin-bottom: 2rem; }
+  .toc details { margin-bottom: 0.5rem; }
+  .toc summary { cursor: pointer; font-weight: 600; color: var(--blue); }
+  .toc ol { padding-left: 1.5rem; font-size: 0.9rem; }
+  .toc li { margin-bottom: 0.2rem; }
+  .toc a { color: var(--blue); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  @media (max-width: 900px) {
+    body { padding: 1rem; }
+    .meta-card { grid-template-columns: 1fr; }
+    table.comp { font-size: 0.78rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Abseil Performance Hints × Project Mycelium Build Principles &amp; Guards</h1>
+<p class="subtitle">
+  A cross-pollination analysis — what we already cover, what we don&rsquo;t, and what we should add.
+  <br><strong>Sources:</strong> <a href="https://abseil.io/fast/hints.html">Abseil Performance Hints</a> (Jeff Dean &amp; Sanjay Ghemawat, 2025-12-16)
+  &nbsp;|&nbsp; <code>BUILD_PRINCIPLES.md</code> v2.4
+  &nbsp;|&nbsp; Architecture Guard (RU-001 → RU-010)
+  &nbsp;|&nbsp; Codebase Health Audit
+  &nbsp;|&nbsp; CSS Alignment Skill
+  <br><strong>Date:</strong> 2026-08-09
+</p>
+
+<!-- ─── META COMPARISON ─── -->
+<div class="meta-card">
+  <div class="side">
+    <h3>Abseil Performance Hints</h3>
+    <ul>
+      <li>By Jeff Dean &amp; Sanjay Ghemawat (Google)</li>
+      <li>C++-centric with language-agnostic principles</li>
+      <li>Focus: <strong>single-binary CPU/memory optimization</strong></li>
+      <li>15 major sections, ~50+ detailed CL examples</li>
+      <li>Both <em>principles</em> and <em>concrete techniques</em></li>
+      <li>Target audience: library authors &amp; systems engineers</li>
+      <li>Measurement-heavy: estimation tables, profiling tools, benchmarks</li>
+    </ul>
+  </div>
+  <div class="side">
+    <h3>Project Mycelium Quality Stack</h3>
+    <ul>
+      <li>Farm management SaaS (Django/HTMX/Postgres/Pi)</li>
+      <li>Python-centric, full-stack web application</li>
+      <li>Focus: <strong>offline-first, data integrity, AI-assisted dev</strong></li>
+      <li>3 layers: Build Principles → ArchGuard rules → Health Audit</li>
+      <li>Both <em>principles</em> and <em>automated enforcement</em></li>
+      <li>Target audience: AI coding agents &amp; small dev team</li>
+      <li>Enforcement-heavy: deterministic rules, shell scan checklists</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ─── TOC ─── -->
+<div class="toc">
+<details open>
+<summary><strong>Table of Contents</strong></summary>
+<ol>
+  <li><a href="#s1">Philosophy &amp; Meta-Level</a></li>
+  <li><a href="#s2">Measurement, Profiling &amp; Estimation</a></li>
+  <li><a href="#s3">Algorithmic Improvements</a></li>
+  <li><a href="#s4">Memory Representation &amp; Data Structures</a></li>
+  <li><a href="#s5">Reducing Allocations</a></li>
+  <li><a href="#s6">Avoiding Unnecessary Work</a></li>
+  <li><a href="#s7">Code Size &amp; Template/Inline Strategy</a></li>
+  <li><a href="#s8">API Design for Performance</a></li>
+  <li><a href="#s9">Parallelization &amp; Synchronization</a></li>
+  <li><a href="#s10">Domain-Specific (ProtoBuf / C++ / Pi)</a></li>
+  <li><a href="#s11">Gaps: What Neither Covers</a></li>
+  <li><a href="#suggestions">Concrete Addition Suggestions</a></li>
+  <li><a href="#summary">Summary &amp; Recommended Actions</a></li>
+</ol>
+</details>
+</div>
+
+<!-- ─── VENN NOTE ─── -->
+<div class="venn-note">
+  <strong>How to read this:</strong> The left column of each table shows what Abseil advises.
+  The right column shows what Project Mycelium already has in place (✓) or lacks (✗).
+  <strong>Green</strong> = already covered &amp; enforced.
+  <strong>Amber</strong> = partially covered or aspirational.
+  <strong>Red</strong> = gap — actionable suggestion follows.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 1: PHILOSOPHY -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s1">1. Philosophy &amp; Meta-Level</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>&ldquo;Choose the faster alternative if it does not impact readability significantly.&rdquo;</strong><br>
+<small>Don&rsquo;t defer all performance to later — pick the faster path at write-time when it&rsquo;s free.</small></td>
+<td>
+  <span class="tag tag-green">ALIGNED</span>
+  Build Principles §4 (Pi Reality) mandates &ldquo;Prefetch or Perish&rdquo; — the faster QuerySet path is non-negotiable. §8.3 (Deletability/YAGNI) tempers this: &ldquo;Build the simplest version.&rdquo; The balance is right for our stack.
+</td>
+</tr>
+
+<tr>
+<td><strong>&ldquo;Premature optimization is the root of all evil — but don&rsquo;t pass up the critical 3%.&rdquo;</strong><br>
+<small>Knuth, full quote. Focus on the 3% that matters.</small></td>
+<td>
+  <span class="tag tag-green">ALIGNED</span>
+  Meta-Principles: &ldquo;Small Steps &amp; Empirical Feedback&rdquo; &mdash; build the minimal thing and iterate. The Pi Reality section explicitly targets the 3% that matters on constrained hardware.
+</td>
+</tr>
+
+<tr>
+<td><strong>Estimation: back-of-the-envelope math before coding.</strong><br>
+<small>Latency numbers every programmer should know (L1=0.5ns, SSD read=1ms, etc.)</small></td>
+<td>
+  <span class="tag tag-amber">ASPIRATIONAL</span>
+  Not formalized. The Pi context makes this partly intuitive (&ldquo;one bad query locks the DB&rdquo;) but we lack a latency-numbers reference or estimation checkpoint in our process. The Health Audit (§8.3) acknowledges &ldquo;cyclomatic complexity&rdquo; as a gap — estimation is a sibling gap.
+</td>
+</tr>
+
+<tr>
+<td><strong>Test code: worry mostly about asymptotic complexity.</strong></td>
+<td>
+  <span class="tag tag-green">ALIGNED</span>
+  TDD skill enforces writing tests first; tests are expected to stay fast because they focus on single units. No explicit asymptotic rule, but the practice naturally keeps tests lean.
+</td>
+</tr>
+
+<tr>
+<td><strong>Library code: harder to tell how performance-sensitive it is — err on the fast side.</strong></td>
+<td>
+  <span class="tag tag-green">ALIGNED</span>
+  Services are our &ldquo;library&rdquo; layer. Contract-First Design (§8.3) + Prefetch mandate make service code performant by default. ArchGuard RU-005 enforces it.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 2: MEASUREMENT -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s2">2. Measurement, Profiling &amp; Estimation</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Profiling tools: pprof, perf, microbenchmarks.</strong></td>
+<td>
+  <span class="tag tag-red">GAP</span>
+  No profiling infrastructure exists. No benchmark harness. No performance regression tests. The ArchGuard and Health Audit are <em>static</em> tools — they catch code patterns, not runtime behavior.
+</td>
+</tr>
+
+<tr>
+<td><strong>What to do when profiles are flat.</strong><br>
+<small>Many 1% improvements add up. Look for structural changes. Reduce allocations.</small></td>
+<td>
+  <span class="tag tag-amber">IMPLICIT</span>
+  Health Audit dimensions A-F capture some of this (duplication, file size) but we lack a performance-profiling feedback loop. The advice about &ldquo;many small improvements&rdquo; maps to the Health Audit&rsquo;s batch-PRD approach.
+</td>
+</tr>
+
+<tr>
+<td><strong>Microbenchmarks: useful but can be misleading. Use benchmark libraries.</strong></td>
+<td>
+  <span class="tag tag-red">GAP</span>
+  Django test suite covers correctness, not performance. No <code>pytest-benchmark</code> or equivalent. The Pi context (slow hardware) makes microbenchmarks especially valuable — a 50ms regression is invisible in CI on a dev laptop but crippling on a Pi.
+</td>
+</tr>
+
+<tr>
+<td><strong>Lock contention profiling.</strong></td>
+<td>
+  <span class="tag tag-gray">N/A</span>
+  Django&rsquo;s request-per-process model (WSGI/ASGI) makes lock contention rare. Not relevant at our current scale and architecture.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 3: ALGORITHMIC IMPROVEMENTS -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s3">3. Algorithmic Improvements</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Turn O(N²) → O(N log N) or O(N). Avoid exponential behavior.</strong></td>
+<td>
+  <span class="tag tag-amber">IMPLICIT</span>
+  Health Audit Dimension B catches duplicated query patterns that are often the source of algorithmic waste (e.g., <code>reconciled_payment_ids</code> called 6 times). But we have no rule or scan that flags O(N²) patterns like nested loops over querysets. The Property Trap (§4) is an explicit algorithmic warning about N+1 via @property.
+</td>
+</tr>
+
+<tr>
+<td><strong>Replace sorted-list intersection (O(N log N)) with hash lookups (O(N)).</strong></td>
+<td>
+  <span class="tag tag-green">COVERED BY DB</span>
+  Our &ldquo;algorithm&rdquo; layer is Postgres. Proper indexing + <code>select_related</code>/<code>prefetch_related</code> make this Postgres&rsquo;s problem. ArchGuard RU-005 ensures we don&rsquo;t revert to Python-side N+1.
+</td>
+</tr>
+
+<tr>
+<td><strong>Good hash functions so things are O(1) instead of O(N).</strong></td>
+<td>
+  <span class="tag tag-gray">N/A</span>
+  We use Postgres indexes (B-tree, GIN for JSONField), not in-process hash tables. This advice is C++ specific.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 4: MEMORY REPRESENTATION -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s4">4. Memory Representation &amp; Data Structures</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Compact data structures</strong> — touching fewer cache lines.</td>
+<td>
+  <span class="tag tag-amber">PARTIAL</span>
+  &ldquo;Indices instead of pointers&rdquo; maps to our UUIDs-as-FKs (fixed 16 bytes vs variable pointer). But we don&rsquo;t think about Django model field ordering for cache-line effects. On a Pi with limited L2 cache, model field layout <em>does</em> matter for in-memory QuerySet evaluation. Not currently checked by any guard.
+</td>
+</tr>
+
+<tr>
+<td><strong>Memory layout: reorder fields, smaller numeric types, hot/cold separation.</strong></td>
+<td>
+  <span class="tag tag-red">GAP</span>
+  Django abstracts memory layout away. However, <code>JSONField</code> blob size, queryset <code>.only()</code>/<code>.defer()</code> usage, and template context object size are our equivalents. No guard checks that views use <code>.only()</code> to limit field selection when rendering large lists.
+</td>
+</tr>
+
+<tr>
+<td><strong>Indices instead of pointers</strong> (32-bit indices into arrays).</td>
+<td>
+  <span class="tag tag-green">NATURAL FIT</span>
+  This is literally Django&rsquo;s FK design. Our UUIDs are 128-bit (for sovereignty), but Postgres indexes them efficiently. The principle is already in the DNA of relational DB design.
+</td>
+</tr>
+
+<tr>
+<td><strong>Batched storage</strong> — avoid per-element allocation (<code>std::map</code> → <code>flat_hash_map</code>).</td>
+<td>
+  <span class="tag tag-green">COVERED BY DB</span>
+  Postgres stores rows contiguously in pages (8KB). Django&rsquo;s <code>prefetch_related</code> does batched loading. This is a solved problem at the DB layer.
+</td>
+</tr>
+
+<tr>
+<td><strong>Inlined storage</strong> — <code>InlinedVector</code> for small collections.</td>
+<td>
+  <span class="tag tag-amber">PARTIAL</span>
+  Our &ldquo;inlined storage&rdquo; equivalent is JSONField for small key-value data (Metadata Extensibility, §3). This is good. But we don&rsquo;t have a pattern for &ldquo;small list, don&rsquo;t create a through-table.&rdquo; The decision is ad-hoc per feature.
+</td>
+</tr>
+
+<tr>
+<td><strong>Unnecessarily nested maps</strong> — flatten to compound keys.</td>
+<td>
+  <span class="tag tag-green">NATURAL FIT</span>
+  Relational DB normalization handles this. Compound unique constraints are our &ldquo;flattened map.&rdquo; The <code>EntityCategory</code> boolean tags (§3) are an excellent example of flattening: instead of a nested mapping of entity→category→behavior, we use flat boolean fields.
+</td>
+</tr>
+
+<tr>
+<td><strong>Arenas</strong> — bulk-allocate, bulk-free.</td>
+<td>
+  <span class="tag tag-gray">N/A</span>
+  Python&rsquo;s GC and Django&rsquo;s request-response cycle provide natural request-scoped arenas. No explicit arena pattern needed.
+</td>
+</tr>
+
+<tr>
+<td><strong>Arrays instead of maps</strong> / <strong>Bit vectors instead of sets</strong>.</td>
+<td>
+  <span class="tag tag-amber">PARTIAL</span>
+  <code>EntityCategory</code> boolean tags (§3) are effectively a bit vector — excellent. But we could extend this pattern. E.g., a FarmEvent&rsquo;s <code>status</code> field could use an integer bitmask instead of a CharField for fixed status sets, reducing index size on the Pi.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 5: REDUCING ALLOCATIONS -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s5">5. Reducing Allocations</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Avoid unnecessary allocations.</strong><br>
+<small>Share static instances, stack-allocate, avoid heap.</small></td>
+<td>
+  <span class="tag tag-amber">IMPLICIT</span>
+  Django&rsquo;s request-scoped objects are our &ldquo;allocations.&rdquo; We avoid unnecessary queries via <code>select_related</code> (RU-005). But we don&rsquo;t have patterns for sharing computed QuerySets across a request — multiple services may re-execute the same query within one HTTP request.
+</td>
+</tr>
+
+<tr>
+<td><strong>Resize/reserve containers.</strong></td>
+<td>
+  <span class="tag tag-green">COVERED BY DB</span>
+  <code>QuerySet</code> is lazy and chunked. <code>prefetch_related</code> uses batched <code>WHERE id IN (...)</code> which is the DB equivalent of reserve. This is handled well.
+</td>
+</tr>
+
+<tr>
+<td><strong>Avoid copying — move, use pointers/indices.</strong></td>
+<td>
+  <span class="tag tag-amber">PARTIAL</span>
+  Django&rsquo;s <code>.values()</code> and <code>.values_list()</code> avoid model instantiation overhead — but no guard checks that views use them for read-only list contexts. The Property Trap (§4) warns against per-instance QuerySet evaluation in loops. But we lack a scan for &ldquo;view constructs full model instances when <code>.values()</code> would suffice.&rdquo;
+</td>
+</tr>
+
+<tr>
+<td><strong>Reuse temporary objects</strong> — hoist outside loops.</td>
+<td>
+  <span class="tag tag-amber">IMPLICIT</span>
+  The Property Trap rule (§4) is a specific case of this: don&rsquo;t create a new query inside a loop. But we don&rsquo;t have a general &ldquo;hoist expensive calls out of loops&rdquo; check. Health Audit Dimension B (duplicate query patterns) catches some of this.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 6: AVOIDING UNNECESSARY WORK -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s6">6. Avoiding Unnecessary Work</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Fast path for common cases.</strong></td>
+<td>
+  <span class="tag tag-amber">IMPLICIT</span>
+  &ldquo;Success by Exception / Passive Routines&rdquo; (§3) is our best example: assume success, only process failures. But we don&rsquo;t systematically check for fast-path opportunities in service code. Health Audit Dimension B catches some via query duplication.
+</td>
+</tr>
+
+<tr>
+<td><strong>Precompute expensive information once.</strong></td>
+<td>
+  <span class="tag tag-amber">PARTIAL</span>
+  <code>Category Behavior Tags</code> (§3) are precomputed configuration — excellent. Django&rsquo;s <code>cached_property</code> could be used more. But we have no guard checking whether computed properties re-evaluate unnecessarily.
+</td>
+</tr>
+
+<tr>
+<td><strong>Move expensive computations outside loops.</strong></td>
+<td>
+  <span class="tag tag-green">ENFORCED</span>
+  RU-005 (prefetch) is exactly this: move the join to the DB, don&rsquo;t loop in Python. Property Trap (§4) extends this to @property aggregations.
+</td>
+</tr>
+
+<tr>
+<td><strong>Defer expensive computation.</strong></td>
+<td>
+  <span class="tag tag-amber">IMPLICIT</span>
+  Django&rsquo;s lazy QuerySets are the ultimate deferral mechanism. But we don&rsquo;t enforce lazy evaluation patterns in service code. Some services might eagerly evaluate a QuerySet they don&rsquo;t need.
+</td>
+</tr>
+
+<tr>
+<td><strong>Specialize code</strong> — write custom fast path instead of general library.</td>
+<td>
+  <span class="tag tag-amber">CAUTION</span>
+  This conflicts with our DRY/Services-first philosophy. The Health Audit&rsquo;s purpose is to <em>reduce</em> specialized duplication, not encourage it. Abseil&rsquo;s advice applies to hot loops in C++ — our &ldquo;hot loops&rdquo; are SQL queries, where specialization means a custom query, not a custom algorithm. We already encourage <code>.raw()</code> or annotate-based queries for performance when needed.
+</td>
+</tr>
+
+<tr>
+<td><strong>Use caching to avoid repeated work.</strong></td>
+<td>
+  <span class="tag tag-red">GAP</span>
+  Build Principles explicitly warn against caching: &ldquo;Never cache data in Python application memory unless you have a bulletproof invalidation strategy.&rdquo; (§7 DB SSOT). This is correct for financial/ecological data. But there&rsquo;s a middle ground: <code>cached_property</code> on model instances within a single request, Django&rsquo;s per-request cache, or template fragment caching. The gap is that we have no <em>guidance</em> on when request-scoped caching is safe vs. dangerous.
+</td>
+</tr>
+
+<tr>
+<td><strong>Make the compiler&rsquo;s job easier</strong> — avoid function calls in hot paths, hand-unroll.</td>
+<td>
+  <span class="tag tag-gray">N/A</span>
+  Python/C++ compiler advice doesn&rsquo;t apply. Our equivalent is: make the <em>QuerySet</em> efficient (which RU-005 already enforces).
+</td>
+</tr>
+
+<tr>
+<td><strong>Reduce stats collection costs</strong> — sample, don&rsquo;t collect for every event.</td>
+<td>
+  <span class="tag tag-amber">ASPIRATIONAL</span>
+  We don&rsquo;t collect runtime stats at all — this is a gap in the <em>measurement</em> domain (see §2), not a cost problem. If we add profiling, sampling should be the default approach.
+</td>
+</tr>
+
+<tr>
+<td><strong>Avoid logging on hot code paths.</strong></td>
+<td>
+  <span class="tag tag-amber">PARTIAL</span>
+  RU-010 catches <code>print()</code> but not excessive logger calls. The Abseil advice about precomputing <code>VLOG_IS_ON</code> outside loops maps to: check <code>logger.isEnabledFor(logging.DEBUG)</code> before building expensive log messages in loops. Not currently checked.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 7: CODE SIZE -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s7">7. Code Size &amp; Template/Inline Strategy</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Trim commonly inlined code</strong> — move slow paths out of line.</td>
+<td>
+  <span class="tag tag-green">ENFORCED</span>
+  Build Principles §8.1: &ldquo;No single file may exceed 30KB.&rdquo; Health Audit Dimension A enforces >25KB warnings. This is our &ldquo;inlining&rdquo; equivalent: forced modularization prevents monolithic files. The Vertical Slicing mandate (§8.1) keeps files focused.
+</td>
+</tr>
+
+<tr>
+<td><strong>Inline with care</strong> — reduce icache pressure.</td>
+<td>
+  <span class="tag tag-green">ENFORCED</span>
+  &ldquo;Thin Views&rdquo; (§5) target &lt;20 lines — the opposite of inlining. Services are the &ldquo;out-of-line&rdquo; code. This is good architecture <em>and</em> good performance hygiene for AI context windows.
+</td>
+</tr>
+
+<tr>
+<td><strong>Reduce template instantiations</strong> / <strong>Reduce container operations</strong>.</td>
+<td>
+  <span class="tag tag-gray">N/A</span>
+  Python has no templates. The equivalent pattern (reducing duplicated QuerySet construction) is covered by Health Audit Dimension B.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 8: API DESIGN -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s8">8. API Design for Performance</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Bulk APIs</strong> — reduce boundary crossings.</td>
+<td>
+  <span class="tag tag-amber">PARTIAL</span>
+  Our &ldquo;API boundary&rdquo; is service method calls and DB queries. <code>bulk_create</code> / <code>bulk_update</code> exist in Django but no guard checks that services prefer them over per-instance <code>.save()</code> in loops. Health Audit Dimension B catches some duplicated query patterns but not bulk-vs-loop choice.
+</td>
+</tr>
+
+<tr>
+<td><strong>Organize code so performance improvements stay inside encapsulation boundaries.</strong></td>
+<td>
+  <span class="tag tag-green">ENFORCED</span>
+  Boundary Separation (§2): logic in Services, not Views. Contract-First Design (§8.3): service signatures are the API. ArchGuard RU-002 (views touching DB) and RU-008 (cross-domain imports) enforce encapsulation.
+</td>
+</tr>
+
+<tr>
+<td><strong>Widely used APIs: be careful adding features — they constrain future implementations.</strong></td>
+<td>
+  <span class="tag tag-amber">ASPIRATIONAL</span>
+  Our Ubiquitous Language (§7) stops new top-level domain models. But we don&rsquo;t have an &ldquo;API deprecation&rdquo; process. The Health Audit §8.4 gap (&ldquo;Deprecation debt&rdquo;) acknowledges this: old fields like <code>settled_by</code> linger. A pattern for marking service methods as deprecated would help.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 9: PARALLELIZATION -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s9">9. Parallelization &amp; Synchronization</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Reduce lock contention, false sharing, use RCU.</strong></td>
+<td>
+  <span class="tag tag-gray">MOSTLY N/A</span>
+  Django&rsquo;s process-per-request model avoids most in-process concurrency issues. The Pi runs few concurrent users. Postgres handles concurrent write safety via MVCC — we use <code>select_for_update</code> and <code>transaction.atomic</code> (RU-003) for the cases that need it.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 10: DOMAIN-SPECIFIC -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s10">10. Domain-Specific Advice (ProtoBuf / C++ / Pi)</h2>
+
+<table class="comp">
+<thead>
+<tr><th style="width:45%">Abseil Performance Hints</th><th style="width:55%">Project Mycelium Alignment</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>Protocol Buffer advice:</strong> arena allocation, lazy parsing, <code>string_view</code>.</td>
+<td>
+  <span class="tag tag-gray">N/A</span>
+  We use Django&rsquo;s ORM + JSONField, not protos. Our equivalent optimization surface is: JSONField query patterns (GIN indexes), serializer efficiency (DRF <code>SerializerMethodField</code> cost), and template rendering cost.
+</td>
+</tr>
+
+<tr>
+<td><strong>C++-Specific:</strong> <code>absl::flat_hash_map</code>, <code>InlinedVector</code>, <code>string_view</code>, move semantics.</td>
+<td>
+  <span class="tag tag-gray">N/A (LANGUAGE)</span>
+  Python equivalents: <code>dict</code> is already a hash table, <code>list</code> is a vector, string slicing creates copies (no <code>string_view</code> equivalent). The closest we get is using <code>deque</code> or <code>array</code> for fixed-size collections — not a current concern.
+</td>
+</tr>
+
+<tr>
+<td><strong>Bulk operations:</strong> process batches, not one-at-a-time.</td>
+<td>
+  <span class="tag tag-amber">PARTIAL</span>
+  Covered in §8 (Bulk APIs). Our gap is that no guard checks for <code>.save()</code> inside a loop where <code>bulk_create</code>/<code>bulk_update</code> would be appropriate.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 11: GAPS NEITHER COVERS -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="s11">11. Gaps: What Neither System Currently Covers</h2>
+
+<p>These are areas where the Abseil hints don&rsquo;t apply directly (different stack) <em>and</em> our Build Principles + Guards don&rsquo;t address them — but the Pi context makes them important.</p>
+
+<table class="comp">
+<thead>
+<tr><th style="width:35%">Gap</th><th style="width:30%">Why Abseil Doesn&rsquo;t Cover It</th><th style="width:35%">Why It Matters for Us</th></tr>
+</thead>
+<tbody>
+
+<tr>
+<td><strong>JSONField blob size monitoring</strong></td>
+<td>C++ structs are fixed-size; Abseil doesn&rsquo;t deal with JSON blobs in DB columns.</td>
+<td>On the Pi, fetching a 50KB JSONField for every row in a 100-row QuerySet = 5MB of JSON deserialization. No guard checks <code>.defer('large_json_field')</code> usage in list views.</td>
+</tr>
+
+<tr>
+<td><strong>Template rendering cost</strong></td>
+<td>No HTML rendering in C++ services.</td>
+<td>RU-009 catches nesting depth, but not: repeated template fragment evaluation, filter chain cost, or context object size. A 50-field model instance in context costs more to render than a flat dict.</td>
+</tr>
+
+<tr>
+<td><strong>Django signal chain length</strong></td>
+<td>No signal/dispatch pattern.</td>
+<td>A single <code>.save()</code> can trigger 10+ signal handlers, each doing DB queries. No guard counts signal handlers per model or flags expensive signals.</td>
+</tr>
+
+<tr>
+<td><strong>Middleware stack depth</strong></td>
+<td>No request middleware.</td>
+<td>Every request passes through all middleware. A slow middleware (e.g., one that hits the DB for user preferences) costs on every request. Not checked.</td>
+</tr>
+
+<tr>
+<td><strong>Asset bundle size (CSS/JS)</strong></td>
+<td>C++ binaries — different concern.</td>
+<td>Total Isolation (§4) means all assets are local. CSS Alignment skill checks correctness, not bundle size. On a Pi serving over Wi-Fi, 500KB of CSS matters. Covered by PWA cache strategy (§4) for repeat visits, not first load.</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SUGGESTIONS -->
+<!-- ═══════════════════════════════════════════ -->
+<h2 id="suggestions">12. Concrete Addition Suggestions</h2>
+
+<p>Based on the gaps identified above, here are actionable recommendations for new Build Principles, ArchGuard rules, and Health Audit dimensions. Grouped by effort and impact.</p>
+
+<!-- HIGH IMPACT, LOW EFFORT -->
+<h3>12A. Quick Wins (Low Effort, High Impact)</h3>
+
+<div class="suggestion">
+<h4>S1. ArchGuard RU-011: &ldquo;.save() in a loop without bulk_create/bulk_update&rdquo; <span class="prio prio-high">HIGH PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Bulk APIs (§8), Reduce allocations (§5 — avoid per-element ops).<br>
+<strong>What:</strong> Scan for <code>for ... .save()</code> patterns in service code (not views — those are RU-002). Flag if N &gt; 1 saves could be <code>bulk_create()</code>.<br>
+<strong>Why:</strong> On a Pi, 100 individual INSERTs is seconds of DB time vs. one bulk INSERT.<br>
+<strong>Effort:</strong> ~50 lines of AST pattern matching in <code>scripts/archguard/rules/python_ast.py</code>.</p>
+</div>
+
+<div class="suggestion">
+<h4>S2. Build Principle §4.6: &ldquo;Use .only() and .defer() for list contexts&rdquo; <span class="prio prio-high">HIGH PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Compact data structures (§4), Reduce allocations — avoid copying unnecessary data.<br>
+<strong>What:</strong> Add a principle: &ldquo;When fetching QuerySets for list views (tables, dropdowns, card grids), use <code>.only('field1', 'field2')</code> to limit the columns fetched. For large JSONFields not needed in list context, use <code>.defer('large_field')</code>.&rdquo;<br>
+<strong>Why:</strong> Fetching all columns for a 100-row table on a Pi wastes memory and I/O. <code>.only()</code> tells Postgres to skip unneeded columns.<br>
+<strong>Effort:</strong> 3 lines in BUILD_PRINCIPLES.md, then a follow-up ArchGuard rule (RU-01X).</p>
+</div>
+
+<div class="suggestion">
+<h4>S3. Health Audit Dimension G: &ldquo;.values() vs. model instantiation in read-only contexts&rdquo; <span class="prio prio-med">MEDIUM PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Avoid copying (§5), Avoid unnecessary work (§6).<br>
+<strong>What:</strong> Scan views and services for QuerySets that are only used to build dicts/lists for JSON responses or templates. Flag if full model instances are constructed when <code>.values()</code> or <code>.values_list()</code> would suffice.<br>
+<strong>Why:</strong> Model instantiation is expensive (Django deserializes every field). For a read-only JSON endpoint returning 200 rows, <code>.values()</code> is 3-5× faster on a Pi.<br>
+<strong>Effort:</strong> Add one more grep/scan to the Health Audit checklist.</p>
+</div>
+
+<!-- MEDIUM IMPACT, MEDIUM EFFORT -->
+<h3>12B. Medium Investment</h3>
+
+<div class="suggestion amber">
+<h4>S4. ArchGuard RU-012: &ldquo;Expensive log message construction in loops&rdquo; <span class="prio prio-med">MEDIUM PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Avoid logging on hot code paths (§6), precompute VLOG_IS_ON outside loops.<br>
+<strong>What:</strong> Flag <code>logger.debug(f&rdquo;...&rdquo;)</code> or any log call with f-string/format inside a loop body, where the log level might be disabled at runtime.<br>
+<strong>Why:</strong> F-strings evaluate eagerly even if the logger discards the message. In a loop over 1000 items, that&rsquo;s 1000 wasted string allocations.<br>
+<strong>Effort:</strong> ~40 lines AST pattern. Easier alternative: add a Build Principle (&ldquo;check logger.isEnabledFor before expensive log formatting in loops&rdquo;).</p>
+</div>
+
+<div class="suggestion amber">
+<h4>S5. Build Principle §4.7: &ldquo;Request-scoped QuerySet reuse&rdquo; <span class="prio prio-med">MEDIUM PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Reduce allocations — reuse temporary objects (§5), Use caching (§6).<br>
+<strong>What:</strong> If a QuerySet result is needed by multiple services within one HTTP request, the view or a request-scoped cache should materialize it once. Django&rsquo;s QuerySets are lazy but not cached across different code paths.<br>
+<strong>Why:</strong> The Health Audit found <code>_get_settled_ids()</code> called 4× per dashboard load. A request-scoped <code>functools.lru_cache</code> or explicit materialization would fix this without violating the &ldquo;no app-memory caching&rdquo; rule (request scope is safe).<br>
+<strong>Effort:</strong> Add principle + pattern example. No automated guard needed (too hard to detect reliably).</p>
+</div>
+
+<div class="suggestion amber">
+<h4>S6. Performance regression test harness (minimum viable) <span class="prio prio-med">MEDIUM PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Measurement &amp; profiling tools (§2), microbenchmarks.<br>
+<strong>What:</strong> Add a <code>make perf-test</code> target that runs key endpoints through <code>pytest-django</code> with <code>django-querycount</code> or <code>django-perf-rec</code> to assert query counts don&rsquo;t regress. Start with the 5 most Pi-critical endpoints (dashboard, kanban, planner, rapid logger, cashbook).<br>
+<strong>Why:</strong> Static analysis can&rsquo;t catch N+1 that arises from model <code>__str__</code> methods, template tag calls, or DRF serializer depth. A query-count assertion (&ldquo;dashboard loads in ≤ 8 queries&rdquo;) makes performance a testable property.<br>
+<strong>Effort:</strong> ~2 days for initial harness + 5 endpoint tests.</p>
+</div>
+
+<!-- LOWER PRIORITY, EXPLORATORY -->
+<h3>12C. Nice to Have (Lower Priority / Exploratory)</h3>
+
+<div class="suggestion amber">
+<h4>S7. Build Principle §4.8: &ldquo;Integer enums for fixed-choice fields&rdquo; <span class="prio prio-low">LOW PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Enum values take up a whole word (§4), arrays instead of maps — bit vectors (§4).<br>
+<strong>What:</strong> For models with fixed, small choice sets (e.g., FarmEvent status with ≤ 16 values), prefer <code>IntegerField</code> with <code>choices</code> over <code>CharField</code>. The index and storage are smaller.<br>
+<strong>Why:</strong> On a Pi with limited RAM, smaller indexes mean more of the working set fits in Postgres shared buffers. This is a marginal gain — only worth it for high-row-count models.<br>
+<strong>Effort:</strong> 3 lines in BUILD_PRINCIPLES.md. No migration required for existing models unless they&rsquo;re high-volume.</p>
+</div>
+
+<div class="suggestion amber">
+<h4>S8. Estimation checklist for new features <span class="prio prio-low">LOW PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Back-of-the-envelope estimation (§1).<br>
+<strong>What:</strong> Add a lightweight &ldquo;Performance Estimate&rdquo; section to the PRD template: &ldquo;Expected row count, queries per request, JSON response size.&rdquo;<br>
+<strong>Why:</strong> Catches design-level performance issues before implementation. E.g., a report that joins 5 tables with 10,000 rows each on the Pi needs a different approach than one with 50 rows.<br>
+<strong>Effort:</strong> Add to <code>docs/engineering/PM_INSTRUCTIONS.md</code>.</p>
+</div>
+
+<div class="suggestion amber">
+<h4>S9. Asset budget check (CSS/JS) <span class="prio prio-low">LOW PRIORITY</span></h4>
+<p><strong>Abseil source:</strong> Code size considerations (§7).<br>
+<strong>What:</strong> Add a simple script that checks total CSS/JS bundle size and warns if > 200KB (gzipped). Could be a CI check or a Health Audit dimension.<br>
+<strong>Why:</strong> Total Isolation means all assets are local. First load on a Pi over Wi-Fi is already slow. Keeping the bundle small prevents gradual bloat.<br>
+<strong>Effort:</strong> ~30 line shell script. Add to CSS Alignment skill as optional check.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SUMMARY -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="summary-box" id="summary">
+<h2>13. Summary &amp; Recommended Actions</h2>
+
+<h3>What We Already Do Well</h3>
+<table class="comp" style="margin-top:0.5rem">
+<thead><tr><th>Area</th><th>Abseil Principle</th><th>Our Mechanism</th></tr></thead>
+<tbody>
+<tr><td>N+1 prevention</td><td>Algorithmic improvements, batch operations</td><td>RU-005 (prefetch), Property Trap rule</td></tr>
+<tr><td>Encapsulation</td><td>Keep perf changes inside module boundaries</td><td>Thin Views, Service layer, RU-002, RU-008</td></tr>
+<tr><td>File size discipline</td><td>Code size, inline with care</td><td>30KB file limit, Health Audit Dimension A</td></tr>
+<tr><td>Data locality</td><td>Batched storage, indices instead of pointers</td><td>Relational DB + UUID FKs — solved at DB layer</td></tr>
+<tr><td>Lazy evaluation</td><td>Defer expensive computation</td><td>Django lazy QuerySets — natural fit</td></tr>
+<tr><td>Bulk configuration</td><td>Reducing container operations</td><td>EntityCategory boolean tags — bit vector pattern</td></tr>
+<tr><td>Fail fast</td><td>N/A (C++ focus)</td><td>RU-001 (no silenced exceptions), transaction.atomic (RU-003)</td></tr>
+</tbody>
+</table>
+
+<h3 style="margin-top:2rem;">Top 3 Actions (Recommended Order)</h3>
+
+<ol style="font-size:0.92rem; line-height:1.8;">
+  <li>
+    <strong>Add RU-011: &ldquo;.save() in a loop&rdquo; rule</strong> (<a href="#s1">S1</a>)
+    <br><span style="color:var(--text-muted)">Highest bang-for-buck. ~50 lines of AST. Catches the single most common Pi performance killer after N+1.</span>
+  </li>
+  <li>
+    <strong>Add §4.6: &ldquo;Use .only()/.defer() for list contexts&rdquo; principle + follow-up guard rule</strong> (<a href="#s2">S2</a>)
+    <br><span style="color:var(--text-muted)">Codifies what experienced Django devs do instinctively. Makes it enforceable by ArchGuard.</span>
+  </li>
+  <li>
+    <strong>Add query-count regression tests for top-5 Pi endpoints</strong> (<a href="#s6">S6</a>)
+    <br><span style="color:var(--text-muted)">Closes the measurement gap. Static analysis can&rsquo;t catch everything — runtime assertions on query count make performance a CI-gated property for the first time.</span>
+  </li>
+</ol>
+
+<h3 style="margin-top:2rem;">The Big Picture</h3>
+
+<p style="font-size:0.92rem;">
+The Abseil Performance Hints and Project Mycelium&rsquo;s quality stack come from different worlds (C++ systems programming vs. Django farm SaaS) but converge on the same truths: <strong>choose the faster path at write-time, encapsulate complexity, and enforce patterns mechanically.</strong>
+</p>
+
+<p style="font-size:0.92rem; margin-top:0.5rem;">
+Our Build Principles + ArchGuard + Health Audit stack already covers ~60% of what Abseil&rsquo;s hints would translate to in a Django/Python context. The remaining 40% falls into two categories:
+</p>
+
+<ul style="font-size:0.92rem; line-height:1.8; padding-left:1.5rem;">
+  <li><strong>Runtime measurement</strong> (profiling, benchmarks, query-count assertions) — our biggest gap, and the one Abseil emphasizes most heavily.</li>
+  <li><strong>Fine-grained ORM optimization</strong> (.only(), .defer(), bulk operations, values()) — uncovered because static analysis focuses on architecture, not query shape.</li>
+</ul>
+
+<p style="font-size:0.92rem; margin-top:0.5rem;">
+The 9 suggestions above close most of these gaps. Together with our existing stack, they create a performance discipline that spans the full spectrum: <strong>write-time principles → static enforcement → runtime measurement.</strong>
+</p>
+
+<p style="font-size:0.82rem; color:var(--text-muted); margin-top:1.5rem; border-top:1px solid var(--border); padding-top:1rem;">
+  <strong>References:</strong>
+  Abseil Performance Hints — <a href="https://abseil.io/fast/hints.html">abseil.io/fast/hints.html</a> (Jeff Dean, Sanjay Ghemawat, 2025-12-16)
+  &nbsp;|&nbsp; <code>docs/engineering/prompts/dev/BUILD_PRINCIPLES.md</code> v2.4
+  &nbsp;|&nbsp; <code>docs/product/04_done/2026-06-18-architecture-guard.md</code>
+  &nbsp;|&nbsp; <code>docs/product/05_research/codebase-health-audit.md</code>
+  &nbsp;|&nbsp; <code>docs/engineering/prompts/arch.md</code>
+</p>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

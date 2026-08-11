@@ -1,4 +1,4 @@
-**Generated on:** 2026-03-13 10:02:07
+**Generated on:** 2026-08-11 21:34:18
 
 ### File Structure
 ```
@@ -13,8 +13,12 @@
         └── task_templates.json
     └── forms.py
     └── management
+        └── __init__.py
         └── commands
+            └── __init__.py
             └── cleanup_photos.py
+            └── preflight_template_tasktypes.py
+            └── sync_from_prod.py
     └── models.py
     └── services
         └── task_services.py
@@ -22,6 +26,8 @@
         └── core
             └── daily_agenda.html
             └── dashboard.html
+            └── includes
+                └── todo_card.html
             └── monthly_planner.html
             └── section_confirm_delete.html
             └── section_detail.html
@@ -35,17 +41,21 @@
             └── task_type_confirm_delete.html
             └── task_type_form.html
             └── task_type_list.html
+            └── todo_kanban.html
             └── visit_log_form.html
             └── visit_log_list.html
             └── weekly_planner.html
     └── templatetags
         └── __init__.py
         └── custom_filters.py
-    └── tests_chairperson.py
-    └── tests_dashboard.py
-    └── tests_monthly.py
-    └── tests_task_series.py
-    └── tests_weeding.py
+    └── tests
+        └── __init__.py
+        └── test_chairperson.py
+        └── test_dashboard.py
+        └── test_monthly.py
+        └── test_task_series.py
+        └── test_todo_kanban.py
+        └── test_weeding.py
     └── urls.py
     └── views.py
 └── coremanagementcommands
@@ -58,6 +68,8 @@
     └── PRODUCTION_CHECKLIST.md
 └── feature-status.sh
 └── icon-usage-report.txt
+└── implementation_log_2026-08-11.md
+└── lint.py
 └── manage.py
 └── new-feature.sh
 └── Prep_Sheets_2026-02-18.pdf
@@ -65,7 +77,27 @@
     └── backlog.md
     └── backlog_v1.md
     └── context
+        └── build_principles.md
         └── learnings.md
+        └── prinicples
+            └── abseil-vs-build-principles-comparison.html
+            └── archguard
+                └── __init__.py
+                └── __main__.py
+                └── audit_writer.py
+                └── rules
+                    └── __init__.py
+                    └── css_js.py
+                    └── python_ast.py
+                    └── templates.py
+                └── tests
+                    └── __init__.py
+                    └── test_rules.py
+                └── violation.py
+            └── consolidated-sprint-plan.html
+            └── performance-testing.md
+            └── pm-brief.md
+            └── river-archguard-assessment.html
         └── project_overview.md
         └── stack.md
         └── ui_standards.md
@@ -74,19 +106,26 @@
         └── edit_log.md
     └── designs
         └── log_avtivity.png
+        └── planner-activity-indicators-options.html
         └── tasks.html
     └── Done
         └── active_sections_dashboard.md
         └── all_logs_view.md
+        └── chairperson_role.md
         └── context_aware_logging.md
         └── dashboard.md
+        └── data_export_excel.md
         └── detailed_planting_metrics.md
+        └── edit_completed_task.md
         └── implemenation.md
         └── investigation_handover.md
         └── log_layout.md
+        └── mobile_responsive_implementation.md
         └── monthly_view.md
+        └── multi_day_tasks.md
         └── planner_interaction_update.md
         └── prd_zone_view
+        └── rolling_todo_list.md
         └── section_mapping.md
         └── stage_tracking.md
         └── styling.md
@@ -97,15 +136,18 @@
         └── weekly_planner_navigation.md
     └── prompts
         └── arch.md
+        └── DEV.md
         └── PM.md
         └── po.md
+    └── ready
+        └── kanban-snap-back-bug.md
+        └── planner-activity-indicators.md
+        └── quick-specs-participants-typeable.md
     └── refinement
-        └── chairperson_role.md
-        └── data_export_excel.md
-        └── edit_completed_task.md
-        └── mobile_responsive_implementation.md
-        └── multi_day_tasks.md
-        └── rolling_todo_list.md
+        └── performance-testing-backlog.md
+        └── playwright_e2e_testing.md
+    └── technical
+└── progress_log.json
 └── requirements.txt
 └── river
     └── .env
@@ -116,7 +158,6 @@
         └── admin.py
         └── apps.py
         └── models.py
-        └── tests.py
         └── views.py
     └── deploy.sh
     └── nginx_config
@@ -220,7 +261,7 @@ class TaskType(models.Model):
     is_active = models.BooleanField(default=True, help_text='Only active task types are shown in dropdowns')
     position = models.PositiveIntegerField(default=0, help_text='Order in which task types appear')
     icon_name = models.CharField(max_length=50, default='task', help_text="Material Symbols icon name (e.g., 'delete_sweep', 'grass', 'forest')")
-    color_class = models.CharField(max_length=50, default='bg-slate-50 text-slate-600 border-slate-100', help_text="Tailwind CSS classes for styling (e.g., 'bg-amber-50 text-amber-600 border-amber-100')")
+    color_class = models.CharField(max_length=150, default='bg-slate-50 text-slate-600 border-slate-100', help_text="Tailwind CSS classes for styling (e.g., 'bg-amber-50 text-amber-600 border-amber-100')")
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Status(models.Model):
@@ -254,13 +295,18 @@ class TaskTemplate(models.Model):
 
 class Task(models.Model):
     ASSIGNEE_TYPE_CHOICES = [('team', 'Team'), ('manager', 'Manager'), ('chairperson', 'Chairperson')]
-    date = models.DateField()
+    TODO_STATUS_CHOICES = [('todo', 'To Do'), ('doing', 'Doing'), ('done', 'Done')]
+    date = models.DateField(null=True, blank=True)
     section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True)
     assignee_type = models.CharField(max_length=15, choices=ASSIGNEE_TYPE_CHOICES, default='team')
     instructions = models.TextField()
     is_completed = models.BooleanField(default=False)
     template = models.ForeignKey(TaskTemplate, on_delete=models.SET_NULL, null=True, blank=True)
     group_id = models.UUIDField(null=True, blank=True, db_index=True, help_text='Links tasks created as a series')
+    is_rolling = models.BooleanField(default=False, db_index=True)
+    is_urgent = models.BooleanField(default=False)
+    todo_status = models.CharField(max_length=10, choices=TODO_STATUS_CHOICES, default='todo', db_index=True)
+    todo_position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -298,6 +344,14 @@ class SectionStageHistory(models.Model):
 @login_required
 def section_reorder_view(request):
     """AJAX endpoint to reorder sections by updating their position field."""
+    # ... implementation hidden ...
+
+class TodoKanbanView(LoginRequiredMixin, ListView):  # Renders: core/todo_kanban.html
+    # ... implementation hidden ...
+
+@method_decorator(csrf_exempt, name='dispatch')
+class TodoUpdateAPI(LoginRequiredMixin, View):
+    """AJAX endpoint to handle Kanban drag-and-drop updates."""
     # ... implementation hidden ...
 
 class GlobalDashboardView(LoginRequiredMixin, ListView):  # Renders: core/dashboard.html
@@ -378,15 +432,6 @@ class DataExportView(LoginRequiredMixin, View):
     # ... implementation hidden ...
 ```
 
-#### `SUMMARY: river/core/tests.py`
-```python
-# Test Coverage Summary for tests.py
-
-class DailyAgendaViewTests:
-    - def test_returns_all_tasks_for_date(self):
-    - def test_ordering(self):
-```
-
 #### `SUMMARY: river/settings.py`
 ```python
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -442,6 +487,10 @@ urlpatterns = [
     # Daily Agenda URLs
     path('daily-agenda/', views.DailyAgendaView.as_view(), name='daily_agenda'),
     path('tasks/<int:pk>/complete/', views.task_complete_view, name='task_complete'),
+    
+    # Kanban Board URLs
+    path('todo/', views.TodoKanbanView.as_view(), name='todo_kanban'),
+    path('todo/update/', views.TodoUpdateAPI.as_view(), name='todo_update'),
     
     # Visit Log URLs
     path('visit-logs/', views.VisitLogListView.as_view(), name='visit_log_list'),

@@ -1,188 +1,124 @@
 # Project Backlog: River Rehabilitation Management
 
-> **Status:** 5 completed, 6 new items pending, ordered by complexity (2026-02-20)
-
-This backlog tracks upcoming features and enhancements requested by the client. These items will be decomposed into PRDs and Technical User Stories in the next phase.
-
-## 1. Feature: Enhanced Weeding Data Capture
-**Target:** `core/templates/core/visit_log_form.html`
-- **Requirement:** Implement a "Removal" (Weeding) interface that mirrors the existing "Planting" interface.
-- **Details:**
-  - Allow users to record specific plant species being removed.
-  - Support multiple species entries per log.
-  - Track quantity or bags removed for each species.
-  - Maintain the "Forest Green" aesthetic with +/- tactile buttons.
-
-## 2. Feature: Monthly Calendar View
-**Target:** `core/templates/core/weekly_planner.html`
-- **Requirement:** Expand the planning capabilities from a 7-day view to a full month view.
-- **Details:**
-  - Provide a high-level overview of scheduled tasks across the month.
-  - Maintain the Team/Manager row distinction if feasible in a monthly grid, or use a summarized status indicator.
-  - Navigation between months.
-
-## 3. Feature: Time-Stamped Stage Tracking
-**Target:** `core/models.py` (Section), `core/templates/core/section_detail.html`
-- **Requirement:** Track and visualize the history of a section's "Lifecycle Stage" transitions.
-- **Details:**
-  - Create a historical log whenever a section's `current_stage` is updated.
-  - Store the timestamp, the old stage, and the new stage.
-  - Visualize these changes on the section's timeline view to show progress over time (e.g., "3 months in Clearing", "Transitioned to Planting on 2026-01-15").
-
-## 4. Feature: Global Activity Dashboard ("All Activities")
-**Target:** New View / Dashboard
-- **Requirement:** A centralized "Star" dashboard providing an overview of all activities across the entire river.
-- **Details:**
-  - High-level insights: Total bags collected, total plants planted, total weeding sessions.
-  - Cross-section comparisons.
-  - This dashboard will serve as the foundation for future analytics and ecological reporting.
-
-## 5. Feature: Task Template Management Interface
-**Target:** `core/templates/core/task_template_form.html`
-- **Requirement:** Create a user-facing interface for managing `TaskTemplate` entries.
-- **Details:**
-  - Move template management from the Django Admin to the core application UI.
-  - Allow managers to edit existing templates (Names, Types, Default Instructions).
-  - Create new templates or retire old ones.
-  - Ensure the interface is consistent with the `TaskForm` and `SectionForm` styling.
+> **Last Updated:** 2026-08-11
+> **Status:** Foundation sprint in progress. Backlog consolidated from `backlog_v1.md` (Jess's production feedback) and Sarah's latest requests.
 
 ---
 
-## Completed Items
+## Current Sprint: Foundation Stabilization
 
-### 1. Feature: Enhanced Weeding Data Capture ✅ DONE
-**Target:** `core/templates/core/visit_log_form.html`
-- **Status:** Implemented
-- **PRD:** `product/Done/weeding_data.md`
-- **Implementation:** 
-  - Added `('weed', 'Weeding / Removal')` to `Metric.METRIC_TYPE_CHOICES`
-  - Created `addWeedMetric()` JavaScript function
-  - Weeding section placed below Planting with +/- buttons
-
-### 2. Feature: Monthly Calendar View ✅ DONE
-**Target:** `core/templates/core/monthly_planner.html`
-- **Status:** Implemented
-- **PRD:** `product/Done/monthly_view.md`
-- **Implementation:**
-  - `MonthlyPlannerView` created in views.py
-  - Calendar grid with Monday start
-  - Task badges with section color coding
-  - Toggle between Weekly/Monthly views
-
-### 3. Feature: Time-Stamped Stage Tracking ✅ DONE
-**Target:** `core/models.py` (Section), `core/templates/core/section_detail.html`
-- **Status:** Implemented
-- **PRD:** `product/Done/stage_tracking.md`
-- **Implementation:**
-  - `SectionStageHistory` model created
-  - Automated capture on stage change
-  - Timeline visualization on section detail
-
-### 4. Feature: Global Activity Dashboard ("All Activities") ✅ DONE
-**Target:** New View / Dashboard
-- **Status:** Implemented
-- **PRD:** `product/Done/dashboard.md`
-- **Implementation:**
-  - `GlobalDashboardView` at `/dashboard/`
-  - Global impact counters (litter, plants, weeds)
-  - Recent activity feed
-  - Stage distribution breakdown
-
-### 5. Feature: Task Template Management Interface ✅ DONE
-**Target:** `core/templates/core/task_template_form.html`
-- **Status:** Implemented
-- **PRD:** `product/Done/template_management.md`
-- **Implementation:**
-  - `TaskTemplateListView`, `TaskTemplateCreateView`, `TaskTemplateUpdateView`, `TaskTemplateDeleteView`
-  - CRUD at `/templates/`, `/templates/create/`, `/templates/<pk>/edit/`
-  - Consistent styling with SectionForm
-
-### 6. Feature: Highlight Current Date in Weekly Planner ✅ DONE
-**Target:** `core/templates/core/weekly_planner.html`
-- **Status:** Implemented
-- **Implementation:**
-  - Added today-highlight CSS class with light blue tint
-  - Added `today` to WeeklyPlannerView context
-  - Highlights both header day number and grid cells in Team/Manager rows
-
-### 7. Feature: Relative Progress Bars for Lifecycle Stages ✅ DONE
-**Target:** `core/templates/core/dashboard.html`, `core/views.py`
-- **Status:** Implemented
-- **Implementation:**
-  - Added `percentage` field to each stage in stage_distribution
-  - Each bar width = (stage count / max count) * 100%
-  - Dashboard now shows relative distribution across stages
-
-### 9. Feature: Remove Success Metrics Card ✅ DONE
-**Target:** `core/templates/core/dashboard.html`
-- **Status:** Implemented
-- **Implementation:**
-  - Removed the Success Metrics card that showed unclear "100%"
-  - Updated grid from 4 columns to 3 columns
+See `product/context/prinicples/consolidated-sprint-plan.html` for the full plan. This sprint focuses on docs hygiene, code quality fixes, Kanban bug fix, ops tooling, and performance enforcement. No user-facing features this sprint.
 
 ---
 
-## New Backlog Items (Ordered by Complexity)
+## Next Sprint (from `progress_log.json` next_three_steps)
 
-### LOW COMPLEXITY
+These are the next user-facing features once foundations are stable:
 
-*(No low complexity items remaining)*
+### 1. Playwright E2E Testing
+**Priority:** High | **Complexity:** High
+- End-to-end integration tests for complex UI flows (planners, modals, Kanban drag-and-drop)
+- Builds confidence for refactoring planner templates and extracting partials
 
----
+### 2. Enhanced Weeding Data Capture
+**Priority:** Medium | **Complexity:** Medium
+- Species-specific removal tracking mirroring the existing planting interface
+- Multiple species entries per log with quantity tracking
+- Maintain the "Forest Green" aesthetic with +/- tactile buttons
 
-### MEDIUM COMPLEXITY
-
-#### 8. Feature: Edit Log Entry from Completed Task
-**Target:** `core/templates/core/daily_agenda.html`, `core/views.py`
-- **Complexity:** Medium
-- **Requirement:** When editing a completed task, redirect to edit the Visit Log instead of the Task.
-- **Details:**
-  - If task `is_completed=True` and has an associated VisitLog, the Edit button should navigate to the VisitLog edit view
-  - If task is not completed (pre-completion), continue to edit the Task as normal
-  - Need to determine how to handle tasks completed without a VisitLog (fallback to Task edit)
-
-#### 9. Feature: Remove Success Metrics Card
-**Target:** `core/templates/core/dashboard.html`
-- **Complexity:** Low
-- **Requirement:** Remove the "Success Metrics" card from the dashboard.
-- **Details:**
-  - Card shows unclear "100%" with "All section data validated"
-  - Simply remove the card entirely
-
-#### 10. Feature: Sections with Recent Activity on Dashboard
-**Target:** `core/templates/core/dashboard.html`, `core/views.py`
-- **Complexity:** Medium
-- **Requirement:** Show sections that have recent activity in addition to the activity feed.
-- **Details:**
-  - Add a section showing "Active Sections" or "Sections with Recent Activity"
-  - Display as a list or grid of section cards with their color codes
-  - Show last activity date for each section
-  - Complements the existing activity feed by highlighting which sections are engaged
+### 3. Stage Tracking Visualization
+**Priority:** Medium | **Complexity:** Medium
+- Polished timeline visualization for section stage history
+- `SectionStageHistory` model already exists — this is the UI layer
 
 ---
 
-### HIGH COMPLEXITY
+## Production Feedback Backlog
 
-#### 11. Feature: Detailed Planting Metrics on Dashboard
-**Target:** `core/templates/core/dashboard.html`, `core/views.py`
-- **Complexity:** High
-- **Requirement:** Separate indigenous planting into number of species and number of individuals per species.
-- **Details:**
-  - Show total number of unique species planted
-  - Show top 5 species breakdown (e.g., "Restio: 150, Bulbinella: 80, etc.")
-  - Current display shows only total plants count
-  - Update the Re-Planting card to display this detailed info
+Items from Jess (first week of production use) and Sarah's latest request list. Each should get its own PRD before implementation.
+
+### 4. Quick Log from Planner
+**Source:** Jess (`backlog_v1.md` #1) | **Complexity:** Medium
+- "New Log" button on planner pages next to "New Task"
+- Log unplanned activities without navigating to Sections or creating a Task first
+- Refinement needed: date default, section pre-population
+
+### 5. Impact Overview — Participant Count
+**Source:** Sarah #2 | **Complexity:** Low
+- Add a metric for number of participants alongside existing plants, litter bags, etc.
+- Surface on the global impact dashboard
+
+### 6. Planner — Tick to Complete + Log
+**Source:** Sarah #3 | **Complexity:** Medium
+- Complete tasks on planner with a tick (not just log-and-complete flow)
+- Streamline the completion workflow from the planner views
+
+### 7. Impact Dashboard — Typeable Litter Bag Count
+**Source:** Sarah #4 | **Complexity:** Low
+- Replace +/- click counters with typeable number inputs for litter bags
+- Speeds up data entry for large counts
+
+### 8. Planner Activity → Section/Lifecycle Indicators
+**Source:** Sarah #5 | **Complexity:** Medium-High
+- If a section has tasks this week (planting, weeding, etc.), show those task types as indicators next to the section name
+- Same for lifecycle progress boxes — reflect current week's activities
+- Needs PRD: query pattern, template changes, performance consideration
+
+### 9. Export Planner to Excel
+**Source:** Sarah #6 | **Complexity:** Medium
+- Export the weekly/monthly planner view to Excel
+- Builds on existing Excel export infrastructure
 
 ---
 
-**Complexity Rating (New Items):**
-- **Low:** (None remaining)
-- **Medium:** Items 8, 10
-- **High:** Item 11
+## Remaining from Original Backlog
+
+Items from the original `backlog.md` that are still pending:
+
+### 10. Edit Log Entry from Completed Task
+**Complexity:** Medium
+- When editing a completed task, redirect to edit the Visit Log instead of the Task
+- If task `is_completed=True` and has an associated VisitLog, navigate to VisitLog edit
+- Fallback to Task edit if no VisitLog exists
+
+### 11. Sections with Recent Activity on Dashboard
+**Complexity:** Medium
+- Show "Active Sections" on the global dashboard as a list/grid with color codes
+- Display last activity date per section
+- Complements the existing activity feed
+
+### 12. Detailed Planting Metrics on Dashboard
+**Complexity:** High
+- Separate indigenous planting into number of species vs. individuals per species
+- Show top 5 species breakdown (e.g., "Restio: 150, Bulbinella: 80")
+- Update the Re-Planting card to display detailed info
+
+---
+
+## Completed (Archive)
+
+These items were implemented between Feb–Mar 2026 and are documented in `product/Done/`:
+
+| # | Feature | PRD |
+|---|---------|-----|
+| 1 | Enhanced Weeding Data Capture (basic) | `product/Done/weeding_data.md` |
+| 2 | Monthly Calendar View | `product/Done/monthly_view.md` |
+| 3 | Time-Stamped Stage Tracking (basic) | `product/Done/stage_tracking.md` |
+| 4 | Global Activity Dashboard | `product/Done/dashboard.md` |
+| 5 | Task Template Management Interface | `product/Done/template_management.md` |
+| 6 | Highlight Current Date in Weekly Planner | — |
+| 7 | Relative Progress Bars for Lifecycle Stages | — |
+| 8 | Remove Success Metrics Card | — |
+| 9 | Chairperson Role Integration | — |
+| 10 | Multi-Day Task Series | — |
+| 11 | Data Export to Excel | — |
+| 12 | Global Rolling To-Do List (Kanban) | — |
+| 13 | Mobile Responsive Layout | — |
+| 14 | Redirect Context Preservation | — |
 
 ---
 
 **Next Steps:**
-1. Review implemented features for any refinements needed
-2. Consider new features for the backlog
-3. Begin testing and user feedback collection
+1. Complete Foundation Stabilization Sprint
+2. Write PRDs for items 4–9 (production feedback) and items 1–3 (next sprint)
+3. Begin next sprint with Playwright E2E → Enhanced Weeding → Stage Tracking Viz
