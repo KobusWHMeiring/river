@@ -8,8 +8,12 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import calendar
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 import json
 import io
 import openpyxl
@@ -80,12 +84,25 @@ class TodoUpdateAPI(LoginRequiredMixin, View):
             task_id = data.get('task_id')
             new_status = data.get('status')
             new_index = data.get('index')
-            
-            if task_id and new_status in ['todo', 'doing', 'done'] and new_index is not None:
-                move_todo_task(task_id, new_status, new_index)
-                return JsonResponse({'success': True})
-            return JsonResponse({'success': False, 'error': 'Invalid data'}, status=400)
+
+            logger.info(f'Kanban move: task={task_id} -> status={new_status} index={new_index}')
+
+            if not task_id:
+                return JsonResponse({'success': False, 'error': 'Missing task_id'}, status=400)
+            if new_status not in ['todo', 'doing', 'done']:
+                return JsonResponse({'success': False, 'error': f'Invalid status: {new_status}'}, status=400)
+            if new_index is None:
+                return JsonResponse({'success': False, 'error': 'Missing index'}, status=400)
+
+            move_todo_task(task_id, new_status, new_index)
+            logger.info(f'Kanban move success: task={task_id} -> {new_status}')
+            return JsonResponse({'success': True})
+
+        except json.JSONDecodeError as e:
+            logger.error(f'Kanban move: invalid JSON: {e}')
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
         except Exception as e:
+            logger.exception(f'Kanban move failed: task={task_id if "task_id" in dir() else "?"}')
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 class GlobalDashboardView(LoginRequiredMixin, ListView):
@@ -105,6 +122,9 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
         total_bags_recyclable = metrics.filter(metric_type='litter_recyclable').aggregate(total=Sum('value'))['total'] or 0
         total_plants = metrics.filter(metric_type='plant').aggregate(total=Sum('value'))['total'] or 0
         total_weeds = metrics.filter(metric_type='weed').aggregate(total=Sum('value'))['total'] or 0
+
+        # Participant Count
+        total_participants = VisitLog.objects.aggregate(Sum('participant_count'))['participant_count__sum'] or 0
 
         # Section Stage Distribution
         from django.db.models import Count
@@ -160,6 +180,7 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
             'total_plants': total_plants,
             'total_weeds': total_weeds,
             'total_bags': total_bags_general + total_bags_recyclable,
+            'total_participants': total_participants,
             'stage_distribution': stage_distribution,
             'total_plant_species': total_plant_species,
             'plant_species_breakdown': plant_species_breakdown,
@@ -1179,4 +1200,159 @@ class DataExportView(LoginRequiredMixin, View):
         )
         response['Content-Disposition'] = f'attachment; filename={filename}'
         
+        return response
+
+
+class PlannerExportView(LoginRequiredMixin, View):
+    """Export the weekly or monthly planner view to Excel."""
+
+    def get(self, request, *args, **kwargs):
+        week_str = request.GET.get('week')
+        year_str = request.GET.get('year')
+        month_str = request.GET.get('month')
+        today = timezone.now().date()
+
+        if week_str:
+            # Weekly export
+            try:
+                week_date = datetime.strptime(week_str, '%Y-%m-%d').date()
+                start = week_date - timedelta(days=week_date.weekday())
+            except (ValueError, TypeError):
+                start = today - timedelta(days=today.weekday())
+            end = start + timedelta(days=6)
+            title = f'Weekly Planner: {start.strftime("%d %b")} – {end.strftime("%d %b %Y")}'
+        elif year_str and month_str:
+            # Monthly export
+            try:
+                year = int(year_str)
+                month = int(month_str)
+            except (ValueError, TypeError):
+                year = today.year
+                month = today.month
+            start = date(year, month, 1)
+            # Last day of month
+            if month == 12:
+                end = date(year, month, 31)
+            else:
+                end = date(year, month + 1, 1) - timedelta(days=1)
+            title = f'Monthly Planner: {calendar.month_name[month]} {year}'
+        else:
+            # Default to current week
+            start = today - timedelta(days=today.weekday())
+            end = start + timedelta(days=6)
+            title = f'Weekly Planner: {start.strftime("%d %b")} – {end.strftime("%d %b %Y")}'
+
+        tasks = Task.objects.filter(
+            date__range=[start, end],
+            is_rolling=False
+        ).select_related('section', 'template__task_type').order_by('date', 'section__position')
+
+        # Build Excel
+        output = io.BytesIO()
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Planner Export'
+
+        header_font = Font(bold=True, color='FFFFFF')
+        header_fill = PatternFill(start_color='166534', end_color='166534', fill_type='solid')
+        header_align = Alignment(horizontal='center')
+        border = Border(
+            left=Side(style='thin'), right=Side(style='thin'),
+            top=Side(style='thin'), bottom=Side(style='thin'),
+        )
+
+        # Title
+        ws.append([title])
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=8)
+        ws.cell(row=1, column=1).font = Font(bold=True, size=14, color='166534')
+        ws.append([f'Generated: {today.strftime("%Y-%m-%d %H:%M")}'])
+        ws.append([f'Tasks: {tasks.count()}'])
+        ws.append([])
+
+        # Headers
+        headers = ['Date', 'Day', 'Section', 'Assignee', 'Task Type', 'Template', 'Instructions', 'Done?']
+        ws.append(headers)
+        for col_idx, cell in enumerate(ws[ws.max_row], 1):
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+            cell.border = border
+
+        # Task rows
+        for task in tasks:
+            row = [
+                task.date,
+                task.date.strftime('%A') if task.date else '',
+                task.section.name if task.section else '—',
+                task.get_assignee_type_display(),
+                task.template.task_type.name if (task.template and task.template.task_type) else 'Custom',
+                task.template.name if task.template else 'Custom',
+                task.instructions,
+                '✓' if task.is_completed else '',
+            ]
+            ws.append(row)
+            for col_idx, cell in enumerate(ws[ws.max_row], 1):
+                cell.border = border
+                if col_idx == 7:
+                    cell.alignment = Alignment(wrap_text=True)
+
+        # Column widths
+        widths = [12, 14, 20, 14, 18, 25, 50, 8]
+        for i, w in enumerate(widths, 1):
+            ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
+
+        # Section summary sheet
+        ws2 = wb.create_sheet(title='By Section')
+        sections = Section.objects.filter(
+            task__date__range=[start, end], task__is_rolling=False
+        ).distinct().order_by('position')
+
+        ws2.append(['Tasks by Section'])
+        ws2.merge_cells(start_row=1, start_column=1, end_row=1, end_column=3)
+        ws2.cell(row=1, column=1).font = Font(bold=True, size=12, color='166534')
+        ws2.append([])
+
+        for section in sections:
+            section_tasks = tasks.filter(section=section)
+            ws2.append([section.name, f'{section_tasks.count()} tasks', ''])
+            ws2.cell(row=ws2.max_row, column=1).font = Font(bold=True)
+
+            sub_headers = ['Date', 'Day', 'Assignee', 'Task Type', 'Instructions', 'Done?']
+            ws2.append(sub_headers)
+            for cell in ws2[ws2.max_row]:
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.border = border
+
+            for task in section_tasks:
+                row = [
+                    task.date,
+                    task.date.strftime('%A') if task.date else '',
+                    task.get_assignee_type_display(),
+                    task.template.task_type.name if (task.template and task.template.task_type) else 'Custom',
+                    task.instructions,
+                    '✓' if task.is_completed else '',
+                ]
+                ws2.append(row)
+                for cell in ws2[ws2.max_row]:
+                    cell.border = border
+            ws2.append([])
+
+        ws2.column_dimensions['A'].width = 14
+        ws2.column_dimensions['B'].width = 14
+        ws2.column_dimensions['C'].width = 16
+        ws2.column_dimensions['D'].width = 20
+        ws2.column_dimensions['E'].width = 55
+        ws2.column_dimensions['F'].width = 8
+
+        wb.save(output)
+        output.seek(0)
+
+        safe_title = title.replace(' ', '_').replace('–', '-').replace(':', '')
+        filename = f'River_{safe_title}_{today.strftime("%Y%m%d")}.xlsx'
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
