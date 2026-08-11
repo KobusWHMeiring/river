@@ -223,36 +223,20 @@
                                 <div class="p-4 md:p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
                                     <span class="material-symbols-outlined text-xl md:text-2xl text-slate-400 mb-2">delete</span>
                                     <h5 class="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 md:mb-4">General Litter Bags</h5>
-                                    <div class="flex items-center justify-center gap-4 md:gap-6">
-                                        <button type="button" onclick="updateCounter('litter_general', -1)" class="counter-btn w-12 h-12 md:w-10 md:h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors active:bg-slate-100" data-testid="counter-btn" aria-label="Decrease general litter count">
-                                            <span class="material-symbols-outlined text-xl">remove</span>
-                                        </button>
-                                        <span class="text-2xl md:text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_general_value">{{ metric_formset.0.value.value|default:0 }}</span>
-                                        <button type="button" onclick="updateCounter('litter_general', 1)" class="counter-btn w-12 h-12 md:w-10 md:h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors active:bg-slate-100" data-testid="counter-btn" aria-label="Increase general litter count">
-                                            <span class="material-symbols-outlined text-xl">add</span>
-                                        </button>
-                                    </div>
+                                    <input type="number" name="metrics-0-value" min="0" value="{{ metric_formset.0.value.value|default:0 }}"
+                                           class="w-24 px-0 py-2 text-center text-2xl md:text-3xl font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white appearance-none">
                                     <input type="hidden" name="metrics-0-metric_type" value="litter_general">
                                     <input type="hidden" name="metrics-0-label" value="General Litter">
-                                    <input type="hidden" name="metrics-0-value" id="litter_general_input" value="{{ metric_formset.0.value.value|default:0 }}">
                                 </div>
 
                                 <!-- Recyclable Litter -->
                                 <div class="p-4 md:p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
                                     <span class="material-symbols-outlined text-xl md:text-2xl text-emerald-500 mb-2">recycling</span>
                                     <h5 class="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 md:mb-4">Recyclable Bags</h5>
-                                    <div class="flex items-center justify-center gap-4 md:gap-6">
-                                        <button type="button" onclick="updateCounter('litter_recyclable', -1)" class="counter-btn w-12 h-12 md:w-10 md:h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors active:bg-slate-100" data-testid="counter-btn" aria-label="Decrease recyclable litter count">
-                                            <span class="material-symbols-outlined text-xl">remove</span>
-                                        </button>
-                                        <span class="text-2xl md:text-3xl font-bold dark:text-white min-w-[3rem]" id="litter_recyclable_value">{{ metric_formset.1.value.value|default:0 }}</span>
-                                        <button type="button" onclick="updateCounter('litter_recyclable', 1)" class="counter-btn w-12 h-12 md:w-10 md:h-10 rounded-full border-2 border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 transition-colors active:bg-slate-100" data-testid="counter-btn" aria-label="Increase recyclable litter count">
-                                            <span class="material-symbols-outlined text-xl">add</span>
-                                        </button>
-                                    </div>
+                                    <input type="number" name="metrics-1-value" min="0" value="{{ metric_formset.1.value.value|default:0 }}"
+                                           class="w-24 px-0 py-2 text-center text-2xl md:text-3xl font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-white appearance-none">
                                     <input type="hidden" name="metrics-1-metric_type" value="litter_recyclable">
                                     <input type="hidden" name="metrics-1-label" value="Recyclable Litter">
-                                    <input type="hidden" name="metrics-1-value" id="litter_recyclable_input" value="{{ metric_formset.1.value.value|default:0 }}">
                                 </div>
                             </div>
                         </div>
@@ -384,8 +368,6 @@ const taskType = '{{ task_type|default:"unplanned" }}';
 let totalMetrics = 2;
 
 const counters = {
-    litter_general: 0,
-    litter_recyclable: 0,
     metric_2: 0 // First plant
 };
 
