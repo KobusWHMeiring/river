@@ -88,3 +88,21 @@ class DashboardTests(TestCase):
         
         self.assertEqual(clearing_data['count'], clearing_count - 1)
         self.assertEqual(planting_data['count'], planting_count + 1)
+
+    def test_participant_count_aggregation(self):
+        """Dashboard should sum participant_count across all visits."""
+        VisitLog.objects.create(section=self.section1, date=timezone.now().date(), participant_count=5)
+        VisitLog.objects.create(section=self.section2, date=timezone.now().date(), participant_count=3)
+        VisitLog.objects.create(section=self.section1, date=timezone.now().date(), participant_count=0)
+
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_participants'], 8)
+
+    def test_participant_count_defaults_to_zero(self):
+        """Existing visits with default participant_count=0 should not crash aggregation."""
+        VisitLog.objects.create(section=self.section1, date=timezone.now().date())
+
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_participants'], 0)
