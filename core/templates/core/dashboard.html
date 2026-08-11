@@ -36,7 +36,7 @@
     <div class="max-w-7xl mx-auto space-y-8">
         
         <!-- Impact Counters -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="stat-card border-t-4 border-t-blue-500">
                 <div class="flex justify-between items-start mb-4">
                     <span class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
@@ -48,6 +48,17 @@
                 <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">
                     {{ total_bags_general }} General / {{ total_bags_recyclable }} Recyclable
                 </p>
+            </div>
+
+            <div class="stat-card border-t-4 border-t-purple-500">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                        <span class="material-symbols-outlined">groups</span>
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Participation</span>
+                </div>
+                <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_participants }} <span class="text-sm font-medium text-slate-400 uppercase">People</span></div>
+                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Total volunteers across all visits</p>
             </div>
 
             <div class="stat-card border-t-4 border-t-emerald-500">
