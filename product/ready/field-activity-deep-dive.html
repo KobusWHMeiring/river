@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>River — Field Activity Deep Dive</title>
+<style>
+  :root {
+    --green: #166534; --green-bg: #dcfce7; --green-border: #86efac;
+    --amber: #92400e; --amber-bg: #fef3c7; --amber-border: #fcd34d;
+    --red: #991b1b; --red-bg: #fee2e2; --red-border: #fca5a5;
+    --blue: #1e40af; --blue-bg: #dbeafe; --blue-border: #93c5fd;
+    --slate: #475569; --slate-bg: #f1f5f9;
+    --bg: #fafafa; --card: #fff; --text: #1e293b; --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 2rem; }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  h1 { font-size: 2rem; color: var(--green); border-bottom: 3px solid var(--green); padding-bottom: 0.5rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 1.3rem; color: var(--blue); margin-top: 2.5rem; margin-bottom: 1rem; }
+  h3 { font-size: 1rem; color: var(--slate); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 2rem; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.5rem 0; }
+  .kpi { background: var(--card); border-radius: 10px; padding: 1.25rem; border: 1px solid #e2e8f0; text-align: center; }
+  .kpi .num { font-size: 2rem; font-weight: 700; }
+  .kpi .lbl { font-size: 0.78rem; color: var(--muted); margin-top: 0.25rem; }
+  .kpi.green .num { color: var(--green); }
+  .kpi.red .num { color: var(--red); }
+  .kpi.amber .num { color: var(--amber); }
+
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--card); border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem; }
+  table.data th { background: var(--green); color: #fff; padding: 0.6rem 0.75rem; text-align: left; font-size: 0.75rem; text-transform: uppercase; }
+  table.data td { padding: 0.5rem 0.75rem; border-top: 1px solid #f1f5f9; }
+  table.data td.num { text-align: right; font-weight: 600; }
+  table.data tr:hover { background: #f8fafc; }
+  table.data tr.zero td { color: var(--muted); }
+
+  .callout { border-left: 4px solid; padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin: 0.75rem 0; font-size: 0.9rem; }
+  .callout.red { background: var(--red-bg); border-color: var(--red); }
+  .callout.amber { background: var(--amber-bg); border-color: var(--amber); }
+  .callout.blue { background: var(--blue-bg); border-color: var(--blue); }
+
+  .section-card { background: var(--card); border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; display: grid; grid-template-columns: 180px 1fr; gap: 1rem; align-items: start; }
+  .section-card .name { font-weight: 700; }
+  .section-card .detail { font-size: 0.82rem; color: var(--muted); }
+  .section-card .bar-wrap { background: #e2e8f0; border-radius: 4px; height: 6px; margin-top: 4px; }
+  .section-card .bar { background: var(--green); border-radius: 4px; height: 6px; }
+
+  .timeline { position: relative; padding-left: 1.5rem; border-left: 2px solid #e2e8f0; margin: 1rem 0; }
+  .timeline .entry { margin-bottom: 0.75rem; position: relative; }
+  .timeline .entry::before { content: ''; position: absolute; left: -1.625rem; top: 0.35rem; width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+  .timeline .date { font-size: 0.75rem; color: var(--muted); }
+  .timeline .label { font-size: 0.85rem; }
+
+  @media (max-width: 700px) {
+    body { padding: 1rem; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .section-card { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🌿 Field Activity Deep Dive</h1>
+<p class="subtitle">
+  <strong>Date:</strong> 2026-08-11 &nbsp;|&nbsp;
+  <strong>Data:</strong> All-time from production &nbsp;|&nbsp;
+  <strong>For:</strong> Sarah
+</p>
+
+<p style="margin-bottom:1.5rem; font-size:0.9rem; color: var(--muted);">
+  A closer look at litter, planting, weeding, and stage changes across all sections. 
+  This is the data behind the planner — what&rsquo;s actually been logged on the ground.
+</p>
+
+<p style="margin-bottom:2rem;">
+  📄 <a href="/core/insights/" style="color:var(--blue);">Planner &amp; Gaps</a> &nbsp;|&nbsp;
+  🌿 <a href="/core/insights/?page=field" style="color:var(--green); font-weight:600;">Field Activity Deep Dive</a>
+</p>
+
+<!-- ═══════════ KPI ═══════════ -->
+<div class="kpi-grid">
+  <div class="kpi green">
+    <div class="num">257</div>
+    <div class="lbl">Plants in the ground<br>across 26 species</div>
+  </div>
+  <div class="kpi amber">
+    <div class="num">417</div>
+    <div class="lbl">Bags of litter collected<br>all from one section</div>
+  </div>
+  <div class="kpi red">
+    <div class="num">0</div>
+    <div class="lbl">Weeding metrics logged<br>despite 12 weeding tasks planned</div>
+  </div>
+</div>
+
+<!-- ═══════════ LITTER ═══════════ -->
+<h2>🗑️ Litter Collection</h2>
+
+<table class="data">
+  <thead><tr><th>Section</th><th>General Bags</th><th>Recyclable</th><th>Total</th><th>Log Entries</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Observatory</td><td class="num">409</td><td class="num">4</td><td class="num">413</td><td class="num">4</td>
+    </tr>
+    <tr class="zero"><td>All other sections (10)</td><td class="num">—</td><td class="num">—</td><td class="num">0</td><td class="num">0</td></tr>
+    <tr style="font-weight:700; background:#f8fafc;">
+      <td>Total</td><td class="num">409</td><td class="num">4</td><td class="num">413</td><td class="num">4</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout amber">
+  <strong>All litter data comes from one section (Observatory) across just 4 log entries.</strong> 
+  9 other sections with tasks planned have zero litter logged. Either litter isn't being recorded 
+  during visits, or Observatory is the only section where litter is a focus. 
+  <br><br>
+  Also notable: only 4 recyclable bags vs 409 general — is recyclable litter being tracked separately?
+</div>
+
+<!-- ═══════════ PLANTING ═══════════ -->
+<h2>🌱 Planting — 257 Plants, 26 Species</h2>
+
+<table class="data">
+  <thead><tr><th>Section</th><th>Plants</th><th>Species</th><th>Top Species</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Fynbos Snake</td><td class="num">129</td><td class="num">13</td>
+      <td>Otholobium decumbens (30), Pelargonium cucullatum (20), Osteospermum incanum (18)</td>
+    </tr>
+    <tr>
+      <td>Mowbray</td><td class="num">114</td><td class="num">15</td>
+      <td>Helichrysum patulum (22), Otholobium bracteolatum (17), Metalasia muricata (15)</td>
+    </tr>
+    <tr>
+      <td>Rondebosch</td><td class="num">14</td><td class="num">6</td>
+      <td>Cliffortia obcordata (9), Cotyledon orbiculata (4), Helichrysum pandurifolium (3)</td>
+    </tr>
+    <tr class="zero"><td>8 other sections</td><td class="num">0</td><td class="num">—</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<div class="callout blue">
+  <strong>Strong species diversity in Fynbos Snake and Mowbray</strong> — 26 species across 3 sections, 
+  all indigenous to the Cape. This is excellent ecological data. If this were visible on the dashboard 
+  (as Sarah requested in item #2), it would tell a compelling story for donors and reports.
+</div>
+
+<!-- ═══════════ WEEDING ═══════════ -->
+<h2>🌿 Weeding / Invasive Removal</h2>
+
+<div class="callout red">
+  <strong>Zero weeding metrics have been logged. Ever.</strong> This is despite:
+  <br>• 12 weeding tasks planned across July–August
+  <br>• The weeding data capture feature being built (species tracking with +/- buttons)
+  <br>• Weeding being one of the core field activities
+  <br><br>
+  <strong>Possible causes:</strong> (a) Weeding IS happening but the team isn't logging metrics during visits, 
+  (b) the weeding UI is confusing or hidden, (c) weeding is being logged as general notes instead of metrics, 
+  or (d) weeding tasks are planned but fieldwork hasn't started yet in those sections.
+</div>
+
+<!-- ═══════════ STAGE CHANGES ═══════════ -->
+<h2>📋 Stage Transitions — All in February 2026</h2>
+
+<p style="font-size:0.85rem; color: var(--muted); margin-bottom:0.5rem;">
+  Every stage change happened within 3 days during initial setup. No transitions have been recorded since.
+</p>
+
+<div class="timeline">
+  <div class="entry"><span class="date">17 Feb</span> <span class="label">Boschenheuwel → Mitigation, Mowbray → Clearing, Newlands → Follow-up, Observatory → Follow-up, Paradise Park → Planting, Riverside Road → Clearing, Rondebosch → Community, Rosebank → Clearing, San Souci → Planting</span></div>
+  <div class="entry"><span class="date">19 Feb</span> <span class="label">Boschenheuwel → Clearing, Fynbos Snake → Mitigation, Observatory Wetland → Mitigation</span></div>
+  <div class="entry"><span class="date">20 Feb</span> <span class="label">Fynbos Snake → Follow-up, Mowbray → Follow-up, Newlands → Clearing, Paradise Park → Mitigation, Riverside Road → Planting, Rondebosch → Clearing, San Souci → Clearing</span></div>
+</div>
+
+<div class="callout amber">
+  <strong>Stage tracking exists but isn't being used operationally.</strong> The initial setup created a 
+  flurry of transitions, then nothing. This could mean: (a) sections haven't changed stages since February 
+  (possible — rehab is slow), or (b) the team doesn't know stage tracking exists, or (c) there's no UI 
+  prompting them to update stages.
+</div>
+
+<!-- ═══════════ SECTION SUMMARY ═══════════ -->
+<h2>📊 Complete Section Activity Profile</h2>
+
+<table class="data">
+  <thead><tr><th>Section</th><th>Stage</th><th>Planted</th><th>Litter</th><th>Weeded</th><th>Photos</th><th>Last Log</th></tr></thead>
+  <tbody>
+    <tr><td>Fynbos Snake</td><td>Follow-up</td><td class="num">129</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+    <tr><td>Mowbray</td><td>Follow-up</td><td class="num">114</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+    <tr><td>Rondebosch</td><td>Clearing</td><td class="num">14</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>—</td></tr>
+    <tr><td>Observatory</td><td>Follow-up</td><td class="num">—</td><td class="num">413</td><td class="num">—</td><td class="num">—</td><td>22 Jul</td></tr>
+    <tr><td>Newlands</td><td>Clearing</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">1</td><td>—</td></tr>
+    <tr><td>Observatory Wetland</td><td>Mitigation</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">1</td><td>—</td></tr>
+    <tr class="zero"><td>Boschenheuwel Arboretum</td><td>Clearing</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>—</td></tr>
+    <tr class="zero"><td>Paradise Park</td><td>Mitigation</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>—</td></tr>
+    <tr class="zero"><td>Riverside Road to ULRG</td><td>Planting</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>—</td></tr>
+    <tr class="zero"><td>Rosebank</td><td>Clearing</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>—</td></tr>
+    <tr class="zero"><td>San Souci</td><td>Clearing</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<div class="callout blue">
+  <strong>5 sections have zero metrics of any kind.</strong> Boschenheuwel, Paradise Park, Riverside Road, 
+  Rosebank, and San Souci have never logged planting, litter, or weeding data — despite some having tasks 
+  planned. Only 3 of 11 sections have logged field metrics.
+</div>
+
+<!-- ═══════════ WHAT THIS MEANS ═══════════ -->
+<h2>Three Takeaways</h2>
+
+<div class="callout red">
+  <strong>① Data is concentrated in 3 sections.</strong><br>
+  Fynbos Snake, Mowbray, and Observatory account for nearly 100% of all logged field activity. 
+  This could reflect genuine operational focus, or it could mean the other sections are doing 
+  work that isn't being recorded.
+</div>
+
+<div class="callout amber">
+  <strong>② Weeding is invisible.</strong><br>
+  0 weeding metrics despite weeding being a core activity type. If weeding is happening, 
+  it&rsquo;s either logged as free-text notes (not metrics) or not logged at all. The Enhanced 
+  Weeding Data Capture feature in the backlog may need UI changes to make it more discoverable.
+</div>
+
+<div class="callout blue">
+  <strong>③ Rich ecological data exists but isn't surfaced.</strong><br>
+  257 plants of 26 indigenous species — this is impressive restoration data. It&rsquo;s in the 
+  database but the dashboard doesn't show species breakdowns. Item #2 (participant count) and 
+  the detailed planting metrics (backlog #12) would turn this hidden data into visible impact.
+</div>
+
+<p style="font-size:0.78rem; color: var(--muted); margin-top: 3rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
+  Data from production via <code>sync_from_prod.py</code> on 2026-08-11. 
+  <a href="/core/insights/">← Back to planner insights</a>
+</p>
+
+</div>
+</body>
+</html>

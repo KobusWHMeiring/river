@@ -140,6 +140,8 @@
                                      title="{% if task.section %}{{ task.section.name }}{% else %}General{% endif %} - {{ task.instructions|truncatechars:50 }} (Team)">
                                     {% if task.is_completed %}
                                     <span class="material-symbols-outlined text-[10px] text-emerald-500">check</span>
+                                    {% else %}
+                                    <button class="tick-complete-btn material-symbols-outlined text-[10px] text-slate-300 hover:text-emerald-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Mark complete">check_box_outline_blank</button>
                                     {% endif %}
                                     <span class="truncate font-medium text-slate-700 dark:text-slate-200">
                                         {% if task.section %}[{{ task.section.name|truncatechars:8 }}]{% else %}[General]{% endif %}
@@ -159,6 +161,8 @@
                                      title="{% if task.section %}{{ task.section.name }}{% else %}General{% endif %} - {{ task.instructions|truncatechars:50 }} (Manager)">
                                     {% if task.is_completed %}
                                     <span class="material-symbols-outlined text-[10px] text-emerald-500">check</span>
+                                    {% else %}
+                                    <button class="tick-complete-btn material-symbols-outlined text-[10px] text-slate-300 hover:text-emerald-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Mark complete">check_box_outline_blank</button>
                                     {% endif %}
                                     <span class="truncate font-medium text-slate-600 dark:text-slate-400">
                                         {% if task.section %}[{{ task.section.name|truncatechars:8 }}]{% else %}[Admin]{% endif %}
@@ -178,6 +182,8 @@
                                      title="{% if task.section %}{{ task.section.name }}{% else %}General{% endif %} - {{ task.instructions|truncatechars:50 }} (Chairperson)">
                                     {% if task.is_completed %}
                                     <span class="material-symbols-outlined text-[10px] text-emerald-500">check</span>
+                                    {% else %}
+                                    <button class="tick-complete-btn material-symbols-outlined text-[10px] text-slate-300 hover:text-emerald-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Mark complete">check_box_outline_blank</button>
                                     {% endif %}
                                     <span class="truncate font-medium text-slate-600 dark:text-slate-400">
                                         {% if task.section %}[{{ task.section.name|truncatechars:8 }}]{% else %}[Strategy]{% endif %}
@@ -487,6 +493,64 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             this.style.borderLeft = 'none';
         }
+    });
+
+    // Tick-to-complete functionality
+    function getCSRFToken() {
+        const name = 'csrftoken';
+        const cookies = document.cookie.split(';');
+        for (let c of cookies) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) {
+                return decodeURIComponent(c.substring(name.length + 1));
+            }
+        }
+        return '';
+    }
+
+    document.querySelectorAll('.tick-complete-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const taskId = this.dataset.taskId;
+            const btnEl = this;
+            const badge = btnEl.closest('.task-badge');
+
+            // Optimistic update
+            btnEl.disabled = true;
+            btnEl.textContent = 'check';
+            btnEl.classList.add('text-emerald-500');
+            btnEl.classList.remove('text-slate-300', 'hover:text-emerald-500');
+            if (badge) {
+                badge.classList.add('opacity-50');
+            }
+
+            fetch(`/core/tasks/${taskId}/complete/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCSRFToken()
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                // Revert optimistic update
+                btnEl.disabled = false;
+                btnEl.textContent = 'check_box_outline_blank';
+                btnEl.classList.remove('text-emerald-500');
+                btnEl.classList.add('text-slate-300', 'hover:text-emerald-500');
+                if (badge) {
+                    badge.classList.remove('opacity-50');
+                }
+            });
+        });
     });
 });
 </script>

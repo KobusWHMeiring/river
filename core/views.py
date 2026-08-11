@@ -847,6 +847,7 @@ class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
             return next_url
         return reverse_lazy('daily_agenda')
 
+@login_required
 def task_complete_view(request, pk):
     task = get_object_or_404(Task, pk=pk)
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -1368,9 +1369,15 @@ class PlannerExportView(LoginRequiredMixin, View):
 
 
 def planner_insights_view(request):
-    """Serve the planner insights page for Sarah's review."""
+    """Serve the planner insights pages for Sarah's review."""
     import os
     from django.conf import settings
-    path = os.path.join(settings.BASE_DIR, 'product', 'Ready', 'planner-insights-gap-analysis.html')
+    page = request.GET.get('page', 'planner')
+    filename_map = {
+        'planner': 'planner-insights-gap-analysis.html',
+        'field': 'field-activity-deep-dive.html',
+    }
+    filename = filename_map.get(page, filename_map['planner'])
+    path = os.path.join(settings.BASE_DIR, 'product', 'Ready', filename)
     with open(path, encoding='utf-8') as f:
         return HttpResponse(f.read())
