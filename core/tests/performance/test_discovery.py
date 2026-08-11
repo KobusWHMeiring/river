@@ -144,10 +144,10 @@ class DiscoveryTests(PerformanceTestCase):
             if budget == '?':
                 status = '—'
             elif count <= budget:
-                status = '✅ OK'
+                status = 'OK'
                 total_under += 1
             else:
-                status = f'❌ +{count - budget}'
+                status = f'OVER +{count - budget}'
                 total_over += 1
             print(f"{name:<28s} {count:>8d}  {str(budget):>8s}  {status:>8s}")
 
