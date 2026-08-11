@@ -1378,6 +1378,6 @@ def planner_insights_view(request):
         'field': 'field-activity-deep-dive.html',
     }
     filename = filename_map.get(page, filename_map['planner'])
-    path = os.path.join(settings.BASE_DIR, 'product', 'Ready', filename)
+    path = os.path.join(settings.BASE_DIR, 'product', 'ready', filename)
     with open(path, encoding='utf-8') as f:
         return HttpResponse(f.read())
