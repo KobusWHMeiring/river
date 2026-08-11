@@ -211,7 +211,7 @@ class VisitLog(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True, help_text="River section where activity took place (optional for general logs)")
     date = models.DateField()
     notes = models.TextField(blank=True)
-    participant_count = models.PositiveIntegerField(default=0)
+    participant_count = models.PositiveIntegerField(default=0, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
