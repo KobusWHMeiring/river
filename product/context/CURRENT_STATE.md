@@ -1,4 +1,4 @@
-**Generated on:** 2026-08-11 21:34:18
+**Generated on:** 2026-08-12 18:50:09
 
 ### File Structure
 ```
@@ -50,11 +50,16 @@
         └── custom_filters.py
     └── tests
         └── __init__.py
+        └── performance
+            └── base.py
+            └── test_discovery.py
         └── test_chairperson.py
         └── test_dashboard.py
         └── test_monthly.py
+        └── test_task_complete.py
         └── test_task_series.py
         └── test_todo_kanban.py
+        └── test_urls.py
         └── test_weeding.py
     └── urls.py
     └── views.py
@@ -75,7 +80,7 @@
 └── Prep_Sheets_2026-02-18.pdf
 └── product
     └── backlog.md
-    └── backlog_v1.md
+    └── backlog.py
     └── context
         └── build_principles.md
         └── learnings.md
@@ -105,8 +110,10 @@
         └── deploy.md
         └── edit_log.md
     └── designs
+        └── field-activity-deep-dive.html
         └── log_avtivity.png
         └── planner-activity-indicators-options.html
+        └── planner-insights-gap-analysis.html
         └── tasks.html
     └── Done
         └── active_sections_dashboard.md
@@ -119,12 +126,14 @@
         └── edit_completed_task.md
         └── implemenation.md
         └── investigation_handover.md
+        └── kanban-snap-back-bug.md
         └── log_layout.md
         └── mobile_responsive_implementation.md
         └── monthly_view.md
         └── multi_day_tasks.md
         └── planner_interaction_update.md
         └── prd_zone_view
+        └── quick-specs-participants-typeable.md
         └── rolling_todo_list.md
         └── section_mapping.md
         └── stage_tracking.md
@@ -132,6 +141,7 @@
         └── success_metrics_card.md
         └── task_template_data.md
         └── template_management.md
+        └── tick-to-complete-planner.md
         └── weeding_data.md
         └── weekly_planner_navigation.md
     └── prompts
@@ -140,9 +150,7 @@
         └── PM.md
         └── po.md
     └── ready
-        └── kanban-snap-back-bug.md
         └── planner-activity-indicators.md
-        └── quick-specs-participants-typeable.md
     └── refinement
         └── performance-testing-backlog.md
         └── playwright_e2e_testing.md
@@ -177,6 +185,9 @@
         └── base_site.html
     └── base.html
 └── test_db.sqlite3
+└── tests
+    └── uat
+        └── participants-typeable_uat.md
 ```
 
 ### Summarized Key Files
@@ -315,6 +326,7 @@ class VisitLog(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True, help_text='River section where activity took place (optional for general logs)')
     date = models.DateField()
     notes = models.TextField(blank=True)
+    participant_count = models.PositiveIntegerField(default=0, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Metric(models.Model):
@@ -396,6 +408,7 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):  
 class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):  # Renders: core/visit_log_form.html
     # ... implementation hidden ...
 
+@login_required
 def task_complete_view(request, pk):
     # ... implementation hidden ...
 
@@ -429,6 +442,14 @@ class TaskTypeDeleteView(LoginRequiredMixin, DeleteView):  # Renders: core/task_
 
 class DataExportView(LoginRequiredMixin, View):
     """View to generate a comprehensive multi-sheet Excel export."""
+    # ... implementation hidden ...
+
+class PlannerExportView(LoginRequiredMixin, View):
+    """Export the weekly or monthly planner view to Excel."""
+    # ... implementation hidden ...
+
+def planner_insights_view(request):
+    """Serve the planner insights pages for Sarah's review."""
     # ... implementation hidden ...
 ```
 
@@ -499,6 +520,10 @@ urlpatterns = [
 
     # Data Export URLs
     path('export/', views.DataExportView.as_view(), name='data_export'),
+    path('export/planner/', views.PlannerExportView.as_view(), name='planner_export'),
+
+    # Insights page (temporary, for Sarah review)
+    path('insights/', views.planner_insights_view, name='planner_insights'),
 
     # Task Template Management URLs
     path('templates/', views.TaskTemplateListView.as_view(), name='task_template_list'),
