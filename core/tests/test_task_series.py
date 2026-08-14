@@ -12,7 +12,10 @@ class TaskSeriesServiceTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='password')
         self.section = Section.objects.create(name='Test Section', color_code='#FFFFFF')
-        self.task_type = TaskType.objects.create(name='Litter Run', code='litter_run', applicable_to='team')
+        self.task_type, _ = TaskType.objects.get_or_create(
+            code='litter_run',
+            defaults={'name': 'Litter Run', 'applicable_to': 'team'}
+        )
         self.template = TaskTemplate.objects.create(
             name='Daily Litter Pick',
             task_type=self.task_type,
@@ -155,7 +158,10 @@ class TaskSeriesViewTests(TestCase):
         self.user = User.objects.create_user(username='testuser', password='password')
         self.client.login(username='testuser', password='password')
         self.section = Section.objects.create(name='Test Section', color_code='#FFFFFF')
-        self.task_type = TaskType.objects.create(name='Litter Run', code='litter_run', applicable_to='team')
+        self.task_type, _ = TaskType.objects.get_or_create(
+            code='litter_run',
+            defaults={'name': 'Litter Run', 'applicable_to': 'team'}
+        )
         self.template = TaskTemplate.objects.create(
             name='Daily Litter Pick',
             task_type=self.task_type,

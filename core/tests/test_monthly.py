@@ -23,10 +23,10 @@ class MonthlyPlannerViewTests(TestCase):
             color_code='#FF5733'
         )
 
-        # Create a task type
-        self.task_type = TaskType.objects.create(
-            name='Litter Run',
-            code='litter_run'
+        # Create (or reuse the seeded) task type
+        self.task_type, _ = TaskType.objects.get_or_create(
+            code='litter_run',
+            defaults={'name': 'Litter Run'}
         )
 
         # Create a task template

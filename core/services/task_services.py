@@ -86,10 +86,31 @@ def move_todo_task(task_id: int, new_status: str, new_index: int) -> None:
         log.info(f'move_todo_task: task={task_id} old={old_status} -> new={new_status} index={new_index}')
         print(f'[DEBUG move_todo_task] task={task_id} old={old_status} -> new={new_status} index={new_index}')
 
-        # Short-circuit: no change needed
+        # Same-column reorder (or no-op if the position didn't change).
+        # SortableJS fires onEnd for in-column drags too, so a task can move
+        # to a new position while keeping its status.
         if old_status == new_status:
-            log.info(f'move_todo_task: same status, skipping')
-            print(f'[DEBUG move_todo_task] same status, skipping')
+            if task.todo_position == new_index:
+                log.info(f'move_todo_task: no change, skipping')
+                print(f'[DEBUG move_todo_task] no change, skipping')
+                return
+
+            column_tasks = list(Task.objects.filter(
+                is_rolling=True,
+                todo_status=new_status
+            ).exclude(id=task_id).order_by('todo_position'))
+
+            column_tasks.insert(new_index, task)
+            print(f'[DEBUG move_todo_task] same-column reorder: {len(column_tasks)} tasks after insert')
+
+            for i, t in enumerate(column_tasks):
+                if t.id == task_id:
+                    updated = Task.objects.filter(id=t.id).update(todo_position=i)
+                    print(f'[DEBUG move_todo_task] UPDATED task {t.id}: pos={i} rows={updated}')
+                    log.info(f'move_todo_task: reordered task {t.id} to pos={i} (same status)')
+                elif t.todo_position != i:
+                    updated = Task.objects.filter(id=t.id).update(todo_position=i)
+                    print(f'[DEBUG move_todo_task] reindex task {t.id}: pos {t.todo_position} -> {i} rows={updated}')
             return
 
         # Re-index target column (includes the task being moved)
