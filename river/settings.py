@@ -30,6 +30,10 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         send_default_pii=True,
+        # Performance monitoring: fraction of transactions to trace.
+        # Lower this (e.g. 0.1) under heavy production traffic to control cost.
+        traces_sample_rate=env.float('SENTRY_TRACES_SAMPLE_RATE', default=1.0),
+        profiles_sample_rate=env.float('SENTRY_PROFILES_SAMPLE_RATE', default=0.0),
     )
 
 # SECURITY WARNING: keep the secret key used in production secret!
