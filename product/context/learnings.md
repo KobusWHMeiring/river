@@ -1322,3 +1322,79 @@ def get_context_data(self, **kwargs):
 - **Workflow Integrity**: Users are now consistently returned to their previous planning view (Week or Month) even after fixing form errors.
 - **Error Reduction**: Client-side `required` attributes prevent ~90% of "accidental" re-renders to the standalone form.
 - **Consistency**: The same redirect preservation pattern is now applied across Task Create, Update, and Delete views.
+
+---
+
+## Date: 2026-08-14
+
+## Issue: Test Suite Regression — UNIQUE constraint on core_tasktype.code
+
+### Problem Description
+28 tests across `test_monthly.py` and `test_task_series.py` errored in `setUp`
+with `django.db.utils.IntegrityError: UNIQUE constraint failed: core_tasktype.code`.
+
+### Root Cause Analysis
+`TaskType.code` is `unique=True`. Data migration
+`0029_create_missing_tasktypes.py` seeds the standard task types
+(`litter_run`, `weeding`, `planting`) via `get_or_create` when the test DB is
+built. The test fixtures then called `TaskType.objects.create(code='litter_run')`,
+colliding with the row the migration had already seeded.
+
+### Solution Implemented
+Switched the three affected fixtures to `get_or_create`, matching the pattern
+already used in `test_task_complete.py`:
+
+```python
+self.task_type, _ = TaskType.objects.get_or_create(
+    code='litter_run',
+    defaults={'name': 'Litter Run'},
+)
+```
+
+### Key Learnings
+1. **Data migrations leak into test fixtures.** A `RunPython` migration that
+   seeds rows runs during test-DB creation, so tests must not assume an empty
+   table for any model a migration populates.
+2. **Prefer `get_or_create` in test `setUp`** when the test just needs a row to
+   exist and the exact instance identity doesn't matter — it is idempotent
+   whether or not a migration pre-seeded the row.
+3. **`unique=True` + `create()` is a landmine** the moment any seed/migration
+   touches that model. Prefer `get_or_create` from the start.
+
+---
+
+## Date: 2026-08-14
+
+## Issue: Kanban Same-Column Reorder Silently Dropped
+
+### Problem Description
+`test_move_todo_task_service` failed: moving a task to a new position *within*
+the same column left `todo_position` unchanged.
+
+### Root Cause Analysis
+`move_todo_task()` short-circuited on `old_status == new_status` and returned
+without re-indexing. But SortableJS fires its `onEnd` handler for in-column
+drags too, so a card reordered within one column is sent with the same status
+and a new index — and the service discarded it.
+
+### Solution Implemented
+Replaced the short-circuit with a same-column reorder branch that is a true
+no-op only when the position is genuinely unchanged:
+
+```python
+if old_status == new_status:
+    if task.todo_position == new_index:
+        return  # true no-op
+    # re-insert task at new_index and re-number the column
+    ...
+    return
+```
+
+### Key Learnings
+1. **"Same status" ≠ "no change".** Position can change independently of status.
+   Short-circuit only when *both* are unchanged.
+2. **Drag-and-drop libraries fire events for in-place moves too.** When the UI
+   sends `(status, index)` on every drop, the service must handle the
+   same-status / different-index case.
+3. **The test already encoded the intended behaviour** — a failing test is the
+   fastest signal that the service and the frontend disagree.
