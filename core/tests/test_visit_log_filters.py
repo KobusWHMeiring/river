@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 
 from core.models import Section, VisitLog, Metric
-from core.services.visit_log_services import base_visit_log_queryset
+from core.services.visit_log_services import base_visit_log_queryset, build_visit_log_queryset
 
 
 class VisitLogServiceTests(TestCase):
@@ -44,3 +44,29 @@ class VisitLogServiceTests(TestCase):
         qs = base_visit_log_queryset({'activity_type': 'planned'})
         # None of these fixtures have a Task, so planned => empty
         self.assertEqual(set(qs), set())
+
+    def test_metric_litter_covers_both_types(self):
+        self.assertEqual(set(build_visit_log_queryset({'metric': 'litter'})), {self.litter})
+
+    def test_metric_plant(self):
+        self.assertEqual(set(build_visit_log_queryset({'metric': 'plant'})), {self.plant, self.plant_reed})
+
+    def test_metric_weed(self):
+        self.assertEqual(set(build_visit_log_queryset({'metric': 'weed'})), {self.weed})
+
+    def test_metric_participants_excludes_zero(self):
+        self.assertEqual(set(build_visit_log_queryset({'metric': 'participants'})), {self.litter, self.plant, self.plant_reed, self.weed})
+
+    def test_species_exact_match(self):
+        qs = build_visit_log_queryset({'metric': 'plant', 'species': 'Restio'})
+        self.assertEqual(set(qs), {self.plant})  # NOT plant_reed
+
+    def test_sort_oldest(self):
+        self.assertEqual(list(build_visit_log_queryset({'sort': 'date'}))[0], self.litter)
+
+    def test_sort_section_null_last(self):
+        names = [v.section.name if v.section else None for v in build_visit_log_queryset({'sort': 'section'})]
+        self.assertEqual(names, ['Alpha', 'Alpha', 'Beta', 'Beta', None])
+
+    def test_sort_participants_desc(self):
+        self.assertEqual(list(build_visit_log_queryset({'sort': '-participant_count'}))[0], self.litter)

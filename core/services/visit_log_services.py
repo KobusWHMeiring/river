@@ -52,3 +52,47 @@ def base_visit_log_queryset(params: dict) -> QuerySet:
         queryset = queryset.filter(task__isnull=True)
 
     return queryset
+
+
+_METRIC_TYPES = {
+    'litter': ('litter_general', 'litter_recyclable'),
+    'plant': ('plant',),
+    'weed': ('weed',),
+}
+
+
+def build_visit_log_queryset(params: dict) -> QuerySet:
+    """Build the full, sorted, de-duplicated VisitLog queryset for list/export.
+
+    Data Flow Contract:
+      in:  params — request.GET-like mapping with optional keys
+           q, section, start_date, end_date, activity_type, metric, species, sort
+      out: QuerySet[VisitLog] filtered, de-duplicated, ordered
+      side effects: none
+    """
+    queryset = base_visit_log_queryset(params)
+
+    metric = params.get('metric')
+    if metric == 'participants':
+        queryset = queryset.filter(participant_count__gt=0)
+    elif metric in _METRIC_TYPES:
+        queryset = queryset.filter(metrics__metric_type__in=_METRIC_TYPES[metric])
+
+    species = params.get('species')
+    if species:
+        queryset = queryset.filter(metrics__label=species)
+
+    if metric in _METRIC_TYPES or metric == 'participants' or species:
+        queryset = queryset.distinct()
+
+    sort = params.get('sort', '-date')
+    if sort == 'date':
+        queryset = queryset.order_by('date', '-created_at')
+    elif sort == 'section':
+        queryset = queryset.order_by(F('section__name').asc(nulls_last=True), '-date')
+    elif sort == '-participant_count':
+        queryset = queryset.order_by('-participant_count', '-date')
+    else:
+        queryset = queryset.order_by('-date', '-created_at')
+
+    return queryset
