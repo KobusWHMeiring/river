@@ -67,6 +67,10 @@ Make every dashboard metric traceable — click a metric and see the underlying 
 - [x] Participant drill-down source confirmed → `participant_count > 0`
 - [x] Date-range behaviour decided → all-time default (reconciles with cards)
 - [x] Inspection-tools scope decided → metric/species filters + sort + export
+- [x] Shared filter logic extracted to `core/services/visit_log_services.py` (single source for list + export)
+- [x] Species filter semantics → exact `label` match (reconciles with species-row totals)
+- [x] Total header in drill-down list → aggregate reconciles with card totals
+- [x] `sort=section` → `section__name` with null sections last
 - [ ] Tests written and passing
 
 ---
@@ -138,3 +142,83 @@ Make every dashboard metric traceable — click a metric and see the underlying 
 - Participants drill-down currently returns 1 log (sparse; improves after PRD #1 ships).
 - Weeds drill-down returns empty until weeding data is captured.
 - Plant species drill-down is rich (26 species, 257 plants) — the main justification for species-level drill-down.
+
+---
+
+# 2026-08-16 Dashboard Metric Drill-Down — Design (Final, Ready for Implementation)
+
+> Final review pass over the 2026-08-14 design. Resolves four open points and
+> locks the service-layer contract. Decisions below supersede any conflicting
+> text above.
+
+## Newly Locked Decisions
+
+| # | Decision | Choice |
+|---|----------|--------|
+| 8 | Shared filter logic | Extract into `core/services/visit_log_services.py`; list + export views both delegate |
+| 9 | Species filter matching | **Exact** `label` match (not icontains) so species-row totals reconcile |
+| 10 | Drill-down total header | Render aggregate total in `visit_log_list.html` when a `metric` filter is active |
+| 11 | `sort=section` semantics | `section__name` ascending, null sections last |
+
+## Service Layer — `core/services/visit_log_services.py` (NEW)
+
+Two functions; the list view (`VisitLogListView`) and the new export view
+(`VisitLogExportView`) both consume them so filter/aggregate logic has a single
+source of truth.
+
+```python
+def build_visit_log_queryset(params: dict) -> QuerySet:
+    """Apply VisitLog list filters from request.GET params.
+
+    Data Flow Contract:
+      in:  params — {q, section, start_date, end_date, activity_type,
+                     metric, species, sort}
+      out: QuerySet[VisitLog], filtered + ordered, with
+           select_related('section','task') and prefetch_related('metrics','photos')
+      side effects: none
+    """
+
+def visit_log_total(queryset: QuerySet, metric: str | None, species: str | None) -> int:
+    """Aggregate total for the active metric/species filter, for the list header.
+
+    Data Flow Contract:
+      in:  queryset (already filtered), metric ('litter'|'plant'|'weed'|'participants'),
+           species (exact label)
+      out: int — sum of matching Metric.value for litter/plant/weed;
+           sum of VisitLog.participant_count for participants; 0 when no filter
+      side effects: none
+    """
+```
+
+### Filter semantics (final)
+
+- `metric`: `litter` → `metrics__metric_type__in=('litter_general','litter_recyclable')`; `plant`/`weed` → exact type; `participants` → `participant_count__gt=0`. All `.distinct()`.
+- `species`: `metrics__label=species` (**exact**), composed with `metric` → `.distinct()`.
+- `sort`: `-date` (default), `date`, `section` (→ `section__name`, nulls last), `-participant_count`.
+- Existing `q`, `section`, `start_date`, `end_date`, `activity_type` unchanged.
+
+### Total header (reconciliation UI)
+
+When a `metric` filter is active, render a one-line summary above the list:
+e.g. "Litter — 123 bags", "Participation — 45 people", "Plants — 12", "Weeds — 8"
+(species-narrowed when `species` present). Computed from the **current** filtered
+queryset, so adding date filters narrows the total accordingly; with no date
+filter it reconciles exactly with the dashboard card.
+
+## Updated File Map
+
+| File | Change |
+|------|--------|
+| `core/services/visit_log_services.py` | **NEW** — `build_visit_log_queryset`, `visit_log_total` |
+| `core/views.py` | `VisitLogListView.get_queryset` delegates to service; add `VisitLogExportView` (delegates too) |
+| `core/urls.py` | Add `export/visit-logs/` |
+| `core/templates/core/visit_log_list.html` | Metric/species filters, sort dropdown, total header, Export button (carries current query string) |
+| `core/templates/core/dashboard.html` | Card "View source" links + species row links (`\|urlencode`) |
+| `core/tests/` | Service unit tests + view filter/sort/export tests |
+
+## Updated Test Plan (additions to the mandatory plan above)
+
+- Service: `visit_log_total` returns the correct sum for each of the 4 metrics and the species-narrowed case.
+- Service: `species` uses **exact** match (a log labeled "Olive" is NOT returned when filtering "Wild Olive").
+- View: `sort=section` orders by section name with null sections last.
+- View: total header reconciles with the dashboard card total (no date filter).
