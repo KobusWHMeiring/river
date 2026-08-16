@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load form_tags %}
 
 {% block title %}Add Log - Liesbeek Master Plan{% endblock %}
 
@@ -88,6 +89,9 @@
 
                 <input type="hidden" name="next" value="{{ next }}">
 
+                {# Validation errors banner — surfaced so users can see what to fix #}
+                {% render_form_errors form metric_formset photo_formset %}
+
                 <!-- Task Context Header -->
                 {% if related_task %}
                 <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
@@ -118,6 +122,22 @@
                             </div>
                         </div>
                     </div>
+
+                    {% if related_task.completion_history.all %}
+                    <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Completion History</h5>
+                        <ul class="space-y-1">
+                            {% for event in related_task.completion_history.all %}
+                            <li class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm {% if event.action == 'completed' %}text-emerald-500{% else %}text-amber-500{% endif %}">{% if event.action == 'completed' %}check_circle{% else %}undo{% endif %}</span>
+                                <span>{{ event.get_action_display }}</span>
+                                {% if event.user %}<span class="text-slate-400">by {{ event.user.username }}</span>{% endif %}
+                                <span class="text-slate-400 ml-auto">{{ event.changed_at|date:"M j, Y H:i" }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
 
@@ -188,15 +208,17 @@
                             <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 pointer-events-none">
                                 <span class="material-symbols-outlined text-lg">groups</span>
                             </span>
-                            <input type="number" name="participant_count" min="0" value="{{ form.participant_count.value|default:0 }}"
+                            <input type="number" name="participant_count" id="{{ form.participant_count.id_for_label }}" min="0" value="{{ form.participant_count.value|default:0 }}"
                                    class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-base focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-slate-200">
                         </div>
+                        {% if form.participant_count.errors %}<p class="text-xs text-red-500 font-medium">{{ form.participant_count.errors.0 }}</p>{% endif %}
                     </div>
 
                     <!-- Notes -->
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 tracking-tight" for="{{ form.notes.id_for_label }}">Notes & Observations</label>
                         <textarea name="{{ form.notes.name }}" id="{{ form.notes.id_for_label }}" rows="4" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-base focus:ring-2 focus:ring-primary/20 focus:border-primary dark:text-slate-200 min-h-[120px]" placeholder="Describe the work completed, any issues found, or wildlife spotted...">{{ form.notes.value|default:'' }}</textarea>
+                        {% if form.notes.errors %}<p class="text-xs text-red-500 font-medium">{{ form.notes.errors.0 }}</p>{% endif %}
                     </div>
                 </div>
 
@@ -365,7 +387,9 @@ const taskType = '{{ task_type|default:"unplanned" }}';
 
 // totalMetrics tracks the next available index in the formset
 // Initial state: 0=litter_general, 1=litter_recyclable, 2=first_dynamic_metric
-let totalMetrics = 2;
+// Admin tasks render no metric inputs, so start at 0 to avoid phantom
+// empty required forms that fail validation silently.
+let totalMetrics = taskType === 'admin' ? 0 : 2;
 
 const counters = {
     metric_2: 0 // First plant

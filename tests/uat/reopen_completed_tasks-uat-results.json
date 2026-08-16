@@ -1,0 +1,78 @@
+{
+  "feature": "reopen_completed_tasks",
+  "timestamp": "2026-08-16T05:06:55.176Z",
+  "summary": {
+    "total": 9,
+    "passed": 8,
+    "failed": 1,
+    "skipped": 0,
+    "pending": 0
+  },
+  "items": [
+    {
+      "id": "1",
+      "category": "Weekly Planner — Completion",
+      "description": "Tick-to-complete with participant capture: open the Weekly Planner, tick an incomplete task card, enter 4 participants in the inline prompt, Confirm, then open Daily Agenda for that date.",
+      "expected_result": "Inline participants prompt appears with number input + Confirm/Cancel; card completes (strikethrough, faded, green check) and page refreshes; Daily Agenda shows Completed and its Edit Log opens the VisitLog with participant count 4.",
+      "result": "pass"
+    },
+    {
+      "id": "2",
+      "category": "Weekly Planner — Completion",
+      "description": "Tick an incomplete task, leave participants blank, Confirm.",
+      "expected_result": "Task completes; VisitLog participant_count = 0.",
+      "result": "pass"
+    },
+    {
+      "id": "3",
+      "category": "Weekly Planner — Re-open",
+      "description": "Re-open (un-tick) a completed task, then open Daily Agenda and edit the log for that task.",
+      "expected_result": "Card returns to incomplete (tick box back, strikethrough removed); VisitLog still exists; log data (metrics, photos, participants) is preserved; Completion History shows Completed then Reopened.",
+      "result": "pass"
+    },
+    {
+      "id": "4",
+      "category": "Weekly Planner — Re-open",
+      "description": "Re-complete the task from scenario 3 by re-ticking and entering 6 participants.",
+      "expected_result": "Task completes with a green success toast; the SAME VisitLog is updated to 6 participants (no second log).",
+      "result": "fail",
+      "error": "when completing the task, the same page reloads without a any indication whether the save was successful or not"
+    },
+    {
+      "id": "5",
+      "category": "Edit Routing",
+      "description": "On Weekly Planner, hover a completed task and inspect the Edit affordance (also verify a completed task that has NO VisitLog).",
+      "expected_result": "Edit links to the VisitLog edit form (not task edit) when a log exists; falls back to task edit when there is no VisitLog.",
+      "result": "pass"
+    },
+    {
+      "id": "6",
+      "category": "Edit Routing",
+      "description": "For a task that already has a VisitLog, navigate to Add Log with ?task=<id>.",
+      "expected_result": "Redirected to the existing VisitLog's edit form (with next preserved), not a blank create form.",
+      "result": "pass"
+    },
+    {
+      "id": "7",
+      "category": "Completion Protection",
+      "description": "Immediately after completing, tick again (or POST /complete/ twice).",
+      "expected_result": "Second request returns already_completed; no duplicate VisitLog or history spam.",
+      "result": "pass"
+    },
+    {
+      "id": "8",
+      "category": "Error Handling",
+      "description": "Simulate a network failure during tick.",
+      "expected_result": "UI reverts (tick box returns, task not completed).",
+      "result": "pass"
+    },
+    {
+      "id": "9",
+      "category": "Data Integrity",
+      "description": "Run the data-integrity SQL checks at the bottom of the UAT file after testing.",
+      "expected_result": "No task has more than one VisitLog; every completion/reopen has a history row.",
+      "result": "pass"
+    }
+  ],
+  "cancelled": false
+}

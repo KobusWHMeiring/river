@@ -1,7 +1,30 @@
 import uuid
 from datetime import timedelta, date
+from typing import Optional
 from django.db import transaction
-from ..models import Task
+from ..models import Task, TaskCompletionHistory
+
+
+def resolve_task_type(task: Optional[Task]) -> str:
+    """Return the task type code ('litter_run', 'weeding', 'planting', 'admin')
+    for a Task, or 'unplanned' when the task has no template/task_type."""
+    if task is not None and task.template is not None and task.template.task_type is not None:
+        return task.template.task_type.code
+    return 'unplanned'
+
+
+def mark_task_completed(task: Optional[Task], user=None) -> None:
+    """Mark a task completed and record a completion-history event.
+
+    Idempotent: already-completed tasks are left untouched so repeated log
+    edits do not duplicate the audit history.
+    """
+    if task is None or task.is_completed:
+        return
+    task.is_completed = True
+    task.save()
+    TaskCompletionHistory.objects.create(task=task, action='completed', user=user)
+
 
 def create_task_series(base_task_data: dict, start_date: date, end_date: date, exclude_weekends: bool = True) -> int:
     """

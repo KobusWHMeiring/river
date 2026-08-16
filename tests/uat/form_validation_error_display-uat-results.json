@@ -1,0 +1,70 @@
+{
+  "feature": "form_validation_error_display",
+  "timestamp": "2026-08-16T06:18:52.207Z",
+  "summary": {
+    "total": 8,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "pending": 8
+  },
+  "items": [
+    {
+      "id": "1",
+      "category": "Visit Log — Admin task",
+      "description": "Edit an Admin-type task's VisitLog: no Metrics section is shown, and submitting saves cleanly (redirect, no error).",
+      "expected_result": "No 'Metrics & Collection' section; submit redirects and saves.",
+      "result": "pending"
+    },
+    {
+      "id": "2",
+      "category": "Visit Log — Admin task",
+      "description": "On the admin log edit, set hidden metrics-TOTAL_FORMS to 2 in DevTools and submit.",
+      "expected_result": "Save succeeds (redirect), no error banner, no phantom metrics created.",
+      "result": "pending"
+    },
+    {
+      "id": "3",
+      "category": "Visit Log — Non-admin",
+      "description": "On a Litter Run log edit, add a photo with a description shorter than 10 chars and submit.",
+      "expected_result": "Page reloads with red banner 'Please correct the errors below' listing the photo description error.",
+      "result": "pending"
+    },
+    {
+      "id": "4",
+      "category": "Visit Log — Inline errors",
+      "description": "Clear the Date field and submit; then enter a negative participant count and submit.",
+      "expected_result": "Banner lists 'Date' and a red inline error appears under Date; inline error appears under the participant input.",
+      "result": "pending"
+    },
+    {
+      "id": "5",
+      "category": "Other forms",
+      "description": "Section → Create, leave Name blank, submit.",
+      "expected_result": "Red banner at top listing Name error + inline error under the field.",
+      "result": "pending"
+    },
+    {
+      "id": "6",
+      "category": "Other forms",
+      "description": "Create a non-rolling Task with no date, submit.",
+      "expected_result": "Banner lists 'Date' error ('Date is required for non-rolling tasks.') + inline error.",
+      "result": "pending"
+    },
+    {
+      "id": "7",
+      "category": "Other forms",
+      "description": "Create a Task Template and a Task Type with blank names/codes, submit each.",
+      "expected_result": "Banner + inline errors appear on both forms.",
+      "result": "pending"
+    },
+    {
+      "id": "8",
+      "category": "Feedback consistency",
+      "description": "Complete and re-open a task; then save a valid visit log edit.",
+      "expected_result": "Success toasts still appear; no error banner when valid.",
+      "result": "pending"
+    }
+  ],
+  "cancelled": false
+}

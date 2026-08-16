@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.views import View
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -19,9 +19,9 @@ import io
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from collections import defaultdict
-from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo, SectionStageHistory
+from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo, SectionStageHistory, TaskCompletionHistory
 from .forms import SectionForm, TaskForm, TaskTemplateForm, TaskTypeForm, VisitLogForm, MetricFormSet, PhotoFormSet
-from .services.task_services import create_task_series, update_task_series, delete_task_series, move_todo_task
+from .services.task_services import create_task_series, update_task_series, delete_task_series, move_todo_task, resolve_task_type, mark_task_completed
 
 from django.db.models import Sum, Q
 from django.utils import timezone
@@ -135,6 +135,10 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
         stage_distribution = []
         max_count = 1  # Default to 1 to avoid division by zero
         for stage_code, label in stage_choices.items():
+            # Community is a valid section stage but is intentionally hidden from
+            # the Lifecycle Progress widget for now.
+            if stage_code == 'community':
+                continue
             count = next((item['count'] for item in stage_counts if item['current_stage'] == stage_code), 0)
             percentage = int(count / max_count * 100) if max_count > 0 else 0
             stage_distribution.append({
@@ -174,6 +178,43 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
             visit_count=Count('visitlog')
         ).distinct().order_by('-last_visit_date')[:10]
 
+        # Weekly planner activity indicators (calendar week Mon-Sun)
+        today = timezone.now().date()
+        monday = today - timedelta(days=today.weekday())
+        sunday = monday + timedelta(days=6)
+        weekly_tasks = Task.objects.filter(
+            date__range=[monday, sunday],
+            is_rolling=False,
+        ).select_related('template__task_type', 'section')
+
+        field_type_codes = {'litter_run', 'weeding', 'planting'}
+        section_weekly_activity = {}
+        stage_weekly_activity = {}
+
+        for task in weekly_tasks:
+            if task.section is None:
+                continue
+            code = task.template.task_type.code if (task.template and task.template.task_type) else None
+            if not code:
+                continue
+
+            section_weekly_activity.setdefault(task.section_id, set()).add(code)
+
+            if code in field_type_codes:
+                stage_weekly_activity.setdefault(task.section.current_stage, set()).add(code)
+
+        section_weekly_activity = {
+            section_id: sorted(codes)
+            for section_id, codes in section_weekly_activity.items()
+        }
+
+        task_type_tags = {
+            'litter_run': {'label': 'Litter', 'classes': 'bg-red-50 text-red-600 border-red-100'},
+            'weeding': {'label': 'Weed', 'classes': 'bg-amber-50 text-amber-600 border-amber-100'},
+            'planting': {'label': 'Plant', 'classes': 'bg-green-50 text-green-600 border-green-100'},
+            'admin': {'label': 'Admin', 'classes': 'bg-indigo-50 text-indigo-600 border-indigo-100'},
+        }
+
         context.update({
             'total_bags_general': total_bags_general,
             'total_bags_recyclable': total_bags_recyclable,
@@ -187,6 +228,9 @@ class GlobalDashboardView(LoginRequiredMixin, ListView):
             'total_weed_species': total_weed_species,
             'weed_species_breakdown': weed_species_breakdown,
             'active_sections': active_sections,
+            'section_weekly_activity': section_weekly_activity,
+            'stage_weekly_activity': stage_weekly_activity,
+            'task_type_tags': task_type_tags,
         })
         return context
 
@@ -658,7 +702,26 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     template_name = 'core/visit_log_form.html'
     success_url = reverse_lazy('daily_agenda')
     success_message = "Visit log created successfully!"
-    
+
+    def get(self, request, *args, **kwargs):
+        # One work record per task: if a log already exists for the targeted
+        # task, redirect to editing that log instead of creating a duplicate.
+        task_id = request.GET.get('task')
+        if task_id:
+            try:
+                task = Task.objects.get(pk=task_id)
+            except (Task.DoesNotExist, ValueError):
+                task = None
+            if task:
+                existing = task.visitlog_set.first()
+                if existing:
+                    url = reverse('visit_log_edit', kwargs={'pk': existing.pk})
+                    next_url = request.GET.get('next', '')
+                    if next_url:
+                        url = f"{url}?next={next_url}"
+                    return redirect(url)
+        return super().get(request, *args, **kwargs)
+
     def get_initial(self):
         initial = super().get_initial()
         section_id = self.request.GET.get('section')
@@ -689,36 +752,21 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         if task_id:
             try:
                 task = Task.objects.get(pk=task_id)
-            except Task.DoesNotExist:
-                pass
+            except (Task.DoesNotExist, ValueError):
+                task = None
         elif 'task' in context['form'].initial:
             task = context['form'].initial.get('task')
-        
-        # Determine task_type for UI adaptation
-        if task and task.template:
-            # Use the task_type code for template logic
-            context['task_type'] = task.template.task_type.code if task.template.task_type else 'unplanned'
-            context['task_template_name'] = task.template.name
-        else:
-            # Default to 'unplanned' if no task or template
-            context['task_type'] = 'unplanned'
-            context['task_template_name'] = None
-        
+
+        context['task_type'] = resolve_task_type(task)
+        context['task_template_name'] = task.template.name if (task and task.template) else None
         context['related_task'] = task
-        
-        print(f"[DEBUG] VisitLogCreateView.get_context_data called - method: {self.request.method}")
+
         if self.request.method == 'POST':
-            print(f"[DEBUG] POST data keys: {list(self.request.POST.keys())}")
-            print(f"[DEBUG] POST metrics data: {dict(self.request.POST.lists()) if 'metrics-0-metric_type' in self.request.POST else 'NO METRICS DATA'}")
             context['metric_formset'] = MetricFormSet(self.request.POST)
             context['photo_formset'] = PhotoFormSet(self.request.POST, self.request.FILES)
-            print(f"[DEBUG] MetricFormSet created with {len(context['metric_formset'].forms)} forms")
-            print(f"[DEBUG] PhotoFormSet created with {len(context['photo_formset'].forms)} forms")
         else:
             context['metric_formset'] = MetricFormSet()
             context['photo_formset'] = PhotoFormSet()
-            print(f"[DEBUG] GET - MetricFormSet has {len(context['metric_formset'].forms)} forms")
-            print(f"[DEBUG] GET - PhotoFormSet has {len(context['photo_formset'].forms)} forms")
         return context
     
     def get_success_url(self):
@@ -728,46 +776,33 @@ class VisitLogCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         return reverse_lazy('daily_agenda')
 
     def form_valid(self, form):
-        print(f"[DEBUG] VisitLogCreateView.form_valid called")
         context = self.get_context_data()
         metric_formset = context['metric_formset']
         photo_formset = context['photo_formset']
-        
-        print(f"[DEBUG] MetricFormSet valid: {metric_formset.is_valid()}")
-        print(f"[DEBUG] PhotoFormSet valid: {photo_formset.is_valid()}")
-        
-        if metric_formset.is_valid() and photo_formset.is_valid():
-            print("[DEBUG] All forms valid, saving...")
-            try:
-                response = super().form_valid(form)
-                metric_formset.instance = self.object
-                metric_formset.save()
-                
-                photo_formset.instance = self.object
-                for photo_form in photo_formset.forms:
-                    if photo_form.cleaned_data.get('file') and not photo_form.cleaned_data.get('DELETE'):
-                        photo_form.instance.section = self.object.section
-                photo_formset.save()
-                
-                if self.object.task:
-                    self.object.task.is_completed = True
-                    self.object.task.save()
-                
-                return response
-            except Exception as e:
-                print(f"[DEBUG] ERROR during save: {e}")
-                raise
-        else:
-            print(f"[DEBUG] form_valid called but formsets invalid")
+
+        # Admin tasks collect no metrics: skip metric validation/save entirely.
+        is_admin = resolve_task_type(form.cleaned_data.get('task')) == 'admin'
+
+        if not is_admin and not metric_formset.is_valid():
+            return self.form_invalid(form)
+        if not photo_formset.is_valid():
             return self.form_invalid(form)
 
-    def form_invalid(self, form):
-        print(f"[DEBUG] VisitLogCreateView.form_invalid called")
-        print(f"[DEBUG] Main form errors: {form.errors}")
-        context = self.get_context_data()
-        print(f"[DEBUG] Metric formset errors: {context['metric_formset'].errors}")
-        print(f"[DEBUG] Photo formset errors: {context['photo_formset'].errors}")
-        return super().form_invalid(form)
+        response = super().form_valid(form)
+
+        if not is_admin:
+            metric_formset.instance = self.object
+            metric_formset.save()
+
+        photo_formset.instance = self.object
+        for photo_form in photo_formset.forms:
+            if photo_form.cleaned_data.get('file') and not photo_form.cleaned_data.get('DELETE'):
+                photo_form.instance.section = self.object.section
+        photo_formset.save()
+
+        mark_task_completed(self.object.task, self.request.user)
+
+        return response
 
 class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = VisitLog
@@ -782,15 +817,9 @@ class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         
         visit_log = self.get_object()
         task = visit_log.task
-        
-        # Determine task_type for UI adaptation
-        if task and task.template:
-            context['task_type'] = task.template.task_type.code if task.template.task_type else 'unplanned'
-            context['task_template_name'] = task.template.name
-        else:
-            context['task_type'] = 'unplanned'
-            context['task_template_name'] = None
-            
+
+        context['task_type'] = resolve_task_type(task)
+        context['task_template_name'] = task.template.name if (task and task.template) else None
         context['related_task'] = task
 
         if self.request.method == 'POST':
@@ -799,47 +828,35 @@ class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         else:
             context['metric_formset'] = MetricFormSet(instance=visit_log)
             context['photo_formset'] = PhotoFormSet(instance=visit_log)
-            
+
         return context
 
     def form_valid(self, form):
-        print(f"[DEBUG] VisitLogUpdateView.form_valid called")
-        print(f"[DEBUG] POST data keys: {list(self.request.POST.keys())}")
         context = self.get_context_data()
         metric_formset = context['metric_formset']
         photo_formset = context['photo_formset']
-        
-        # Debug: print each metric form's data
-        for i, m_form in enumerate(metric_formset.forms):
-            print(f"[DEBUG] Metric form {i} data: {m_form.data}")
-            print(f"[DEBUG] Metric form {i} errors: {m_form.errors}")
-        
-        print(f"[DEBUG] MetricFormSet valid: {metric_formset.is_valid()}")
-        print(f"[DEBUG] PhotoFormSet valid: {photo_formset.is_valid()}")
-        
-        if metric_formset.is_valid() and photo_formset.is_valid():
-            print("[DEBUG] All forms valid, saving...")
-            response = super().form_valid(form)
-            metric_formset.save()
-            
-            # Ensure section is set on photos
-            for photo_form in photo_formset.forms:
-                if photo_form.cleaned_data.get('file') and not photo_form.cleaned_data.get('DELETE'):
-                    photo_form.instance.section = self.object.section
-            
-            photo_formset.save()
-            return response
-        else:
-            print(f"[DEBUG] form_valid called but formsets invalid")
+
+        # Admin tasks collect no metrics: skip metric validation/save entirely.
+        is_admin = resolve_task_type(form.cleaned_data.get('task')) == 'admin'
+
+        if not is_admin and not metric_formset.is_valid():
+            return self.form_invalid(form)
+        if not photo_formset.is_valid():
             return self.form_invalid(form)
 
-    def form_invalid(self, form):
-        print(f"[DEBUG] VisitLogUpdateView.form_invalid called")
-        print(f"[DEBUG] Main form errors: {form.errors}")
-        context = self.get_context_data()
-        print(f"[DEBUG] Metric formset errors: {context['metric_formset'].errors}")
-        print(f"[DEBUG] Photo formset errors: {context['photo_formset'].errors}")
-        return super().form_invalid(form)
+        response = super().form_valid(form)
+
+        if not is_admin:
+            metric_formset.save()
+
+        # Ensure section is set on photos
+        for photo_form in photo_formset.forms:
+            if photo_form.cleaned_data.get('file') and not photo_form.cleaned_data.get('DELETE'):
+                photo_form.instance.section = self.object.section
+
+        photo_formset.save()
+        mark_task_completed(self.object.task, self.request.user)
+        return response
 
     def get_success_url(self):
         next_url = self.request.POST.get('next', self.request.GET.get('next', ''))
@@ -857,16 +874,64 @@ def task_complete_view(request, pk):
             return JsonResponse({'success': False, 'error': 'already_completed'})
         return redirect('daily_agenda')
 
-    # Create VisitLog BEFORE marking complete (atomicity by ordering)
-    visit_log = VisitLog.objects.create(
-        task=task,
-        section=task.section,
-        date=timezone.now().date(),
-        notes=f"Task completed: {task.instructions}"
-    )
+    # Parse optional participant_count from POST (default 0 when absent/invalid).
+    participant_count = 0
+    raw_count = request.POST.get('participant_count')
+    if raw_count is not None:
+        try:
+            participant_count = max(0, int(raw_count))
+        except (ValueError, TypeError):
+            participant_count = 0
+
+    # Reuse an existing VisitLog (one work record per task); never duplicate.
+    existing = task.visitlog_set.first()
+    if existing:
+        existing.participant_count = participant_count
+        existing.save()
+    else:
+        VisitLog.objects.create(
+            task=task,
+            section=task.section,
+            date=timezone.now().date(),
+            notes=f"Task completed: {task.instructions}",
+            participant_count=participant_count
+        )
 
     task.is_completed = True
     task.save()
+
+    TaskCompletionHistory.objects.create(
+        task=task,
+        action='completed',
+        user=request.user
+    )
+
+    messages.success(request, "Task completed successfully.")
+
+    if is_ajax:
+        return JsonResponse({'success': True})
+    return redirect('daily_agenda')
+
+
+@login_required
+def task_reopen_view(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'method_not_allowed'}, status=405)
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    task.is_completed = False
+    task.save()
+
+    TaskCompletionHistory.objects.create(
+        task=task,
+        action='reopened',
+        user=request.user
+    )
+
+    messages.success(request, "Task re-opened.")
 
     if is_ajax:
         return JsonResponse({'success': True})

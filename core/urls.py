@@ -24,6 +24,7 @@ urlpatterns = [
     # Daily Agenda URLs
     path('daily-agenda/', views.DailyAgendaView.as_view(), name='daily_agenda'),
     path('tasks/<int:pk>/complete/', views.task_complete_view, name='task_complete'),
+    path('tasks/<int:pk>/reopen/', views.task_reopen_view, name='task_reopen'),
     
     # Kanban Board URLs
     path('todo/', views.TodoKanbanView.as_view(), name='todo_kanban'),

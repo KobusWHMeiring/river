@@ -40,7 +40,9 @@ if SENTRY_DSN:
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-5#l=3&2_3&z3g8#ks*_l(o!djkhide^20mm8byx6##z2!u8tah')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool('DEBUG', default=True)
+# Default to False so a missing DEBUG in the environment is safe by default;
+# set DEBUG=True explicitly in your local .env for development.
+DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 

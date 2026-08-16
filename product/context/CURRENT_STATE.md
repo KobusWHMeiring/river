@@ -1,4 +1,4 @@
-**Generated on:** 2026-08-12 18:50:09
+**Generated on:** 2026-08-16 08:31:09
 
 ### File Structure
 ```
@@ -6,8 +6,16 @@
 └── .env
 └── .env.example
 └── .gitignore
+└── .pi
+    └── extensions
+        └── backlog-checkpoint.ts
+        └── uat-checklist
+            └── checklist.ts
+            └── index.ts
+    └── extensions copy
 └── config_gen.py
 └── core
+    └── __init__.py
     └── admin.py
     └── fixtures
         └── task_templates.json
@@ -27,6 +35,7 @@
             └── daily_agenda.html
             └── dashboard.html
             └── includes
+                └── form_errors.html
                 └── todo_card.html
             └── monthly_planner.html
             └── section_confirm_delete.html
@@ -48,6 +57,7 @@
     └── templatetags
         └── __init__.py
         └── custom_filters.py
+        └── form_tags.py
     └── tests
         └── __init__.py
         └── performance
@@ -55,11 +65,15 @@
             └── test_discovery.py
         └── test_chairperson.py
         └── test_dashboard.py
+        └── test_form_errors.py
+        └── test_log_and_complete.py
         └── test_monthly.py
         └── test_task_complete.py
+        └── test_task_reopen.py
         └── test_task_series.py
         └── test_todo_kanban.py
         └── test_urls.py
+        └── test_visit_log_form.py
         └── test_weeding.py
     └── urls.py
     └── views.py
@@ -82,6 +96,7 @@
     └── backlog.md
     └── backlog.py
     └── context
+        └── backlog-loop-design.md
         └── build_principles.md
         └── learnings.md
         └── prinicples
@@ -104,6 +119,7 @@
             └── pm-brief.md
             └── river-archguard-assessment.html
         └── project_overview.md
+        └── SESSION_CHECKPOINT.json
         └── stack.md
         └── ui_standards.md
     └── debug
@@ -124,13 +140,16 @@
         └── data_export_excel.md
         └── detailed_planting_metrics.md
         └── edit_completed_task.md
+        └── form-validation-error-display.md
         └── implemenation.md
         └── investigation_handover.md
         └── kanban-snap-back-bug.md
+        └── lifecycle-progress-data-source.md
         └── log_layout.md
         └── mobile_responsive_implementation.md
         └── monthly_view.md
         └── multi_day_tasks.md
+        └── planner-activity-indicators.md
         └── planner_interaction_update.md
         └── prd_zone_view
         └── quick-specs-participants-typeable.md
@@ -150,8 +169,13 @@
         └── PM.md
         └── po.md
     └── ready
-        └── planner-activity-indicators.md
+        └── planner-search.md
+        └── reopen-completed-tasks-uat-run.md
+        └── reopen-completed-tasks.md
+        └── section-days-worked-metric.md
     └── refinement
+        └── dashboard-metric-drilldown.md
+        └── dynamic-kanban-columns.md
         └── performance-testing-backlog.md
         └── playwright_e2e_testing.md
     └── technical
@@ -187,7 +211,15 @@
 └── test_db.sqlite3
 └── tests
     └── uat
+        └── form_validation_error_display-uat-results.json
+        └── form_validation_error_display_uat.md
         └── participants-typeable_uat.md
+        └── planner_activity_indicators-uat-results.json
+        └── planner_activity_indicators_uat.md
+        └── planner_search_uat.md
+        └── reopen_completed_tasks-uat-results.json
+        └── reopen_completed_tasks_uat.md
+        └── section_days_worked_uat.md
 ```
 
 ### Summarized Key Files
@@ -349,6 +381,13 @@ class SectionStageHistory(models.Model):
     # Choices: STAGE_CHOICES, name, color_code, current_stage, status, description, position, boundary_data, center_point, created_at, updated_at
     changed_at = models.DateTimeField()
     notes = models.TextField(blank=True)
+
+class TaskCompletionHistory(models.Model):
+    ACTION_CHOICES = [('completed', 'Completed'), ('reopened', 'Reopened')]
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='completion_history')
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    changed_at = models.DateTimeField(default=timezone.now)
 ```
 
 #### `SUMMARY: core/views.py`
@@ -412,6 +451,10 @@ class VisitLogUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):  
 def task_complete_view(request, pk):
     # ... implementation hidden ...
 
+@login_required
+def task_reopen_view(request, pk):
+    # ... implementation hidden ...
+
 class TaskTemplateListView(LoginRequiredMixin, ListView):  # Renders: core/task_template_list.html
     # ... implementation hidden ...
 
@@ -457,7 +500,7 @@ def planner_insights_view(request):
 ```python
 BASE_DIR = Path(__file__).resolve().parent.parent
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
-DEBUG = env.bool('DEBUG', default=True)
+DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 INSTALLED_APPS = [
 MIDDLEWARE = [
@@ -508,6 +551,7 @@ urlpatterns = [
     # Daily Agenda URLs
     path('daily-agenda/', views.DailyAgendaView.as_view(), name='daily_agenda'),
     path('tasks/<int:pk>/complete/', views.task_complete_view, name='task_complete'),
+    path('tasks/<int:pk>/reopen/', views.task_reopen_view, name='task_reopen'),
     
     # Kanban Board URLs
     path('todo/', views.TodoKanbanView.as_view(), name='todo_kanban'),

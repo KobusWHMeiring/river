@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block title %}Impact Dashboard - Liesbeek Master Plan{% endblock %}
 
@@ -121,6 +122,19 @@
                                 <span class="text-slate-500">{{ stage.label }}</span>
                                 <span class="text-slate-900 dark:text-white">{{ stage.count }} Sections</span>
                             </div>
+                            {% with codes=stage_weekly_activity|get_item:stage.code %}
+                            {% if codes %}
+                            <div class="flex flex-wrap gap-1">
+                                {% for code in codes %}
+                                {% with tag=task_type_tags|get_item:code %}
+                                {% if tag %}
+                                <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border {{ tag.classes }}">{{ tag.label }}</span>
+                                {% endif %}
+                                {% endwith %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            {% endwith %}
                             <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                 <div class="h-full bg-primary" style="width: {{ stage.percentage }}%;"></div>
                             </div>
@@ -143,6 +157,19 @@
                             <div class="w-1 h-10 rounded-full shrink-0" style="background-color: {{ section.color_code }};"></div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate group-hover:text-primary transition-colors">{{ section.name }}</p>
+                                {% with codes=section_weekly_activity|get_item:section.pk %}
+                                {% if codes %}
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    {% for code in codes %}
+                                    {% with tag=task_type_tags|get_item:code %}
+                                    {% if tag %}
+                                    <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border {{ tag.classes }}">{{ tag.label }}</span>
+                                    {% endif %}
+                                    {% endwith %}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                {% endwith %}
                                 <p class="text-xs text-slate-400">Last visited {{ section.last_visit_date|timesince }} ago</p>
                             </div>
                             <span class="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{{ section.visit_count }}</span>

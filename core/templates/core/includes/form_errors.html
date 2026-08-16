@@ -1,0 +1,13 @@
+{% if errors %}
+<div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl" role="alert" aria-live="assertive" data-testid="form-errors">
+    <h4 class="text-sm font-bold text-red-700 dark:text-red-300 mb-2">Please correct the errors below:</h4>
+    <ul class="list-disc list-inside space-y-1 text-sm text-red-600 dark:text-red-300">
+        {% for item in errors %}
+        <li>
+            {% if item.anchor %}<a href="#{{ item.anchor }}" class="underline font-semibold">{{ item.label }}:</a>{% elif item.label %}<strong>{{ item.label }}:</strong>{% endif %}
+            {{ item.message }}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}

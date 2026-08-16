@@ -28,6 +28,7 @@ Surface current-week task activity on the dashboard's Active Sections list and L
 | Calendar week (Mon–Sun) | Matches planner week; avoids "last 7 days" confusion mid-week |
 | Include completed tasks | Indicator reflects the week's plan, not remaining work |
 | Skip tasks with no template | No `TaskType.code` = nothing meaningful to label |
+| Skip tasks with no section | Section-less tasks are the planner's "Admin" convention (`task.section=None`); no section/stage to key on, so excluded from both lists |
 | Filter Admin from Lifecycle bars | Admin tasks aren't field-relevant for stage classification |
 | Colored text tags | Most accessible, matches existing dashboard badge patterns |
 | In-view aggregation (no new service file) | Single-use dashboard context; YAGNI. Extract later if reused. |
@@ -35,7 +36,7 @@ Surface current-week task activity on the dashboard's Active Sections list and L
 ## 5. Technical Constraints
 
 - **Query pattern:** One additional query on `Task` filtered by date range, with `.select_related('template__task_type', 'section')`. Rolling tasks (`is_rolling=True`) are excluded.
-- **Aggregation:** Build `{section_id: set(task_type_codes)}` dicts in Python — one for Active Sections, one for Lifecycle stages (grouped by `section.current_stage`).
+- **Aggregation:** Build `{section_id: set(task_type_codes)}` dicts in Python — one for Active Sections, one for Lifecycle stages (grouped by `section.current_stage`). Guard `task.section is None` (section-less "Admin" tasks) and skip them from both dicts.
 - **Template:** Add indicator tags to existing `dashboard.html` — no new templates.
 - **Performance:** The current dashboard view already queries `Task` for other purposes — this adds a lightweight date-filtered query on ~8 sections' worth of planner tasks. Query count increase: ≤1.
 
@@ -52,6 +53,7 @@ Surface current-week task activity on the dashboard's Active Sections list and L
   - Add query: `Task.objects.filter(date__range=[mon, sun], is_rolling=False).select_related('template__task_type', 'section')`
   - Build `section_weekly_activity: dict[int, list[str]]` — section ID → sorted list of unique task type codes
   - Build `stage_weekly_activity: dict[str, set[str]]` — stage key → set of task type codes across sections in that stage (field types only: litter_run, weeding, planting)
+  - Guard `task.section is None` (section-less "Admin" tasks) before keying either dict — skip to avoid `AttributeError`
 - Target File: `core/templates/core/dashboard.html`
   - In Active Sections loop, add indicator tags below section name
   - In Lifecycle Progress loop, add indicator tags above progress bars
@@ -66,6 +68,7 @@ Surface current-week task activity on the dashboard's Active Sections list and L
 - **Unit Test:** `test_weekly_activity_aggregation`: Create tasks for 2 sections with different types this week, 1 section with no tasks, 1 section with tasks next week. Verify `section_weekly_activity` dict has correct keys and task type sets.
 - **Edge Case:** Section has only completed tasks → tags still appear.
 - **Edge Case:** Section has tasks with no template → skipped, no "Custom" tag.
+- **Edge Case:** Task with `section=None` (section-less "Admin" task) → skipped from both dicts, no crash, no tags.
 - **Edge Case:** No sections have tasks this week → both dicts are empty, template renders no tags.
 
 ---
@@ -88,6 +91,7 @@ Surface current-week task activity on the dashboard's Active Sections list and L
 
 **The Test Plan (MANDATORY):**
 - **Unit Test:** `test_stage_weekly_activity`: Create 2 sections in "Planting" stage — one with a planting task, one with a weeding task. Verify stage dict shows both `planting` and `weeding` codes, but no `admin` even if an admin task exists.
+- **Edge Case:** Task with `section=None` (section-less "Admin" task) → skipped from stage dict (no stage to attribute), no crash.
 - **Edge Case:** A stage with zero sections → no entry in dict, no tags rendered.
 
 ---
@@ -119,7 +123,7 @@ Surface current-week task activity on the dashboard's Active Sections list and L
 - [x] Query pattern validated against performance principles (§VI)
 - [x] No new service file — single-use, YAGNI
 - [x] No template restructuring — additive HTML only
-- [ ] Tests written and passing
+- [x] Tests written and passing
 - [ ] Manual visual verification on dashboard with production data
 
 ---

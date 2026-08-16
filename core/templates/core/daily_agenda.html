@@ -102,9 +102,9 @@
                         </div>
                         <h3 class="text-sm font-semibold text-slate-400 dark:text-slate-500 line-through mb-4">{{ task.instructions|truncatechars:120 }}</h3>
                         <div class="task-card-actions flex flex-col md:flex-row gap-2 md:gap-3">
-                            <button class="w-full md:flex-1 flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 py-3 md:py-2.5 px-4 rounded-lg text-sm font-bold cursor-not-allowed" disabled>
-                                <span class="material-symbols-outlined text-lg">check_circle</span>
-                                Task Completed
+                            <button class="tick-reopen-btn w-full md:flex-1 flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 py-3 md:py-2.5 px-4 rounded-lg text-sm font-bold hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-600 transition-all" data-task-id="{{ task.pk }}" title="Re-open task">
+                                <span class="material-symbols-outlined text-lg">undo</span>
+                                Re-open Task
                             </button>
                             <div class="flex gap-2 justify-end md:justify-start">
                                 {% with visit_log=task.visitlog_set.first %}
@@ -161,4 +161,49 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function getCSRFToken() {
+        const name = 'csrftoken';
+        const cookies = document.cookie.split(';');
+        for (let c of cookies) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) {
+                return decodeURIComponent(c.substring(name.length + 1));
+            }
+        }
+        return '';
+    }
+
+    document.querySelectorAll('.tick-reopen-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const btnEl = this;
+            btnEl.disabled = true;
+            fetch(`/core/tasks/${btnEl.dataset.taskId}/reopen/`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCSRFToken()
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    btnEl.disabled = false;
+                }
+            })
+            .catch(() => { btnEl.disabled = false; });
+        });
+    });
+});
+</script>
 {% endblock %}

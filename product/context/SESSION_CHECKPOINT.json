@@ -1,0 +1,13 @@
+{
+  "last_checkpoint": "2026-08-16T08:18:43+02:00",
+  "summary": "Completed Planner Activity Indicators end-to-end. Implemented weekly task-type tags on the dashboard (core/views.py GlobalDashboardView.get_context_data() builds section_weekly_activity and stage_weekly_activity with null-section/template/task-type guards; core/templates/core/dashboard.html renders colored tags: Litter=red, Weed=amber, Plant=green, Admin=indigo). 7 unit tests added (DashboardWeeklyActivityTests); full suite 76 tests OK. UAT file tests/uat/planner_activity_indicators_uat.md created and all 14 scenarios passed (13 directly, 1 after seeding demo field tasks to verify the Litter lifecycle tag). Seeded demo data (3 field tasks + 1 visit log, marked 'UAT demo') remains in the DB for visual confirmation and can be removed on request. PRD moved ready -> Done; backlog + CURRENT_STATE regenerated; learnings + progress_log updated.",
+  "moved": [
+    { "planner-activity-indicators.md": "ready -> Done" }
+  ],
+  "up_next": [
+    "Remove 'UAT demo' seed data when visual verification is complete",
+    "Re-verify UAT item 4 (completion toast) then commit & move Re-open Completed Tasks + Participant Count to Done",
+    "Implement Section Days Worked metric (ready)"
+  ],
+  "learnings_added": true
+}

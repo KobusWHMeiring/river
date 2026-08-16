@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.utils import timezone
-from core.models import Section, Task, TaskTemplate, TaskType, VisitLog
+from core.models import Section, Task, TaskTemplate, TaskType, VisitLog, TaskCompletionHistory
 
 
 class TaskCompleteViewTests(TestCase):
@@ -134,3 +134,65 @@ class TaskCompleteViewTests(TestCase):
         self.assertIsNotNone(visit_log)
         # section can be None on VisitLog
         self.assertIsNone(visit_log.section)
+
+    def test_task_complete_with_participant_count(self):
+        """POST with participant_count writes that value to the VisitLog."""
+        url = f'/core/tasks/{self.task.id}/complete/'
+        response = self.client.post(
+            url,
+            {'participant_count': '5'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+
+        visit_log = VisitLog.objects.get(task=self.task)
+        self.assertEqual(visit_log.participant_count, 5)
+
+    def test_task_complete_default_participant_zero(self):
+        """POST without participant_count defaults the VisitLog to 0."""
+        url = f'/core/tasks/{self.task.id}/complete/'
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        self.assertTrue(response.json()['success'])
+        visit_log = VisitLog.objects.get(task=self.task)
+        self.assertEqual(visit_log.participant_count, 0)
+
+    def test_task_complete_reuses_existing_visit_log(self):
+        """Re-completing a task updates the existing VisitLog instead of creating a new one."""
+        existing = VisitLog.objects.create(
+            task=self.task,
+            section=self.section,
+            date=timezone.now().date(),
+            notes='Prior work',
+            participant_count=2
+        )
+
+        url = f'/core/tasks/{self.task.id}/complete/'
+        response = self.client.post(
+            url,
+            {'participant_count': '7'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        self.assertTrue(response.json()['success'])
+        self.assertEqual(VisitLog.objects.filter(task=self.task).count(), 1)
+        existing.refresh_from_db()
+        self.assertEqual(existing.participant_count, 7)
+
+    def test_task_complete_creates_history_event(self):
+        """Completing a task records a 'completed' audit event."""
+        url = f'/core/tasks/{self.task.id}/complete/'
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        self.assertTrue(response.json()['success'])
+        event = TaskCompletionHistory.objects.get(task=self.task)
+        self.assertEqual(event.action, 'completed')
+        self.assertEqual(event.user, self.user)

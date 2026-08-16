@@ -1398,3 +1398,191 @@ if old_status == new_status:
    same-status / different-index case.
 3. **The test already encoded the intended behaviour** — a failing test is the
    fastest signal that the service and the frontend disagree.
+
+---
+
+## Date: 2026-08-14
+
+## Issue: Test Discovery Fails — Missing core/__init__.py
+
+### Problem Description
+`python manage.py test` reported `Ran 0 tests`, and `python manage.py test core.tests`
+crashed with `TypeError: _path_normpath: path should be string, bytes or os.PathLike,
+not NoneType`.
+
+### Root Cause Analysis
+`core/__init__.py` was missing, so `core` was a Python **namespace package** whose
+`__file__` is `None`. Django's `DiscoverRunner` delegates to `unittest` discovery,
+which calls `os.path.abspath(module.__file__)` to locate the top-level directory and
+aborts on `None`.
+
+### Solution Implemented
+Added an empty `core/__init__.py`. The full suite (53 tests) then discovered and
+passed.
+
+### Key Learnings
+1. **A Django app package must have `__init__.py`.** Without it the app is a
+   namespace package (`__file__ = None`), and `unittest` discovery breaks even
+   though the app imports fine at runtime.
+2. **`Ran 0 tests` is a discovery failure, not empty coverage.** If a suite should
+   have tests but finds none, check the package `__init__.py` chain before assuming
+   tests were removed.
+3. **Direct import can succeed while discovery fails.** Namespace packages import,
+   but tooling that reads `__file__` (like `unittest`'s loader) breaks.
+---
+
+## Date: 2026-08-16
+
+## Issue: Sentry RuntimeError on POST /admin (missing trailing slash)
+
+### Problem Description
+Sentry reported `RuntimeError: You called this URL via POST, but the URL doesn't
+end in a slash and you have APPEND_SLASH set` for `/admin` in production.
+
+### Root Cause Analysis
+A POST to `/admin` (no trailing slash) does not match the `admin/` route, so
+Django returns a 404 and `CommonMiddleware` tries to redirect to `/admin/`.
+Django 6.0's `get_full_path_with_slash` only *raises* that `RuntimeError` when
+`settings.DEBUG` is True — with `DEBUG=False` it silently returns a 301 redirect
+instead. The hard error therefore proved the production server was running with
+`DEBUG=True` (a missing/`True` value in the production `.env` combined with the
+`env.bool('DEBUG', default=True)` default). The POST itself is a bot/scanner
+probe, not an app form — no template posts to a bare `/admin`.
+
+### Solution Implemented
+Flipped the default to `DEBUG = env.bool('DEBUG', default=False)` in
+`river/settings.py` (defence in depth). Production `.env` must also set
+`DEBUG=False` and gunicorn restarted.
+
+### Key Learnings
+1. **Django's APPEND_SLASH POST error is DEBUG-gated.** A slashless POST 500 in
+   production is a signal that DEBUG is enabled, not just a URL/form bug.
+2. **Defaults that are safe for dev are unsafe for prod.** `DEBUG` should
+   default to `False` so a missing env var fails safe; local `.env` sets it
+   explicitly.
+
+---
+
+## Date: 2026-08-16
+
+## Issue: Section "Days Worked" metric is planned-based, not actual logged work
+
+### Problem Description
+Sarah asked for a "days worked" metric on the section detail page. Data
+investigation revealed actual work logs (`VisitLog.date`) are too sparse to be
+useful: 15 distinct dates total across sections (0–6 per section), and 14 of 31
+visit logs have no section. Planned planner tasks (`Task.date`, `is_rolling=False`)
+have 115 distinct dates (8–36 per section) — the only meaningful signal today.
+
+### Key Learnings
+1. **"Days Worked" currently means distinct planned `Task.date`**
+   (`is_rolling=False`, `date__lte=today`, no task-type filter) — not actual logged
+   days. The label is kept by request, but the planned-vs-worked gap is a known,
+   accepted trade-off until VisitLog coverage improves.
+2. **Revisit the metric when logging coverage improves.** If more visits start
+   carrying a section, consider switching to (or unioning with) distinct
+   `VisitLog.date`.
+
+## Date: 2026-08-16
+
+## Issue: Form validation errors must map to visible fields (admin-task phantom metrics)
+
+### Problem Description
+During UAT of Re-open + Participant Count, editing a VisitLog for an *admin*-type
+task failed validation with `metric_type required` / `value required` for two
+metric rows that were not rendered anywhere on the page. The Metrics section is
+hidden for admin tasks (`{% if task_type != 'admin' %}`), but the client JS
+hardcoded `totalMetrics = 2` and forced `TOTAL_FORMS = 2`, so the server expected
+two metric forms that never existed in the HTML.
+
+### Solution Implemented (stopgap)
+- `visit_log_form.html`: start `totalMetrics` at 0 for admin tasks so
+  `TOTAL_FORMS = 0`; added a top-of-form error banner rendering `form`,
+  `metric_formset`, and `photo_formset` errors (gated on `total_error_count`).
+- `task_complete_view` / `task_reopen_view`: added `messages.success(...)` for
+  visible confirmation after the page reload.
+- Regression tests: `core/tests/test_visit_log_form.py`.
+
+### Key Learnings
+1. **Conditional rendering must be paired with conditional validation.** Hiding
+   fields by context (`task_type`) while the client still submits their indices
+   produces phantom required-field errors. The client and template must agree on
+   how many forms exist.
+2. **Always render a form-level error summary.** Relying on per-field inline
+   errors alone means whole-formset failures are silent. A single error banner
+   (gated on `total_error_count`) surfaces every validation message.
+3. **Scope to a PRD:** this exposed a systemic pattern (several forms likely have
+   hidden/absent required fields) — captured as
+   `product/refinement/form-validation-error-display.md`.
+
+---
+
+## Date: 2026-08-16
+
+## Issue: Lifecycle Progress bars conflated with task type / community activity
+
+### Problem Description
+Director asked where the dashboard "Lifecycle Progress" stages pull their data
+from, and reported that community events (e.g. a "community planting day" task
+type) were not showing up as a "Community" section.
+
+### Root Cause Analysis
+Lifecycle Progress is driven by `Section.current_stage` (a section lifecycle
+field), NOT by task types or activity. `GlobalDashboardView.get_context_data()`
+builds `stage_distribution` from `Section.objects.values('current_stage')` and
+`Section.STAGE_CHOICES`. A task's type only affects the planner and metrics — it
+has zero effect on the lifecycle bars. No `Section` had
+`current_stage='community'`, so the "Community" bar showed "0 Sections".
+
+### Solution Implemented
+For now, hide the "Community" stage from the widget: `core/views.py` skips
+`community` when building `stage_distribution`. `Section.STAGE_CHOICES` is
+unchanged (sections can still be classified as "Community").
+
+### Key Learnings
+1. **Task type ≠ section stage.** These are two distinct concepts in the model;
+   don't expect task activity to move lifecycle bars.
+2. **Confirm the data source before "fixing" a dashboard gap.** The bar was empty
+   because of data classification, not a missing feature — the fix was to hide it
+   until community tracking is revisited (PRD Option C deferred).
+
+---
+
+## Date: 2026-08-16
+
+## Issue: Weekly planner activity aggregation on the dashboard
+
+### Problem Description
+Added "Planner Activity Indicators" — colored task-type tags on the dashboard's
+Active Sections list and Lifecycle Progress bars, driven by tasks scheduled in
+the current calendar week (Mon–Sun).
+
+### Root Cause Analysis / Design decisions
+The aggregation iterates `Task` for the week and keys a dict by `section_id`
+(for Active Sections) and by `section.current_stage` (for Lifecycle bars). Two
+data-shape traps surfaced:
+
+1. **`task.section` is nullable.** Section-less tasks are the codebase's "Admin"
+   convention — the weekly/monthly planners render them as "Admin" via
+   `{% if task.section %}…{% else %}Admin{% endif %}`. Any Python-side
+   aggregation must guard `task.section is None` before accessing
+   `task.section.current_stage` or it raises `AttributeError`.
+2. **`task.template` / `task.template.task_type` are nullable.** Tasks without a
+   template (or a template without a task type) have no code to label and are
+   skipped.
+
+### Solution Implemented
+`core/views.py` `GlobalDashboardView.get_context_data()` builds
+`section_weekly_activity` (id → sorted list of codes) and `stage_weekly_activity`
+(stage → set of field codes `litter_run`/`weeding`/`planting`), guarding both
+nulls. Admin is included on Active Sections but excluded from Lifecycle bars.
+The template renders compact colored tags via the existing `get_item` filter.
+
+### Key Learnings
+1. **"Admin" has two independent signals:** `TaskType.code == 'admin'` (via
+   template) vs. `task.section is None` (planner display convention). Don't
+   conflate them when filtering.
+2. **The Active Sections list is gated by 30-day visit activity.** A section with
+   tasks this week but no visit log in 30 days never appears on the list, so its
+   tags are invisible — a limitation to revisit if managers need a complete
+   "this week's workload" view.

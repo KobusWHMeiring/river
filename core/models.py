@@ -272,3 +272,21 @@ class SectionStageHistory(models.Model):
         indexes = [
             models.Index(fields=['section', 'changed_at']),
         ]
+
+
+class TaskCompletionHistory(models.Model):
+    ACTION_CHOICES = [
+        ('completed', 'Completed'),
+        ('reopened', 'Reopened'),
+    ]
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='completion_history')
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    changed_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-changed_at']
+
+    def __str__(self):
+        return f"{self.task} — {self.get_action_display()} at {self.changed_at}"

@@ -25,6 +25,7 @@ class UrlSmokeTests(TestCase):
     POST_ONLY_NAMES = {
         'section_reorder',
         'task_complete',
+        'task_reopen',
         'todo_update',
     }
 

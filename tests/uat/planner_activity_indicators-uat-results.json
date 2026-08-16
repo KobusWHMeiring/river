@@ -1,0 +1,113 @@
+{
+  "feature": "planner_activity_indicators",
+  "timestamp": "2026-08-16T05:36:01.661Z",
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0,
+    "pending": 0
+  },
+  "items": [
+    {
+      "id": "1",
+      "category": "Active Sections tags",
+      "description": "On the Impact Dashboard, find the Active Section with a Litter task this week.",
+      "expected_result": "A red 'Litter' tag appears below its name.",
+      "result": "pass"
+    },
+    {
+      "id": "2",
+      "category": "Active Sections tags",
+      "description": "Find the Active Section with a Weed task this week.",
+      "expected_result": "An amber 'Weed' tag appears below its name.",
+      "result": "pass"
+    },
+    {
+      "id": "3",
+      "category": "Active Sections tags",
+      "description": "Find the Active Section with a Plant task this week.",
+      "expected_result": "A green 'Plant' tag appears below its name.",
+      "result": "pass"
+    },
+    {
+      "id": "4",
+      "category": "Active Sections tags",
+      "description": "Find the Active Section with an Admin task this week.",
+      "expected_result": "An indigo 'Admin' tag appears below its name.",
+      "result": "pass"
+    },
+    {
+      "id": "5",
+      "category": "No-tag state",
+      "description": "Find an Active Section with no tasks scheduled this week.",
+      "expected_result": "No tags appear below its name (layout unchanged).",
+      "result": "pass"
+    },
+    {
+      "id": "6",
+      "category": "Lifecycle tags",
+      "description": "Look at the Lifecycle Progress bar for the stage containing the Litter-task section.",
+      "expected_result": "A red 'Litter' tag appears above that progress bar.",
+      "result": "pass",
+      "comment": "Confirmed after seeding demo field tasks (Litter tag appears above the Clearing bar)."
+    },
+    {
+      "id": "7",
+      "category": "Lifecycle tags",
+      "description": "Look at the stage containing the Weed-task section.",
+      "expected_result": "An amber 'Weed' tag appears above that bar.",
+      "result": "pass"
+    },
+    {
+      "id": "8",
+      "category": "Lifecycle tags",
+      "description": "Look at the stage containing the Plant-task section.",
+      "expected_result": "A green 'Plant' tag appears above that bar.",
+      "result": "pass"
+    },
+    {
+      "id": "9",
+      "category": "Lifecycle tags",
+      "description": "Look at the stage containing the Admin-task section.",
+      "expected_result": "No indigo 'Admin' tag above that bar (admin excluded from lifecycle).",
+      "result": "pass"
+    },
+    {
+      "id": "10",
+      "category": "Completed tasks",
+      "description": "Mark one of this week's tasks complete, then reload the dashboard.",
+      "expected_result": "The tag still appears for that section/stage.",
+      "result": "pass"
+    },
+    {
+      "id": "11",
+      "category": "Time window",
+      "description": "Ensure a task is dated next week (or last week) only.",
+      "expected_result": "No tag appears for that section (Mon-Sun current week only).",
+      "result": "pass"
+    },
+    {
+      "id": "12",
+      "category": "Edge cases",
+      "description": "Create a task this week with no template.",
+      "expected_result": "No 'Custom' tag; that task contributes nothing.",
+      "result": "pass"
+    },
+    {
+      "id": "13",
+      "category": "Edge cases",
+      "description": "Create a task this week with no section (Admin convention).",
+      "expected_result": "Dashboard renders normally; no tag shown anywhere for that task.",
+      "result": "pass"
+    },
+    {
+      "id": "14",
+      "category": "Empty state",
+      "description": "With no tasks scheduled this week at all, reload the dashboard.",
+      "expected_result": "No tags in Active Sections or Lifecycle bars; page renders normally.",
+      "result": "pass"
+    }
+  ],
+  "cancelled": false
+}

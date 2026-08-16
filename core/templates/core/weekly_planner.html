@@ -140,6 +140,16 @@
                                 </div>
                                 {% if task.is_completed %}
                                 <span class="material-symbols-outlined text-xs text-emerald-500 font-bold">check_circle</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button class="tick-reopen-btn material-symbols-outlined text-xs text-slate-300 hover:text-amber-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Re-open task" style="min-width:24px;min-height:24px;display:inline-flex;align-items:center;justify-content:center;">undo</button>
+                                    {% with visit_log=task.visitlog_set.first %}
+                                    {% if visit_log %}
+                                    <a href="{% url 'visit_log_edit' visit_log.pk %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit log">edit_note</a>
+                                    {% else %}
+                                    <a href="{% url 'task_edit' task.id %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit task">edit</a>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
                                 {% else %}
                                 <button class="tick-complete-btn material-symbols-outlined text-base text-slate-300 hover:text-emerald-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Mark complete" style="min-width:24px;min-height:24px;display:inline-flex;align-items:center;justify-content:center;">check_box_outline_blank</button>
                                 <a href="{% url 'task_edit' task.id %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit task">edit</a>
@@ -193,6 +203,16 @@
                                 </span>
                                 {% if task.is_completed %}
                                 <span class="material-symbols-outlined text-xs text-emerald-500 font-bold">check_circle</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button class="tick-reopen-btn material-symbols-outlined text-xs text-slate-300 hover:text-amber-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Re-open task" style="min-width:24px;min-height:24px;display:inline-flex;align-items:center;justify-content:center;">undo</button>
+                                    {% with visit_log=task.visitlog_set.first %}
+                                    {% if visit_log %}
+                                    <a href="{% url 'visit_log_edit' visit_log.pk %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit log">edit_note</a>
+                                    {% else %}
+                                    <a href="{% url 'task_edit' task.id %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit task">edit</a>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
                                 {% else %}
                                 <button class="tick-complete-btn material-symbols-outlined text-base text-slate-300 hover:text-emerald-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Mark complete" style="min-width:24px;min-height:24px;display:inline-flex;align-items:center;justify-content:center;">check_box_outline_blank</button>
                                 <a href="{% url 'task_edit' task.id %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit task">edit</a>
@@ -246,6 +266,16 @@
                                 </span>
                                 {% if task.is_completed %}
                                 <span class="material-symbols-outlined text-xs text-emerald-500 font-bold">check_circle</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button class="tick-reopen-btn material-symbols-outlined text-xs text-slate-300 hover:text-amber-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Re-open task" style="min-width:24px;min-height:24px;display:inline-flex;align-items:center;justify-content:center;">undo</button>
+                                    {% with visit_log=task.visitlog_set.first %}
+                                    {% if visit_log %}
+                                    <a href="{% url 'visit_log_edit' visit_log.pk %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit log">edit_note</a>
+                                    {% else %}
+                                    <a href="{% url 'task_edit' task.id %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit task">edit</a>
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
                                 {% else %}
                                 <button class="tick-complete-btn material-symbols-outlined text-base text-slate-300 hover:text-emerald-500 transition-colors cursor-pointer" data-task-id="{{ task.id }}" title="Mark complete" style="min-width:24px;min-height:24px;display:inline-flex;align-items:center;justify-content:center;">check_box_outline_blank</button>
                                 <a href="{% url 'task_edit' task.id %}?next={{ request.get_full_path|urlencode }}" class="material-symbols-outlined text-xs text-slate-300 hover:text-primary transition-colors opacity-0 group-hover:opacity-100" title="Edit task">edit</a>
@@ -526,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Tick-to-complete functionality
+    // Tick-to-complete (with participant prompt) + re-open functionality
     function getCSRFToken() {
         const name = 'csrftoken';
         const cookies = document.cookie.split(';');
@@ -539,66 +569,78 @@ document.addEventListener('DOMContentLoaded', function() {
         return '';
     }
 
-    document.querySelectorAll('.tick-complete-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const taskId = this.dataset.taskId;
-            const btnEl = this;
-            const card = btnEl.closest('.task-card');
-
-            // Optimistic update
-            btnEl.disabled = true;
-            btnEl.textContent = 'check_circle';
-            btnEl.classList.remove('text-slate-300', 'hover:text-emerald-500');
-            btnEl.classList.add('text-emerald-500', 'text-xs', 'font-bold');
-            if (card) {
-                card.classList.add('opacity-60');
-                const heading = card.querySelector('h4');
-                if (heading) {
-                    heading.classList.add('line-through', 'text-slate-400');
-                }
-                const desc = card.querySelector('p');
-                if (desc) {
-                    desc.classList.add('text-slate-400');
-                }
-            }
-
-            fetch(`/core/tasks/${taskId}/complete/`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCSRFToken()
-                }
-            })
+    function postTaskAction(url, body) {
+        const headers = {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCSRFToken()
+        };
+        if (body) {
+            headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        }
+        return fetch(url, { method: 'POST', headers, body: body })
             .then(response => {
                 if (!response.ok) throw new Error('Network error');
                 return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    btnEl.classList.add('text-emerald-500');
-                } else {
-                    throw new Error(data.error || 'Unknown error');
-                }
-            })
-            .catch(error => {
-                // Revert optimistic update
-                btnEl.disabled = false;
-                btnEl.textContent = 'check_box_outline_blank';
-                btnEl.classList.remove('text-emerald-500', 'text-xs', 'font-bold');
-                btnEl.classList.add('text-slate-300', 'hover:text-emerald-500');
-                if (card) {
-                    card.classList.remove('opacity-60');
-                    const heading = card.querySelector('h4');
-                    if (heading) {
-                        heading.classList.remove('line-through', 'text-slate-400');
-                    }
-                    const desc = card.querySelector('p');
-                    if (desc) {
-                        desc.classList.remove('text-slate-400');
-                    }
-                }
             });
+    }
+
+    document.querySelectorAll('.tick-complete-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const btnEl = this;
+            const taskId = btnEl.dataset.taskId;
+
+            const prompt = document.createElement('span');
+            prompt.className = 'inline-flex items-center gap-1';
+            prompt.innerHTML = [
+                '<input type="number" min="0" value="0" placeholder="0" aria-label="Number of participants"',
+                'class="tick-participants w-10 px-1 py-0.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">',
+                '<button type="button" class="tick-confirm material-symbols-outlined text-base text-emerald-500 hover:text-emerald-600 cursor-pointer" title="Confirm completion">check_circle</button>',
+                '<button type="button" class="tick-cancel material-symbols-outlined text-base text-slate-400 hover:text-slate-600 cursor-pointer" title="Cancel">close</button>'
+            ].join('');
+            btnEl.replaceWith(prompt);
+
+            const input = prompt.querySelector('.tick-participants');
+            input.focus();
+            input.addEventListener('click', e => e.stopPropagation());
+
+            const cancel = () => prompt.replaceWith(btnEl);
+            prompt.querySelector('.tick-cancel').addEventListener('click', e => {
+                e.stopPropagation();
+                cancel();
+            });
+            prompt.querySelector('.tick-confirm').addEventListener('click', e => {
+                e.stopPropagation();
+                const participants = parseInt(input.value, 10) || 0;
+                const body = new URLSearchParams();
+                body.set('participant_count', String(participants));
+                postTaskAction(`/core/tasks/${taskId}/complete/`, body.toString())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            cancel();
+                        }
+                    })
+                    .catch(() => cancel());
+            });
+        });
+    });
+
+    document.querySelectorAll('.tick-reopen-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const btnEl = this;
+            btnEl.disabled = true;
+            postTaskAction(`/core/tasks/${btnEl.dataset.taskId}/reopen/`, '')
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        btnEl.disabled = false;
+                    }
+                })
+                .catch(() => { btnEl.disabled = false; });
         });
     });
 });
