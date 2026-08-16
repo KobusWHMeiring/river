@@ -21,7 +21,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from collections import defaultdict
 from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo, SectionStageHistory, TaskCompletionHistory
 from .forms import SectionForm, TaskForm, TaskTemplateForm, TaskTypeForm, VisitLogForm, MetricFormSet, PhotoFormSet
-from .services.task_services import create_task_series, update_task_series, delete_task_series, move_todo_task, resolve_task_type, mark_task_completed
+from .services.task_services import create_task_series, update_task_series, delete_task_series, move_todo_task, resolve_task_type, mark_task_completed, search_planner_tasks
 
 from django.db.models import Sum, Q
 from django.utils import timezone
@@ -936,6 +936,13 @@ def task_reopen_view(request, pk):
     if is_ajax:
         return JsonResponse({'success': True})
     return redirect('daily_agenda')
+
+
+@login_required
+def task_search_view(request):
+    """JSON search endpoint for the planner search box (keyword search)."""
+    q = request.GET.get('q', '')
+    return JsonResponse({'results': search_planner_tasks(q)})
 
 
 # Task Template Management Views

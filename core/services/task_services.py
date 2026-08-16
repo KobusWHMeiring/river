@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta, date
 from typing import Optional
 from django.db import transaction
+from django.db.models import Q
 from ..models import Task, TaskCompletionHistory
 
 
@@ -169,3 +170,45 @@ def move_todo_task(task_id: int, new_status: str, new_index: int) -> None:
         task.refresh_from_db()
         print(f'[DEBUG move_todo_task] VERIFY: task {task.id} now has status={task.todo_status} pos={task.todo_position}')
         log.info(f'move_todo_task: verified task {task.id} status={task.todo_status}')
+
+
+def search_planner_tasks(q: str) -> list[dict]:
+    """
+    Data Flow Contract
+    -------------------
+    In:  q (str) — raw search text from the planner search box.
+    Out: list[dict] — up to 8 matches, newest first. Keys: id, instructions
+         (80 chars), date (ISO str or None), section_name, task_type_name,
+         task_type_code.
+    Side Effects: none (pure read).
+    Fails: never raises on ordinary input; icontains escapes wildcards.
+           Blank/whitespace q returns [].
+    """
+    q = (q or '').strip()
+    if not q:
+        return []
+
+    tasks = (
+        Task.objects.filter(is_rolling=False)
+        .filter(
+            Q(instructions__icontains=q)
+            | Q(section__name__icontains=q)
+            | Q(template__name__icontains=q)
+            | Q(template__task_type__name__icontains=q)
+        )
+        .select_related('section', 'template__task_type')
+        .order_by('-date', '-id')[:8]
+    )
+
+    results = []
+    for t in tasks:
+        tt = t.template.task_type if t.template else None
+        results.append({
+            'id': t.id,
+            'instructions': t.instructions[:80],
+            'date': t.date.isoformat() if t.date else None,
+            'section_name': t.section.name if t.section else 'No Section',
+            'task_type_name': tt.name if tt else 'Custom Task',
+            'task_type_code': tt.code if tt else '',
+        })
+    return results

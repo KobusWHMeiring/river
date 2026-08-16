@@ -65,6 +65,15 @@
             </span>
         </div>
 
+        <!-- Search + Jump to date -->
+        <div class="relative">
+            <input type="search" id="plannerSearch" placeholder="Search tasks…" autocomplete="off"
+                   class="w-40 md:w-56 pl-3 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs md:text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none">
+            <div id="searchResults" class="absolute left-0 right-0 top-full mt-1 z-50 hidden max-h-80 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg"></div>
+        </div>
+        <input type="date" id="plannerDateJump" title="Jump to date"
+               class="pl-3 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs md:text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none">
+
         <!-- Month Navigation -->
         <div class="flex border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
             <a href="{% url 'monthly_planner' %}?year={{ prev_year }}&month={{ prev_month }}" class="px-2 py-1.5 md:px-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700 transition-colors">
@@ -135,7 +144,7 @@
                             <!-- Team Tasks -->
                             <div class="space-y-1">
                                 {% for task in team_tasks|slice:":1" %}
-                                <div class="task-badge flex items-center gap-1.5 px-2 py-1 rounded text-[10px] bg-white dark:bg-slate-700 border-l-2 shadow-sm {% if task.is_completed %}opacity-50{% endif %}"
+                                <div class="task-badge flex items-center gap-1.5 px-2 py-1 rounded text-[10px] bg-white dark:bg-slate-700 border-l-2 shadow-sm {% if task.is_completed %}opacity-50{% endif %}" data-task-id="{{ task.id }}"
                                      style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};"
                                      title="{% if task.section %}{{ task.section.name }}{% else %}General{% endif %} - {{ task.instructions|truncatechars:50 }} (Team)">
                                     {% if task.is_completed %}
@@ -156,7 +165,7 @@
                             <!-- Manager Tasks -->
                             <div class="space-y-1">
                                 {% for task in manager_tasks|slice:":1" %}
-                                <div class="task-badge flex items-center gap-1.5 px-2 py-1 rounded text-[10px] bg-slate-50 dark:bg-slate-800 border-l-2 shadow-sm {% if task.is_completed %}opacity-50{% endif %}"
+                                <div class="task-badge flex items-center gap-1.5 px-2 py-1 rounded text-[10px] bg-slate-50 dark:bg-slate-800 border-l-2 shadow-sm {% if task.is_completed %}opacity-50{% endif %}" data-task-id="{{ task.id }}"
                                      style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};"
                                      title="{% if task.section %}{{ task.section.name }}{% else %}General{% endif %} - {{ task.instructions|truncatechars:50 }} (Manager)">
                                     {% if task.is_completed %}
@@ -177,7 +186,7 @@
                             <!-- Chairperson Tasks (Strategic) -->
                             <div class="space-y-1">
                                 {% for task in chairperson_tasks|slice:":1" %}
-                                <div class="task-badge flex items-center gap-1.5 px-2 py-1 rounded text-[10px] bg-slate-50 dark:bg-slate-900/10 border-l-2 shadow-sm {% if task.is_completed %}opacity-50{% endif %}"
+                                <div class="task-badge flex items-center gap-1.5 px-2 py-1 rounded text-[10px] bg-slate-50 dark:bg-slate-900/10 border-l-2 shadow-sm {% if task.is_completed %}opacity-50{% endif %}" data-task-id="{{ task.id }}"
                                      style="border-left-color: {% if task.section %}{{ task.section.color_code }}{% else %}#808080{% endif %};"
                                      title="{% if task.section %}{{ task.section.name }}{% else %}General{% endif %} - {{ task.instructions|truncatechars:50 }} (Chairperson)">
                                     {% if task.is_completed %}
@@ -583,5 +592,74 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+</script>
+<script>
+const SEARCH_URL = "{% url 'task_search' %}";
+const PLANNER_VIEW = 'monthly';
+const searchInput = document.getElementById('plannerSearch');
+const resultsBox = document.getElementById('searchResults');
+const dateJump = document.getElementById('plannerDateJump');
+
+let debounceTimer;
+searchInput.addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(runSearch, 250);
+});
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
+function jumpUrl(r) {
+  if (PLANNER_VIEW === 'weekly') return `?week=${r.date}&highlight=${r.id}`;
+  const d = new Date(r.date + 'T00:00:00');
+  return `?year=${d.getFullYear()}&month=${d.getMonth() + 1}&highlight=${r.id}`;
+}
+
+async function runSearch() {
+  const q = searchInput.value.trim();
+  if (!q) { resultsBox.classList.add('hidden'); return; }
+  const resp = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(q)}`);
+  const data = await resp.json();
+  const results = data.results || [];
+  if (!results.length) {
+    resultsBox.innerHTML = '<div class="px-3 py-2 text-xs text-slate-500">No results</div>';
+  } else {
+    resultsBox.innerHTML = results.map(r => `
+      <a href="${jumpUrl(r)}" class="block px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 last:border-0">
+        <span class="block text-xs font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(r.instructions)}</span>
+        <span class="block text-[10px] text-slate-500">${escapeHtml(r.section_name)} · ${escapeHtml(r.task_type_name)} · ${r.date}</span>
+      </a>`).join('');
+  }
+  resultsBox.classList.remove('hidden');
+}
+
+dateJump.addEventListener('change', () => {
+  if (!dateJump.value) return;
+  if (PLANNER_VIEW === 'weekly') window.location.href = `?week=${dateJump.value}`;
+  else {
+    const d = new Date(dateJump.value + 'T00:00:00');
+    window.location.href = `?year=${d.getFullYear()}&month=${d.getMonth() + 1}`;
+  }
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#plannerSearch') && !e.target.closest('#searchResults')) {
+    resultsBox.classList.add('hidden');
+  }
+});
+
+const params = new URLSearchParams(window.location.search);
+const hl = params.get('highlight');
+if (hl) {
+  const el = document.querySelector(`.task-card[data-task-id="${hl}"], .task-badge[data-task-id="${hl}"]`);
+  if (el) {
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.classList.add('ring-2', 'ring-amber-400');
+    setTimeout(() => el.classList.remove('ring-2', 'ring-amber-400'), 2500);
+  }
+}
 </script>
 {% endblock %}
