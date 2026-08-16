@@ -1,13 +1,13 @@
 {
-  "last_checkpoint": "2026-08-16T08:55:00+02:00",
-  "summary": "Implemented Section Days Worked metric per product/ready/section-days-worked-metric.md (TDD: wrote failing tests first, then view + template). SectionDetailView now computes days_worked = distinct Task.date (is_rolling=False, date<=today) and drops total_bags_general/total_bags_recyclable; template swaps Total Litter Bags card for Days Worked (4 cards remain). Added core/tests/test_section_detail.py (6 tests). Full suite 89 pass; lint static-clean (Gemini audit API 404 unavailable). UAT 5/5 pass (tests/uat/section_days_worked-uat-results.json). Moved PRD to product/Done/. Regenerated backlog.md + CURRENT_STATE.md, refreshed progress_log.json, appended one test-writing learning.",
+  "last_checkpoint": "2026-08-16T09:32:00+02:00",
+  "summary": "Closed the loop on Re-open Completed Tasks + Participant Count. Verified the success-toast fix was already committed (messages.success in task_complete_view/task_reopen_view, rendered as a green banner in templates/base.html) in 5570632 — AFTER the earlier UAT run, which is why UAT item 4 had failed. Re-ran the full UAT (tests/uat/reopen_completed_tasks_uat.md): 9/9 passed. Moved reopen-completed-tasks.md ready -> Done, updated its status header to 'Shipped — UAT 9/9 passed'. Regenerated backlog.md + CURRENT_STATE.md and refreshed progress_log.json. Note: a parallel session already shipped section-days-worked (b720890) and reconciled it to Done (9c5a213) during this session.",
   "moved": [
-    { "section-days-worked-metric.md": "ready -> Done" }
+    { "reopen-completed-tasks.md": "ready -> Done (UAT 9/9)" }
   ],
   "up_next": [
-    "Add success toast on task complete/re-open (UAT reopen_completed_tasks item 4 failed); then re-run UAT + move Re-open Completed Tasks to Done",
     "Implement Planner Search / Jump-to (ready)",
-    "Playwright E2E testing (refinement)"
+    "Dynamic Kanban Columns (refinement)",
+    "Dashboard Metric Drill-Down (refinement)"
   ],
-  "learnings_added": true
+  "learnings_added": false
 }

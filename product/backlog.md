@@ -3,14 +3,13 @@
 > **Auto-generated** — do not edit by hand. The directories are the source of truth.
 > Regenerate with: `python product/backlog.py`
 
-**Generated:** 2026-08-16 09:27
+**Generated:** 2026-08-16 09:31
 
-## Ready — approved, ready to build (2)
+## Ready — approved, ready to build (1)
 
 | File | Summary |
 |------|---------|
 | `planner-search.md` | PRD: Planner Search / Jump-to |
-| `reopen-completed-tasks.md` | PRD: Re-open Completed Tasks + Participant Count on Completion |
 
 ## Refinement — in design / needs a decision (4)
 
@@ -21,7 +20,7 @@
 | `performance-testing-backlog.md` | Performance Regression Testing — River Backlog |
 | `playwright_e2e_testing.md` | PRD: Playwright E2E Testing Implementation |
 
-## Done — shipped (32)
+## Done — shipped (33)
 
 | File | Summary |
 |------|---------|
@@ -46,6 +45,7 @@
 | `planner_interaction_update.md` | PRD: Planner Interaction Update (Context-Aware Navigation) |
 | `prd_zone_view` | In SectionDetailView.get_context_data() |
 | `quick-specs-participants-typeable.md` | Quick Specs: Participant Count + Typeable Litter Bags |
+| `reopen-completed-tasks.md` | PRD: Re-open Completed Tasks + Participant Count on Completion |
 | `rolling_todo_list.md` | PRD: Global Rolling To-Do List (Refined v2) |
 | `section-days-worked-metric.md` | PRD: Section "Days Worked" Metric + Remove Litter Bags from Section Metrics |
 | `section_mapping.md` | PRD: Section Mapping & Spatial Visualization |

@@ -1,6 +1,6 @@
 # PRD: Re-open Completed Tasks + Participant Count on Completion
 
-**Status:** Implemented — committed + unit-tested; UAT 8/9 passed. Outstanding: success toast on complete/re-open (UAT item 4).
+**Status:** Shipped — UAT 9/9 passed (2026-08-16).
 **Source:** Sarah Schumann (Director), 2026-08-12
 
 ## 1. Problem Statement

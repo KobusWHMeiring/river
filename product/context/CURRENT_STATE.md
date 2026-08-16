@@ -1,4 +1,4 @@
-**Generated on:** 2026-08-16 09:27:38
+**Generated on:** 2026-08-16 09:31:10
 
 ### File Structure
 ```
@@ -154,6 +154,7 @@
         └── planner_interaction_update.md
         └── prd_zone_view
         └── quick-specs-participants-typeable.md
+        └── reopen-completed-tasks.md
         └── rolling_todo_list.md
         └── section-days-worked-metric.md
         └── section_mapping.md
@@ -172,7 +173,6 @@
         └── po.md
     └── ready
         └── planner-search.md
-        └── reopen-completed-tasks.md
     └── refinement
         └── dashboard-metric-drilldown.md
         └── dynamic-kanban-columns.md

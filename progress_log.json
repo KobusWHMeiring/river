@@ -21,13 +21,14 @@
     "Time-Stamped Stage Tracking Visualization",
     "Lifecycle Progress widget — hide Community stage (data-source clarification)",
     "Planner Activity Indicators on Dashboard (weekly task-type tags on Active Sections & Lifecycle bars)",
-    "Section Days Worked Metric (distinct planned dates; removed Total Litter Bags card)"
+    "Section Days Worked Metric (distinct planned dates; removed Total Litter Bags card)",
+    "Re-open Completed Tasks + Participant Count (success toast on complete/re-open)"
   ],
   "stalled_tasks": [],
   "next_three_steps": [
-    "Add success toast on task complete/re-open (UAT reopen_completed_tasks item 4 failed); then re-run UAT + move Re-open Completed Tasks to Done",
     "Implement Planner Search / Jump-to (ready)",
-    "Playwright E2E testing (refinement)"
+    "Dynamic Kanban Columns (refinement)",
+    "Dashboard Metric Drill-Down (refinement)"
   ],
   "architectural_concerns": [
     "Preserving redirect context (next parameter) across form validation cycles.",
