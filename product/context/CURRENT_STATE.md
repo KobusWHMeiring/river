@@ -1,4 +1,4 @@
-**Generated on:** 2026-08-16 09:31:10
+**Generated on:** 2026-08-16 12:19:39
 
 ### File Structure
 ```
@@ -71,6 +71,7 @@
         └── test_section_detail.py
         └── test_task_complete.py
         └── test_task_reopen.py
+        └── test_task_search.py
         └── test_task_series.py
         └── test_todo_kanban.py
         └── test_urls.py
@@ -151,6 +152,7 @@
         └── monthly_view.md
         └── multi_day_tasks.md
         └── planner-activity-indicators.md
+        └── planner-search.md
         └── planner_interaction_update.md
         └── prd_zone_view
         └── quick-specs-participants-typeable.md
@@ -172,7 +174,6 @@
         └── PM.md
         └── po.md
     └── ready
-        └── planner-search.md
     └── refinement
         └── dashboard-metric-drilldown.md
         └── dynamic-kanban-columns.md
@@ -216,6 +217,7 @@
         └── participants-typeable_uat.md
         └── planner_activity_indicators-uat-results.json
         └── planner_activity_indicators_uat.md
+        └── planner_search-uat-results.json
         └── planner_search_uat.md
         └── reopen_completed_tasks-uat-results.json
         └── reopen_completed_tasks_uat.md
@@ -456,6 +458,11 @@ def task_complete_view(request, pk):
 def task_reopen_view(request, pk):
     # ... implementation hidden ...
 
+@login_required
+def task_search_view(request):
+    """JSON search endpoint for the planner search box (keyword search)."""
+    # ... implementation hidden ...
+
 class TaskTemplateListView(LoginRequiredMixin, ListView):  # Renders: core/task_template_list.html
     # ... implementation hidden ...
 
@@ -553,6 +560,7 @@ urlpatterns = [
     path('daily-agenda/', views.DailyAgendaView.as_view(), name='daily_agenda'),
     path('tasks/<int:pk>/complete/', views.task_complete_view, name='task_complete'),
     path('tasks/<int:pk>/reopen/', views.task_reopen_view, name='task_reopen'),
+    path('tasks/search/', views.task_search_view, name='task_search'),
     
     # Kanban Board URLs
     path('todo/', views.TodoKanbanView.as_view(), name='todo_kanban'),

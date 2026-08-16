@@ -1,0 +1,77 @@
+{
+  "feature": "planner_search",
+  "timestamp": "2026-08-16T10:18:04.904Z",
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "pending": 0
+  },
+  "items": [
+    {
+      "category": "Weekly Planner — Keyword Search",
+      "description": "Open Weekly Planner, type 'litter' into the search box (top header).",
+      "expected_result": "Within ~300ms an inline dropdown lists up to 8 matching tasks, newest first, each showing instructions snippet + section name + task type name.",
+      "id": "1",
+      "result": "pass"
+    },
+    {
+      "category": "Weekly Planner — Keyword Search",
+      "description": "Click a search result in the dropdown.",
+      "expected_result": "Page navigates to the result's own week (?week=<date>&highlight=<task_id>) and that task card scrolls into view and briefly glows amber.",
+      "id": "2",
+      "result": "pass"
+    },
+    {
+      "category": "Weekly Planner — Jump to date",
+      "description": "On Weekly Planner, pick a past date (e.g. a March date) in the date input.",
+      "expected_result": "Page navigates to that date's week (?week=<date>).",
+      "id": "3",
+      "result": "pass"
+    },
+    {
+      "category": "Monthly Planner — Search + jump",
+      "description": "Open Monthly Planner, search 'litter', click a result dated in a different month.",
+      "expected_result": "Page navigates to the result's month (?year=&month=&highlight=<task_id>) and the correct day-cell badge is highlighted.",
+      "id": "4",
+      "result": "pass"
+    },
+    {
+      "category": "Null section/template fallback",
+      "description": "Search 'Intern training' (a task with no section and no template), then click it.",
+      "expected_result": "Result shows 'No Section' and 'Custom Task' (no blank/null/None text); lands on correct week with the card highlighted.",
+      "id": "5",
+      "result": "pass"
+    },
+    {
+      "category": "No matches / blank query",
+      "description": "Search 'zzzzz', then clear the box (or enter spaces).",
+      "expected_result": "Empty state (dropdown shows 'No results' or doesn't open); clearing hides the dropdown.",
+      "id": "6",
+      "result": "pass"
+    },
+    {
+      "category": "Rolling (Kanban) tasks excluded",
+      "description": "Note a rolling to-do item's text on the Kanban board, then search that text in planner search.",
+      "expected_result": "The rolling task does not appear (planner search is non-rolling only).",
+      "id": "7",
+      "result": "pass"
+    },
+    {
+      "category": "Special characters",
+      "description": "Search '%' then '_' then '\"'.",
+      "expected_result": "No error; characters treated literally (likely empty list).",
+      "id": "8",
+      "result": "pass"
+    },
+    {
+      "category": "Unauthenticated access",
+      "description": "Log out, then directly GET /core/tasks/search/?q=litter.",
+      "expected_result": "302 redirect to login (no JSON/task text leaked to anonymous users).",
+      "id": "9",
+      "result": "pass"
+    }
+  ],
+  "cancelled": false
+}

@@ -3,13 +3,11 @@
 > **Auto-generated** — do not edit by hand. The directories are the source of truth.
 > Regenerate with: `python product/backlog.py`
 
-**Generated:** 2026-08-16 09:31
+**Generated:** 2026-08-16 12:19
 
-## Ready — approved, ready to build (1)
+## Ready — approved, ready to build (0)
 
-| File | Summary |
-|------|---------|
-| `planner-search.md` | PRD: Planner Search / Jump-to |
+_None._
 
 ## Refinement — in design / needs a decision (4)
 
@@ -20,7 +18,7 @@
 | `performance-testing-backlog.md` | Performance Regression Testing — River Backlog |
 | `playwright_e2e_testing.md` | PRD: Playwright E2E Testing Implementation |
 
-## Done — shipped (33)
+## Done — shipped (34)
 
 | File | Summary |
 |------|---------|
@@ -42,6 +40,7 @@
 | `monthly_view.md` | PRD: Monthly Planning View |
 | `multi_day_tasks.md` | PRD: Multi-Day Task Series (Refined v2) |
 | `planner-activity-indicators.md` | PRD: Planner Activity → Section/Lifecycle Indicators |
+| `planner-search.md` | PRD: Planner Search / Jump-to |
 | `planner_interaction_update.md` | PRD: Planner Interaction Update (Context-Aware Navigation) |
 | `prd_zone_view` | In SectionDetailView.get_context_data() |
 | `quick-specs-participants-typeable.md` | Quick Specs: Participant Count + Typeable Litter Bags |

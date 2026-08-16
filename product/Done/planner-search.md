@@ -1,6 +1,6 @@
 # PRD: Planner Search / Jump-to
 
-**Status:** Ready — design approved 2026-08-16
+**Status:** Shipped — UAT 9/9 passed (2026-08-16).
 **Source:** Sarah Schumann (Director), 2026-08-12
 
 ## 1. Problem Statement

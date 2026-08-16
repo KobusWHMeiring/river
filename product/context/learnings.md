@@ -1644,3 +1644,18 @@ assertion only passes once the card actually renders.
    `assertContains` on a UI label, keep fixture/sample names distinct from the
    asserted text, or the test can pass for the wrong reason before the feature
    exists.
+
+---
+
+## Date: 2026-08-16
+
+## Issue: Planner-search test fixtures collided with data-migration-seeded rows
+
+### Problem Description
+The PRD's test code created fixtures with `TaskType.objects.create(name='Weeding', code='weeding')` and `Section.objects.create(name='Upper Liesbeek')`. On first run the test DB failed with `UNIQUE constraint failed` because data migrations already seed those exact rows (TaskType 'weeding' via 0029; Section 'Upper Liesbeek' via 0003).
+
+### Solution Implemented
+Switched setUp to `get_or_create(code=..., defaults={...})` / `get_or_create(name=..., defaults={...})`, matching the convention already used by the older test files (e.g. test_task_complete.py).
+
+### Key Learnings
+1. **Use `get_or_create` for any model seeded by a data migration.** `create()` collides with the seeded rows' unique constraints (name/code) in the test DB. Grep the migrations before writing fixtures, or just default to `get_or_create` for shared lookup tables (TaskType, Section).
