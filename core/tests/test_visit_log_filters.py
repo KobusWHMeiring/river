@@ -98,3 +98,27 @@ class VisitLogServiceTests(TestCase):
         self.assertEqual(metric_total_display('litter', 8), 'Litter — 8 bags')
         self.assertEqual(metric_total_display('plant', 10, 'Restio'), 'Plants · Restio — 10')
         self.assertIsNone(metric_total_display(None, 0))
+
+
+class VisitLogListViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(username='listview', password='password', email='lv@example.com')
+        self.client = Client()
+        self.client.login(username='listview', password='password')
+        self.section, _ = Section.objects.get_or_create(name='Gamma', defaults={'color_code': '#333333', 'current_stage': 'clearing'})
+        v = VisitLog.objects.create(section=self.section, date=date(2026, 8, 1), participant_count=4)
+        Metric.objects.create(visit=v, metric_type='litter_general', value=5)
+        Metric.objects.create(visit=v, metric_type='litter_recyclable', value=3)
+
+    def test_metric_filter_and_total_context(self):
+        resp = self.client.get(reverse('visit_log_list'), {'metric': 'litter'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.context['visit_log_total'], 8)
+        self.assertEqual(resp.context['total_summary'], 'Litter — 8 bags')
+        self.assertEqual(resp.context['selected_metric'], 'litter')
+        self.assertEqual(resp.context['sort'], '-date')
+        self.assertEqual(len(resp.context['visit_logs']), 1)
+
+    def test_unfiltered_has_no_summary(self):
+        resp = self.client.get(reverse('visit_log_list'))
+        self.assertIsNone(resp.context['total_summary'])

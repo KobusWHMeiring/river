@@ -22,8 +22,9 @@ from collections import defaultdict
 from .models import Section, Task, TaskTemplate, TaskType, VisitLog, Metric, Photo, SectionStageHistory, TaskCompletionHistory
 from .forms import SectionForm, TaskForm, TaskTemplateForm, TaskTypeForm, VisitLogForm, MetricFormSet, PhotoFormSet
 from .services.task_services import create_task_series, update_task_series, delete_task_series, move_todo_task, resolve_task_type, mark_task_completed, search_planner_tasks
+from .services.visit_log_services import base_visit_log_queryset, build_visit_log_queryset, visit_log_total, metric_total_display
 
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count
 from django.utils import timezone
 from django.contrib import messages
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponseForbidden
@@ -238,7 +239,12 @@ class SectionListView(LoginRequiredMixin, ListView):
     model = Section
     template_name = 'core/section_list.html'
     context_object_name = 'sections'
-    
+
+    def get_queryset(self):
+        # select_related('status') avoids N+1 queries for the status badge
+        # rendered per section in the list template.
+        return Section.objects.select_related('status').order_by('position', 'name')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
@@ -952,8 +958,9 @@ class TaskTemplateListView(LoginRequiredMixin, ListView):
     context_object_name = 'templates'
 
     def get_queryset(self):
-        # Order by active first, then by name
-        return TaskTemplate.objects.all().order_by('-is_active', 'name')
+        # select_related('task_type') avoids N+1 queries for task type
+        # color/icon/name rendered in the list template.
+        return TaskTemplate.objects.select_related('task_type').order_by('-is_active', 'name')
 
 
 class TaskTemplateCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
@@ -995,57 +1002,25 @@ class VisitLogListView(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        queryset = VisitLog.objects.select_related('section', 'task').prefetch_related('metrics', 'photos').order_by('-date', '-created_at')
-        
-        # Global search
-        search_query = self.request.GET.get('q')
-        if search_query:
-            queryset = queryset.filter(
-                Q(notes__icontains=search_query) | 
-                Q(section__name__icontains=search_query) |
-                Q(task__template__name__icontains=search_query)
-            )
-        
-        # Section filter
-        section_id = self.request.GET.get('section')
-        if section_id:
-            queryset = queryset.filter(section_id=section_id)
-        
-        # Date range filters
-        start_date = self.request.GET.get('start_date')
-        if start_date:
-            try:
-                start = datetime.strptime(start_date, '%Y-%m-%d').date()
-                queryset = queryset.filter(date__gte=start)
-            except (ValueError, TypeError):
-                pass
-        
-        end_date = self.request.GET.get('end_date')
-        if end_date:
-            try:
-                end = datetime.strptime(end_date, '%Y-%m-%d').date()
-                queryset = queryset.filter(date__lte=end)
-            except (ValueError, TypeError):
-                pass
-        
-        # Activity type filter (Planned vs Unplanned)
-        activity_type = self.request.GET.get('activity_type')
-        if activity_type == 'planned':
-            queryset = queryset.filter(task__isnull=False)
-        elif activity_type == 'unplanned':
-            queryset = queryset.filter(task__isnull=True)
-        
-        return queryset
+        return build_visit_log_queryset(self.request.GET)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        metric = self.request.GET.get('metric')
+        species = self.request.GET.get('species')
         context['sections'] = Section.objects.all()
         context['search_query'] = self.request.GET.get('q', '')
         context['selected_section'] = self.request.GET.get('section', '')
         context['start_date'] = self.request.GET.get('start_date', '')
         context['end_date'] = self.request.GET.get('end_date', '')
         context['activity_type'] = self.request.GET.get('activity_type', '')
-        
+        context['selected_metric'] = metric or ''
+        context['selected_species'] = species or ''
+        context['sort'] = self.request.GET.get('sort', '-date')
+        total = visit_log_total(base_visit_log_queryset(self.request.GET), metric, species)
+        context['visit_log_total'] = total
+        context['total_summary'] = metric_total_display(metric, total, species)
+
         # Preserve query parameters for pagination
         query_params = self.request.GET.copy()
         if 'page' in query_params:
@@ -1062,8 +1037,9 @@ class TaskTypeListView(LoginRequiredMixin, ListView):
     context_object_name = 'task_types'
 
     def get_queryset(self):
-        # Order by position, then by name
-        return TaskType.objects.all().order_by('position', 'name')
+        # Annotate template_count to avoid N+1 queries for the per-type
+        # template count rendered in the list template.
+        return TaskType.objects.annotate(template_count=Count('templates')).order_by('position', 'name')
 
 
 class TaskTypeCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
