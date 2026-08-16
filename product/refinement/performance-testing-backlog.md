@@ -3,7 +3,7 @@
 > **Inspired by:** Homtini `tests/performance/` suite & Abseil Performance Hints  
 > **Date:** 2026-08-11 (updated 2026-08-16)  
 > **Goal:** Per-endpoint query budgets with CI enforcement, N+1 growth detection, and a documented budget-adjustment process  
-> **Status:** ✅ BL-1/BL-2/BL-3 done (Django `TestCase`, not pytest) · N+1 fixes applied · BL-4→BL-7 remaining
+> **Status:** ✅ BL-1/BL-2/BL-3/BL-4 done (Django `TestCase`, not pytest) · N+1 fixes applied · BL-5→BL-7 remaining
 
 ---
 
@@ -80,6 +80,7 @@ The Discovery run surfaced four N+1 hotspots. All fixed:
 | Task Templates | `TaskTemplateListView.get_queryset()` → `.select_related('task_type')` | 19 → 3 |
 | Task Types | `TaskTypeListView.get_queryset()` → `.annotate(template_count=Count('templates'))` + template uses `task_type.template_count` | 6 → 3 |
 | Task Create | `TaskForm` template field queryset → `.select_related('task_type')` (fixes `__str__` N+1 in dropdown) | 23 → 7 |
+| Weekly Planner | `WeeklyPlannerView.get_queryset()` → `.select_related('section', 'template')` (surfaced by BL-4 growth test) | 67 → 7 with 30 tasks |
 
 ---
 
@@ -94,6 +95,11 @@ For endpoints that scale with data volume, add a growth assertion: create N reco
 | Section List | Create 10 extra sections | 10 | Query count unchanged |
 | Visit Log List | Create 50 extra visit logs (paginated, page 1) | 50 | Query count unchanged |
 | Dashboard | Create 20 extra visit logs across sections | 20 | Query count unchanged (aggregates, not per-row) |
+
+> **Implemented** (BL-4, 2026-08-16) as `core/tests/performance/test_n1_growth.py` — 5 tests,
+> all passing. Surfaced and fixed one real N+1: the Weekly Planner queried
+> `section` and `template` per task (7 → 67 queries with 30 tasks); now
+> `.select_related('section', 'template')` keeps it flat.
 
 ---
 
@@ -217,7 +223,12 @@ def test_dashboard_query_budget(perf_client, count_queries):
 
 ---
 
-### BL-4: N+1 Growth Tests (P1)
+### BL-4: N+1 Growth Tests (P1) — ✅ DONE
+
+> **Implemented** as `core/tests/performance/test_n1_growth.py` (unittest). Five
+> `PerformanceTestCase` tests seed a baseline, bulk-create extra rows, and assert
+> the query count stays flat via `assert_no_query_growth()` (added to `base.py`).
+> This surfaced and fixed a Weekly Planner N+1 (see "N+1 Fixes Applied").
 
 **File:** `core/tests/performance/test_n1_growth.py`
 
@@ -323,11 +334,11 @@ Add to `DEVELOPER_HANDOVER.md` or create `docs/performance-budgets.md`:
 | BL-1: Test infrastructure | 15 min | P0 | ✅ DONE |
 | BL-2: Discovery run | 20 min | P0 | ✅ DONE |
 | BL-3: Budget tests (12 endpoints) | 30 min | P0 | ✅ DONE |
-| BL-4: N+1 growth tests (5 endpoints) | 1–2 hr | P1 | |
+| BL-4: N+1 growth tests (5 endpoints) | 1–2 hr | P1 | ✅ DONE |
 | BL-5: Known issues suppression | 10 min | P1 | |
 | BL-6: CI integration | 15 min | P1 | |
 | BL-7: Budget adjustment docs | 10 min | P2 | |
-| **Remaining** | **~1.5–2.5 hours** | | |
+| **Remaining** | **~35 minutes** | | |
 
 ---
 

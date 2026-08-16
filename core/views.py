@@ -391,7 +391,12 @@ class WeeklyPlannerView(LoginRequiredMixin, ListView):
             start_of_week = today - timedelta(days=today.weekday())
 
         end_of_week = start_of_week + timedelta(days=6)
-        return Task.objects.filter(date__range=[start_of_week, end_of_week], is_rolling=False)
+        # select_related avoids N+1 queries for the section badge and template
+        # name rendered per task cell in the planner grid.
+        return Task.objects.filter(
+            date__range=[start_of_week, end_of_week],
+            is_rolling=False,
+        ).select_related('section', 'template')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

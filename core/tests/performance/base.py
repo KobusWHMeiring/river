@@ -65,3 +65,13 @@ class PerformanceTestCase(TestCase):
             f"If this is intentional, raise the budget in test_budgets.py "
             f"and document why in product/refinement/performance-testing-backlog.md."
         )
+
+    def assert_no_query_growth(self, endpoint, before, after):
+        """Assert adding data did not increase the query count (N+1 guard)."""
+        self.assertLessEqual(
+            after,
+            before,
+            f"\n{endpoint}: query count grew from {before} to {after} after adding data.\n"
+            f"This is an N+1 regression — fix the view's queryset "
+            f"(select_related/prefetch_related) rather than weakening this assertion."
+        )
