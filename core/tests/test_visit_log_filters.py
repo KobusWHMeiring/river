@@ -125,6 +125,12 @@ class VisitLogListViewTests(TestCase):
         resp = self.client.get(reverse('visit_log_list'))
         self.assertIsNone(resp.context['total_summary'])
 
+    def test_template_shows_total_header_and_export(self):
+        resp = self.client.get(reverse('visit_log_list'), {'metric': 'litter'})
+        self.assertContains(resp, 'Litter — 8 bags')
+        self.assertContains(resp, 'Export')
+        self.assertContains(resp, reverse('visit_log_export'))
+
 
 class VisitLogExportViewTests(TestCase):
     def setUp(self):

@@ -73,6 +73,29 @@
                             <input type="date" name="end_date" value="{{ end_date }}" class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
                         </div>
                     </div>
+
+                    <!-- Metric Filter -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Metric</label>
+                        <select name="metric" class="w-full py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                            <option value="">All Metrics</option>
+                            <option value="litter" {% if selected_metric == 'litter' %}selected{% endif %}>Litter</option>
+                            <option value="plant" {% if selected_metric == 'plant' %}selected{% endif %}>Plants</option>
+                            <option value="weed" {% if selected_metric == 'weed' %}selected{% endif %}>Weeds</option>
+                            <option value="participants" {% if selected_metric == 'participants' %}selected{% endif %}>Participation</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sort</label>
+                        <select name="sort" class="w-full py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-slate-800 dark:text-slate-200 outline-none">
+                            <option value="-date" {% if sort == '-date' %}selected{% endif %}>Newest</option>
+                            <option value="date" {% if sort == 'date' %}selected{% endif %}>Oldest</option>
+                            <option value="section" {% if sort == 'section' %}selected{% endif %}>Section A–Z</option>
+                            <option value="-participant_count" {% if sort == '-participant_count' %}selected{% endif %}>Participants high→low</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-between">
@@ -94,6 +117,10 @@
 
                     <!-- Action Buttons -->
                     <div class="flex items-center gap-3">
+                        <a href="{% url 'visit_log_export' %}{% if query_params %}?{{ query_params }}{% endif %}" class="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">download</span>
+                            Export
+                        </a>
                         <a href="{% url 'visit_log_list' %}" class="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
                             Clear Filters
                         </a>
@@ -105,6 +132,10 @@
                 </div>
             </form>
         </div>
+
+        {% if total_summary %}
+        <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{{ total_summary }}</p>
+        {% endif %}
 
         <!-- Results Count -->
         <div class="flex items-center justify-between">
