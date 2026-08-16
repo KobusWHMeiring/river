@@ -5,7 +5,12 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 
 from core.models import Section, VisitLog, Metric
-from core.services.visit_log_services import base_visit_log_queryset, build_visit_log_queryset
+from core.services.visit_log_services import (
+    base_visit_log_queryset,
+    build_visit_log_queryset,
+    visit_log_total,
+    metric_total_display,
+)
 
 
 class VisitLogServiceTests(TestCase):
@@ -70,3 +75,26 @@ class VisitLogServiceTests(TestCase):
 
     def test_sort_participants_desc(self):
         self.assertEqual(list(build_visit_log_queryset({'sort': '-participant_count'}))[0], self.litter)
+
+    def test_total_litter(self):
+        self.assertEqual(visit_log_total(base_visit_log_queryset({}), 'litter', None), 8)
+
+    def test_total_plant(self):
+        self.assertEqual(visit_log_total(base_visit_log_queryset({}), 'plant', None), 17)
+
+    def test_total_plant_species(self):
+        self.assertEqual(visit_log_total(base_visit_log_queryset({}), 'plant', 'Restio'), 10)
+
+    def test_total_weed(self):
+        self.assertEqual(visit_log_total(base_visit_log_queryset({}), 'weed', None), 15)
+
+    def test_total_participants(self):
+        self.assertEqual(visit_log_total(base_visit_log_queryset({}), 'participants', None), 10)
+
+    def test_total_no_metric(self):
+        self.assertEqual(visit_log_total(base_visit_log_queryset({}), None, None), 0)
+
+    def test_metric_total_display(self):
+        self.assertEqual(metric_total_display('litter', 8), 'Litter — 8 bags')
+        self.assertEqual(metric_total_display('plant', 10, 'Restio'), 'Plants · Restio — 10')
+        self.assertIsNone(metric_total_display(None, 0))

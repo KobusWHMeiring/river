@@ -96,3 +96,51 @@ def build_visit_log_queryset(params: dict) -> QuerySet:
         queryset = queryset.order_by('-date', '-created_at')
 
     return queryset
+
+
+METRIC_DISPLAY = {
+    'litter': ('Litter', 'bags'),
+    'participants': ('Participation', 'people'),
+    'plant': ('Plants', ''),
+    'weed': ('Weeds', ''),
+}
+
+
+def visit_log_total(queryset: QuerySet, metric: Optional[str] = None, species: Optional[str] = None) -> int:
+    """Return the aggregate total for the active metric/species filter.
+
+    Data Flow Contract:
+      in:  queryset — base-filtered QuerySet[VisitLog] (from base_visit_log_queryset)
+           metric — 'litter' | 'plant' | 'weed' | 'participants' | None
+           species — exact Metric.label, or None
+      out: int — sum of matching Metric.value for litter/plant/weed;
+           sum of participant_count for participants; 0 when no metric
+      side effects: none
+    """
+    if metric == 'litter':
+        return queryset.filter(metrics__metric_type__in=('litter_general', 'litter_recyclable')).aggregate(total=Sum('metrics__value'))['total'] or 0
+    if metric in ('plant', 'weed'):
+        qs = queryset.filter(metrics__metric_type=metric)
+        if species:
+            qs = qs.filter(metrics__label=species)
+        return qs.aggregate(total=Sum('metrics__value'))['total'] or 0
+    if metric == 'participants':
+        return queryset.aggregate(total=Sum('participant_count'))['total'] or 0
+    return 0
+
+
+def metric_total_display(metric: Optional[str], total: int, species: Optional[str] = None) -> Optional[str]:
+    """Return the human summary line for the drill-down total header, or None.
+
+    Data Flow Contract:
+      in:  metric ('litter'|'plant'|'weed'|'participants'|None), total int, species str|None
+      out: str like 'Litter — 8 bags' / 'Plants · Restio — 10', or None when no metric
+      side effects: none
+    """
+    if not metric or metric not in METRIC_DISPLAY:
+        return None
+    label, unit = METRIC_DISPLAY[metric]
+    if species:
+        label = f'{label} · {species}'
+    unit = f' {unit}' if unit else ''
+    return f'{label} — {total}{unit}'
