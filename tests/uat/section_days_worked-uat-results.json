@@ -1,0 +1,49 @@
+{
+  "feature": "section_days_worked",
+  "timestamp": "2026-08-16T07:26:53.054Z",
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "pending": 0
+  },
+  "items": [
+    {
+      "id": "1",
+      "category": "Days Worked metric",
+      "description": "Open a section detail page whose section has 4 past-dated planner tasks across 3 distinct dates (one date has 2 tasks).",
+      "expected_result": "The \"Days Worked\" card shows 3 (distinct dates, not task count).",
+      "result": "pass"
+    },
+    {
+      "id": "2",
+      "category": "Future tasks excluded",
+      "description": "With a future-dated planner task present on that section, confirm it appears under \"Upcoming Work\".",
+      "expected_result": "\"Days Worked\" is still 3 (future task not counted).",
+      "result": "pass"
+    },
+    {
+      "id": "3",
+      "category": "Rolling tasks excluded",
+      "description": "With a rolling (Kanban) task present on that section, confirm it appears on the Kanban.",
+      "expected_result": "\"Days Worked\" is still 3 (rolling task not counted).",
+      "result": "pass"
+    },
+    {
+      "id": "4",
+      "category": "Litter Bags card removed",
+      "description": "Scroll the metric cards at the top of the section page.",
+      "expected_result": "No \"Total Litter Bags\" card anywhere; exactly 4 cards: Days Worked, Total Plants, Weeds Removed, Days in Stage.",
+      "result": "pass"
+    },
+    {
+      "id": "5",
+      "category": "Zero state",
+      "description": "Open a section with no past-dated planner tasks.",
+      "expected_result": "\"Days Worked\" shows 0.",
+      "result": "pass"
+    }
+  ],
+  "cancelled": false
+}

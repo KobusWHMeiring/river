@@ -3,16 +3,14 @@
 > **Auto-generated** — do not edit by hand. The directories are the source of truth.
 > Regenerate with: `python product/backlog.py`
 
-**Generated:** 2026-08-16 08:31
+**Generated:** 2026-08-16 09:27
 
-## Ready — approved, ready to build (4)
+## Ready — approved, ready to build (2)
 
 | File | Summary |
 |------|---------|
 | `planner-search.md` | PRD: Planner Search / Jump-to |
-| `reopen-completed-tasks-uat-run.md` | Run UAT: Re-open Completed Tasks + Participant Count |
 | `reopen-completed-tasks.md` | PRD: Re-open Completed Tasks + Participant Count on Completion |
-| `section-days-worked-metric.md` | PRD: Section "Days Worked" Metric + Remove Litter Bags from Section Metrics |
 
 ## Refinement — in design / needs a decision (4)
 
@@ -23,7 +21,7 @@
 | `performance-testing-backlog.md` | Performance Regression Testing — River Backlog |
 | `playwright_e2e_testing.md` | PRD: Playwright E2E Testing Implementation |
 
-## Done — shipped (31)
+## Done — shipped (32)
 
 | File | Summary |
 |------|---------|
@@ -49,6 +47,7 @@
 | `prd_zone_view` | In SectionDetailView.get_context_data() |
 | `quick-specs-participants-typeable.md` | Quick Specs: Participant Count + Typeable Litter Bags |
 | `rolling_todo_list.md` | PRD: Global Rolling To-Do List (Refined v2) |
+| `section-days-worked-metric.md` | PRD: Section "Days Worked" Metric + Remove Litter Bags from Section Metrics |
 | `section_mapping.md` | PRD: Section Mapping & Spatial Visualization |
 | `stage_tracking.md` | PRD: Time-Stamped Section Stage Tracking |
 | `styling.md` | Styling & Redesign Updates Summary |

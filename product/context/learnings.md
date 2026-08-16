@@ -1586,3 +1586,61 @@ The template renders compact colored tags via the existing `get_item` filter.
    tasks this week but no visit log in 30 days never appears on the list, so its
    tags are invisible — a limitation to revisit if managers need a complete
    "this week's workload" view.
+
+---
+
+## Date: 2026-08-16
+
+## Issue: "Log and Complete" did not complete a task that already had a VisitLog
+
+### Problem Description
+On the Daily Agenda, clicking **Log and Complete** for a task that already has a
+VisitLog (e.g. a task that was completed then re-opened) redirected to the log
+**edit** form, showed the success toast, but left `task.is_completed = False`.
+
+### Root Cause Analysis
+1. `VisitLogCreateView.get()` redirects to `visit_log_edit` when
+   `task.visitlog_set.first()` already exists (the "one work record per task"
+   invariant). Only `VisitLogCreateView.form_valid` set `is_completed = True`;
+   `VisitLogUpdateView.form_valid` never did.
+2. A related Django gotcha while fixing this: `BaseFormSet.is_valid()` returns
+   `False` for an **unbound** formset (`if not self.is_bound: return False`).
+   Swapping in an empty `MetricFormSet()` to "neutralise" validation therefore
+   failed validation instead of passing it.
+
+### Solution Implemented
+- Added `mark_task_completed(task, user)` in `core/services/task_services.py`
+  (idempotent — skips already-completed tasks so repeated edits don't duplicate
+  `TaskCompletionHistory`), and call it from **both** visit-log views.
+- For the admin-metrics guard, skip metric validation/save entirely
+  (`if not is_admin and not metric_formset.is_valid()`) instead of replacing the
+  formset with an unbound one.
+
+### Key Learnings
+1. **A redirect from create → edit must preserve the create action's side
+   effects.** When a "complete"-style entry point forwards to the edit view, the
+   edit view needs the same completion logic as the create view.
+2. **Unbound formsets fail `is_valid()`.** To "disable" a formset, bypass it in
+   code rather than substituting an unbound instance.
+
+---
+
+## Date: 2026-08-16
+
+## Issue: Section "Days Worked" card test passed before the card existed
+
+### Problem Description
+The planned `assertContains(response, 'Days Worked')` test passed on the
+unmodified section detail page because the test fixture section was named
+"Days Worked Section", so the string appeared in the page title/breadcrumb
+rather than the new metric card.
+
+### Solution Implemented
+Renamed the fixture section to a neutral name ("Test Section") so the
+assertion only passes once the card actually renders.
+
+### Key Learnings
+1. **Don't let fixture names collide with the label under test.** When using
+   `assertContains` on a UI label, keep fixture/sample names distinct from the
+   asserted text, or the test can pass for the wrong reason before the feature
+   exists.

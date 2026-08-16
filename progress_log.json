@@ -20,13 +20,14 @@
     "Enhanced Weeding Data Capture (Species tracking)",
     "Time-Stamped Stage Tracking Visualization",
     "Lifecycle Progress widget — hide Community stage (data-source clarification)",
-    "Planner Activity Indicators on Dashboard (weekly task-type tags on Active Sections & Lifecycle bars)"
+    "Planner Activity Indicators on Dashboard (weekly task-type tags on Active Sections & Lifecycle bars)",
+    "Section Days Worked Metric (distinct planned dates; removed Total Litter Bags card)"
   ],
   "stalled_tasks": [],
   "next_three_steps": [
-    "Run UAT for Planner Activity Indicators (tests/uat/planner_activity_indicators_uat.md) and record sign-off",
-    "Re-verify UAT item 4 (completion toast) then commit & move Re-open Completed Tasks + Participant Count to Done",
-    "Implement Section Days Worked metric (ready)"
+    "Add success toast on task complete/re-open (UAT reopen_completed_tasks item 4 failed); then re-run UAT + move Re-open Completed Tasks to Done",
+    "Implement Planner Search / Jump-to (ready)",
+    "Playwright E2E testing (refinement)"
   ],
   "architectural_concerns": [
     "Preserving redirect context (next parameter) across form validation cycles.",

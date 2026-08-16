@@ -1,13 +1,13 @@
 {
-  "last_checkpoint": "2026-08-16T08:18:43+02:00",
-  "summary": "Completed Planner Activity Indicators end-to-end. Implemented weekly task-type tags on the dashboard (core/views.py GlobalDashboardView.get_context_data() builds section_weekly_activity and stage_weekly_activity with null-section/template/task-type guards; core/templates/core/dashboard.html renders colored tags: Litter=red, Weed=amber, Plant=green, Admin=indigo). 7 unit tests added (DashboardWeeklyActivityTests); full suite 76 tests OK. UAT file tests/uat/planner_activity_indicators_uat.md created and all 14 scenarios passed (13 directly, 1 after seeding demo field tasks to verify the Litter lifecycle tag). Seeded demo data (3 field tasks + 1 visit log, marked 'UAT demo') remains in the DB for visual confirmation and can be removed on request. PRD moved ready -> Done; backlog + CURRENT_STATE regenerated; learnings + progress_log updated.",
+  "last_checkpoint": "2026-08-16T08:55:00+02:00",
+  "summary": "Implemented Section Days Worked metric per product/ready/section-days-worked-metric.md (TDD: wrote failing tests first, then view + template). SectionDetailView now computes days_worked = distinct Task.date (is_rolling=False, date<=today) and drops total_bags_general/total_bags_recyclable; template swaps Total Litter Bags card for Days Worked (4 cards remain). Added core/tests/test_section_detail.py (6 tests). Full suite 89 pass; lint static-clean (Gemini audit API 404 unavailable). UAT 5/5 pass (tests/uat/section_days_worked-uat-results.json). Moved PRD to product/Done/. Regenerated backlog.md + CURRENT_STATE.md, refreshed progress_log.json, appended one test-writing learning.",
   "moved": [
-    { "planner-activity-indicators.md": "ready -> Done" }
+    { "section-days-worked-metric.md": "ready -> Done" }
   ],
   "up_next": [
-    "Remove 'UAT demo' seed data when visual verification is complete",
-    "Re-verify UAT item 4 (completion toast) then commit & move Re-open Completed Tasks + Participant Count to Done",
-    "Implement Section Days Worked metric (ready)"
+    "Add success toast on task complete/re-open (UAT reopen_completed_tasks item 4 failed); then re-run UAT + move Re-open Completed Tasks to Done",
+    "Implement Planner Search / Jump-to (ready)",
+    "Playwright E2E testing (refinement)"
   ],
   "learnings_added": true
 }

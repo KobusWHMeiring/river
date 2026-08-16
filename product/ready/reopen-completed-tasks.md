@@ -1,6 +1,6 @@
 # PRD: Re-open Completed Tasks + Participant Count on Completion
 
-**Status:** In Refinement — design drafted 2026-08-14 (awaiting review)
+**Status:** Implemented — committed + unit-tested; UAT 8/9 passed. Outstanding: success toast on complete/re-open (UAT item 4).
 **Source:** Sarah Schumann (Director), 2026-08-12
 
 ## 1. Problem Statement

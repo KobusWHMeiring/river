@@ -1,4 +1,4 @@
-**Generated on:** 2026-08-16 08:31:09
+**Generated on:** 2026-08-16 09:27:38
 
 ### File Structure
 ```
@@ -68,6 +68,7 @@
         └── test_form_errors.py
         └── test_log_and_complete.py
         └── test_monthly.py
+        └── test_section_detail.py
         └── test_task_complete.py
         └── test_task_reopen.py
         └── test_task_series.py
@@ -154,6 +155,7 @@
         └── prd_zone_view
         └── quick-specs-participants-typeable.md
         └── rolling_todo_list.md
+        └── section-days-worked-metric.md
         └── section_mapping.md
         └── stage_tracking.md
         └── styling.md
@@ -170,9 +172,7 @@
         └── po.md
     └── ready
         └── planner-search.md
-        └── reopen-completed-tasks-uat-run.md
         └── reopen-completed-tasks.md
-        └── section-days-worked-metric.md
     └── refinement
         └── dashboard-metric-drilldown.md
         └── dynamic-kanban-columns.md
@@ -219,6 +219,7 @@
         └── planner_search_uat.md
         └── reopen_completed_tasks-uat-results.json
         └── reopen_completed_tasks_uat.md
+        └── section_days_worked-uat-results.json
         └── section_days_worked_uat.md
 ```
 
