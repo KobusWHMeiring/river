@@ -135,3 +135,206 @@ Queried the dev DB to compare the two candidate definitions of "Days Worked":
 ## Verification / UAT
 - Unit tests pass + `python lint.py`
 - Manual: open a section with known task dates → Days Worked = distinct past dates; Litter Bags gone; 4 cards remain.
+
+---
+
+# Section Days Worked — Implementation Plan
+
+**Goal:** Add a "Days Worked" metric card to the section detail page and remove the misleading "Total Litter Bags" card.
+
+**Architecture:** One read-only aggregate added to `SectionDetailView` context; the template swaps one card. No model/migration/URL changes. Logic stays in the view (matches existing metric-sum aggregation; YAGNI).
+
+**Tech Stack:** Django 6, SQLite (test/dev), Django TestCase.
+
+**UAT:** `tests/uat/section_days_worked_uat.md` — drafted before implementation.
+
+---
+
+### Task 1: Write failing tests
+
+**Files:**
+- Create: `core/tests/test_section_detail.py`
+
+- [ ] **Step 1: Write the failing test file**
+
+```python
+from datetime import timedelta
+
+from django.contrib.auth.models import User
+from django.test import TestCase, Client
+from django.urls import reverse
+from django.utils import timezone
+
+from core.models import Section, Task, VisitLog, Metric
+
+
+class SectionDaysWorkedTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_superuser(
+            username='daysworked', password='testpass123', email='d@example.com'
+        )
+        self.client.login(username='daysworked', password='testpass123')
+        self.section = Section.objects.create(
+            name='Days Worked Section',
+            color_code='#11AA22',
+            current_stage='planting'
+        )
+        self.today = timezone.now().date()
+
+    def test_days_worked_counts_distinct_dates(self):
+        Task.objects.create(date=self.today - timedelta(days=1), section=self.section, assignee_type='team', instructions='A')
+        Task.objects.create(date=self.today - timedelta(days=1), section=self.section, assignee_type='team', instructions='B same day')
+        Task.objects.create(date=self.today - timedelta(days=2), section=self.section, assignee_type='team', instructions='C')
+        Task.objects.create(date=self.today - timedelta(days=3), section=self.section, assignee_type='team', instructions='D')
+
+        response = self.client.get(reverse('section_detail', kwargs={'pk': self.section.pk}))
+
+        self.assertEqual(response.context['days_worked'], 3)
+
+    def test_days_worked_excludes_future_dates(self):
+        Task.objects.create(date=self.today + timedelta(days=2), section=self.section, assignee_type='team', instructions='Future')
+
+        response = self.client.get(reverse('section_detail', kwargs={'pk': self.section.pk}))
+
+        self.assertEqual(response.context['days_worked'], 0)
+
+    def test_days_worked_excludes_rolling(self):
+        Task.objects.create(section=self.section, assignee_type='team', instructions='Rolling', is_rolling=True)
+
+        response = self.client.get(reverse('section_detail', kwargs={'pk': self.section.pk}))
+
+        self.assertEqual(response.context['days_worked'], 0)
+
+    def test_days_worked_zero_when_no_tasks(self):
+        response = self.client.get(reverse('section_detail', kwargs={'pk': self.section.pk}))
+
+        self.assertEqual(response.context['days_worked'], 0)
+
+    def test_litter_bags_card_removed(self):
+        visit = VisitLog.objects.create(section=self.section, date=self.today, notes='v')
+        Metric.objects.create(visit=visit, metric_type='litter_general', label='gen', value=5)
+
+        response = self.client.get(reverse('section_detail', kwargs={'pk': self.section.pk}))
+
+        self.assertNotIn('total_bags_general', response.context)
+        self.assertNotIn('total_bags_recyclable', response.context)
+        self.assertNotContains(response, 'Total Litter Bags')
+
+    def test_days_worked_card_rendered(self):
+        Task.objects.create(date=self.today, section=self.section, assignee_type='team', instructions='Today')
+
+        response = self.client.get(reverse('section_detail', kwargs={'pk': self.section.pk}))
+
+        self.assertContains(response, 'Days Worked')
+```
+
+- [ ] **Step 2: Run tests to verify they fail (RED)**
+
+Run: `python manage.py test core.tests.test_section_detail -v 2`
+Expected: FAIL — `days_worked` missing from context (KeyError) and "Total Litter Bags" still rendered.
+
+---
+
+### Task 2: Implement the view change
+
+**Files:**
+- Modify: `core/views.py`
+
+- [ ] **Step 1: Remove litter sums, add days_worked**
+
+In `SectionDetailView.get_context_data()`, replace:
+```python
+        # Cumulative Metrics
+        metrics = Metric.objects.filter(visit__section=section)
+        total_bags_general = metrics.filter(metric_type='litter_general').aggregate(total=Sum('value'))['total'] or 0
+        total_bags_recyclable = metrics.filter(metric_type='litter_recyclable').aggregate(total=Sum('value'))['total'] or 0
+        total_plants = metrics.filter(metric_type='plant').aggregate(total=Sum('value'))['total'] or 0
+        total_weeds = metrics.filter(metric_type='weed').aggregate(total=Sum('value'))['total'] or 0
+```
+with:
+```python
+        # Cumulative Metrics
+        metrics = Metric.objects.filter(visit__section=section)
+        total_plants = metrics.filter(metric_type='plant').aggregate(total=Sum('value'))['total'] or 0
+        total_weeds = metrics.filter(metric_type='weed').aggregate(total=Sum('value'))['total'] or 0
+
+        # Days Worked — distinct planned dates up to today (no type filter, excludes rolling/future)
+        days_worked = Task.objects.filter(section=section, is_rolling=False, date__lte=today).values('date').distinct().count()
+```
+
+- [ ] **Step 2: Swap context entries**
+
+In the same `context.update({...})`, remove `total_bags_general` / `total_bags_recyclable` and add `days_worked`:
+```python
+        context.update({
+            'total_plants': total_plants,
+            'total_weeds': total_weeds,
+            'days_worked': days_worked,
+            'weeding_summary': weeding_summary,
+            'past_visits': past_visits,
+            'stage_history': stage_history,
+            'timeline_items': timeline_items,
+            'today_tasks': today_tasks,
+            'future_tasks': future_tasks,
+            'today': today,
+            'days_in_stage': days_in_stage
+        })
+```
+
+- [ ] **Step 3: Run context tests (GREEN for logic)**
+
+Run: `python manage.py test core.tests.test_section_detail -v 2`
+Expected: `test_days_worked_counts_distinct_dates`, `test_days_worked_excludes_future_dates`, `test_days_worked_excludes_rolling`, `test_days_worked_zero_when_no_tasks`, `test_litter_bags_card_removed` PASS; `test_days_worked_card_rendered` still FAILS (template not updated).
+
+---
+
+### Task 3: Implement the template change
+
+**Files:**
+- Modify: `core/templates/core/section_detail.html`
+
+- [ ] **Step 1: Swap the first metric card**
+
+Replace:
+```html
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Total Litter Bags</span>
+                    <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ total_bags_general|add:total_bags_recyclable }}</div>
+                    <span class="text-[10px] text-slate-400 font-medium">{{ total_bags_general }} General / {{ total_bags_recyclable }} Recyclable</span>
+                </div>
+```
+with:
+```html
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-t-4 p-6 flex flex-col items-center justify-center text-center shadow-sm border-x border-b border-slate-200 dark:border-slate-800" style="border-top-color: {{ section.color_code }};">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Days Worked</span>
+                    <div class="text-4xl font-light text-slate-900 dark:text-white mb-1">{{ days_worked }}</div>
+                    <span class="text-[10px] text-slate-400 font-medium">Days with planned work to date</span>
+                </div>
+```
+
+- [ ] **Step 2: Run the full test file (GREEN)**
+
+Run: `python manage.py test core.tests.test_section_detail -v 2`
+Expected: all 6 tests PASS.
+
+---
+
+### Task 4: Full suite + lint + commit
+
+- [ ] **Step 1: Run the full test suite**
+
+Run: `python manage.py test`
+Expected: all tests pass (no regressions).
+
+- [ ] **Step 2: Run the linter**
+
+Run: `python lint.py`
+Expected: no violations.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add core/tests/test_section_detail.py core/views.py core/templates/core/section_detail.html tests/uat/section_days_worked_uat.md
+git commit -m "feat: add days-worked metric and remove litter bags from section detail"
+```
