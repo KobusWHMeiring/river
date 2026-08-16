@@ -71,7 +71,7 @@ Make every dashboard metric traceable — click a metric and see the underlying 
 - [x] Species filter semantics → exact `label` match (reconciles with species-row totals)
 - [x] Total header in drill-down list → aggregate reconciles with card totals
 - [x] `sort=section` → `section__name` with null sections last
-- [ ] Tests written and passing
+- [x] Tests written and passing
 
 ---
 
