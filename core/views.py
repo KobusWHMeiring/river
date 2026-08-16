@@ -273,10 +273,11 @@ class SectionDetailView(LoginRequiredMixin, DetailView):
 
         # Cumulative Metrics
         metrics = Metric.objects.filter(visit__section=section)
-        total_bags_general = metrics.filter(metric_type='litter_general').aggregate(total=Sum('value'))['total'] or 0
-        total_bags_recyclable = metrics.filter(metric_type='litter_recyclable').aggregate(total=Sum('value'))['total'] or 0
         total_plants = metrics.filter(metric_type='plant').aggregate(total=Sum('value'))['total'] or 0
         total_weeds = metrics.filter(metric_type='weed').aggregate(total=Sum('value'))['total'] or 0
+
+        # Days Worked — distinct planned dates up to today (no type filter, excludes rolling/future)
+        days_worked = Task.objects.filter(section=section, is_rolling=False, date__lte=today).values('date').distinct().count()
 
         # Top 3 Weeding Species
         top_weeds = metrics.filter(metric_type='weed').values('label').annotate(total=Sum('value')).order_by('-total')[:3]
@@ -332,10 +333,9 @@ class SectionDetailView(LoginRequiredMixin, DetailView):
         timeline_items.sort(key=lambda x: x['created_at'], reverse=True)
 
         context.update({
-            'total_bags_general': total_bags_general,
-            'total_bags_recyclable': total_bags_recyclable,
             'total_plants': total_plants,
             'total_weeds': total_weeds,
+            'days_worked': days_worked,
             'weeding_summary': weeding_summary,
             'past_visits': past_visits,
             'stage_history': stage_history,
