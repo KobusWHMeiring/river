@@ -55,6 +55,19 @@ class DashboardTests(TestCase):
         self.assertContains(response, "Mowbray")
         self.assertContains(response, "Recent Activity Test")
 
+    def test_drilldown_links_present(self):
+        response = self.client.get(reverse('dashboard'))
+        self.assertContains(response, reverse('visit_log_list') + '?metric=litter')
+        self.assertContains(response, reverse('visit_log_list') + '?metric=participants')
+        self.assertContains(response, reverse('visit_log_list') + '?metric=plant')
+        self.assertContains(response, reverse('visit_log_list') + '?metric=weed')
+
+    def test_species_row_link(self):
+        v = VisitLog.objects.create(section=self.section1, date=timezone.now().date())
+        Metric.objects.create(visit=v, metric_type='plant', label='Restio', value=10)
+        response = self.client.get(reverse('dashboard'))
+        self.assertContains(response, '?metric=plant&amp;species=Restio')
+
     def test_lifecycle_stage_distribution(self):
         # Data migration 0003 adds 8 sections:
         # Mowbray (clearing), San Souci (planting), Upper Liesbeek (mitigation), 

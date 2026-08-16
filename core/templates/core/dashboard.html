@@ -43,7 +43,7 @@
                     <span class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                         <span class="material-symbols-outlined">delete</span>
                     </span>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Litter Removed</span>
+                    <a href="{% url 'visit_log_list' %}?metric=litter" class="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Litter Removed · View source</a>
                 </div>
                 <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_bags }} <span class="text-sm font-medium text-slate-400 uppercase">Bags</span></div>
                 <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">
@@ -56,7 +56,7 @@
                     <span class="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
                         <span class="material-symbols-outlined">groups</span>
                     </span>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Participation</span>
+                    <a href="{% url 'visit_log_list' %}?metric=participants" class="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Participation · View source</a>
                 </div>
                 <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_participants }} <span class="text-sm font-medium text-slate-400 uppercase">People</span></div>
                 <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Total volunteers across all visits</p>
@@ -67,17 +67,17 @@
                     <span class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
                         <span class="material-symbols-outlined">park</span>
                     </span>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Re-Planting</span>
+                    <a href="{% url 'visit_log_list' %}?metric=plant" class="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Re-Planting · View source</a>
                 </div>
                 <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_plants }} <span class="text-sm font-medium text-slate-400 uppercase">Plants</span></div>
                 <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-3">{{ total_plant_species }} Species planted</p>
                 {% if plant_species_breakdown %}
                 <div class="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3">
                     {% for species in plant_species_breakdown %}
-                    <div class="flex justify-between text-xs">
+                    <a href="{% url 'visit_log_list' %}?metric=plant&amp;species={{ species.label|urlencode }}" class="flex justify-between text-xs hover:text-primary">
                         <span class="text-slate-600 dark:text-slate-400 truncate max-w-[70%]">{{ species.label }}</span>
                         <span class="text-slate-900 dark:text-white font-semibold">{{ species.total }}</span>
-                    </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -88,17 +88,17 @@
                     <span class="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
                         <span class="material-symbols-outlined">delete_forever</span>
                     </span>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invasives Removed</span>
+                    <a href="{% url 'visit_log_list' %}?metric=weed" class="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Invasives Removed · View source</a>
                 </div>
                 <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ total_weeds }} <span class="text-sm font-medium text-slate-400 uppercase">Units</span></div>
                 <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-3">{{ total_weed_species }} Species managed</p>
                 {% if weed_species_breakdown %}
                 <div class="space-y-1 border-t border-slate-100 dark:border-slate-800 pt-3">
                     {% for species in weed_species_breakdown %}
-                    <div class="flex justify-between text-xs">
+                    <a href="{% url 'visit_log_list' %}?metric=weed&amp;species={{ species.label|urlencode }}" class="flex justify-between text-xs hover:text-primary">
                         <span class="text-slate-600 dark:text-slate-400 truncate max-w-[70%]">{{ species.label }}</span>
                         <span class="text-slate-900 dark:text-white font-semibold">{{ species.total }}</span>
-                    </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% endif %}
