@@ -81,6 +81,7 @@ The Discovery run surfaced four N+1 hotspots. All fixed:
 | Task Types | `TaskTypeListView.get_queryset()` → `.annotate(template_count=Count('templates'))` + template uses `task_type.template_count` | 6 → 3 |
 | Task Create | `TaskForm` template field queryset → `.select_related('task_type')` (fixes `__str__` N+1 in dropdown) | 23 → 7 |
 | Weekly Planner | `WeeklyPlannerView.get_queryset()` → `.select_related('section', 'template')` (surfaced by BL-4 growth test) | 67 → 7 with 30 tasks |
+| Daily Agenda | `DailyAgendaView.get_queryset()` → `.select_related('section')` + `.prefetch_related('visitlog_set')` (surfaced by BL-4 growth test) | 66 → 6 with 40 tasks |
 
 ---
 
@@ -92,14 +93,16 @@ For endpoints that scale with data volume, add a growth assertion: create N reco
 |----------|------------|--------|--------|
 | Weekly Planner | Create 30 extra tasks across week | 30 | Query count unchanged |
 | Monthly Planner | Create 60 extra tasks across month | 60 | Query count unchanged |
+| Daily Agenda | Create 20 incomplete + 20 completed tasks (completed ones get a visit log) | 40 | Query count unchanged |
 | Section List | Create 10 extra sections | 10 | Query count unchanged |
 | Visit Log List | Create 50 extra visit logs (paginated, page 1) | 50 | Query count unchanged |
 | Dashboard | Create 20 extra visit logs across sections | 20 | Query count unchanged (aggregates, not per-row) |
 
-> **Implemented** (BL-4, 2026-08-16) as `core/tests/performance/test_n1_growth.py` — 5 tests,
-> all passing. Surfaced and fixed one real N+1: the Weekly Planner queried
-> `section` and `template` per task (7 → 67 queries with 30 tasks); now
-> `.select_related('section', 'template')` keeps it flat.
+> **Implemented** (BL-4, 2026-08-16) as `core/tests/performance/test_n1_growth.py` — 6 tests,
+> all passing. Surfaced and fixed two real N+1s: the Weekly Planner queried
+> `section` and `template` per task (7 → 67 queries with 30 tasks) and the Daily
+> Agenda queried `section` and the completed-task visit log per task (6 → 66 with
+> 40 tasks); `select_related`/`prefetch_related` keep both flat.
 
 ---
 
@@ -225,10 +228,10 @@ def test_dashboard_query_budget(perf_client, count_queries):
 
 ### BL-4: N+1 Growth Tests (P1) — ✅ DONE
 
-> **Implemented** as `core/tests/performance/test_n1_growth.py` (unittest). Five
+> **Implemented** as `core/tests/performance/test_n1_growth.py` (unittest). Six
 > `PerformanceTestCase` tests seed a baseline, bulk-create extra rows, and assert
 > the query count stays flat via `assert_no_query_growth()` (added to `base.py`).
-> This surfaced and fixed a Weekly Planner N+1 (see "N+1 Fixes Applied").
+> This surfaced and fixed a Weekly Planner and a Daily Agenda N+1 (see "N+1 Fixes Applied").
 
 **File:** `core/tests/performance/test_n1_growth.py`
 

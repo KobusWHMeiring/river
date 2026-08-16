@@ -558,16 +558,17 @@ class DailyAgendaView(LoginRequiredMixin, ListView):
     
     def get_queryset(self):
         target_date = self.get_target_date()
+        # select_related('section') avoids N+1 queries for the section badge
+        # rendered per task; prefetch_related('visitlog_set') avoids the per-task
+        # reverse lookup for completed tasks' edit-log link.
+        queryset = Task.objects.filter(
+            date=target_date,
+            is_rolling=False,
+        ).select_related('section').prefetch_related('visitlog_set')
         try:
-            return Task.objects.filter(
-                date=target_date,
-                is_rolling=False
-            ).order_by('assignee_type', 'section__name')
+            return queryset.order_by('assignee_type', 'section__name')
         except Exception:
-            return Task.objects.filter(
-                date=target_date,
-                is_rolling=False
-            ).order_by('section__name')
+            return queryset.order_by('section__name')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

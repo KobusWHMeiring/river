@@ -81,6 +81,35 @@ class NPlusOneGrowthTests(PerformanceTestCase):
         after = self._get_count(url)
         self.assert_no_query_growth('Monthly Planner', before, after)
 
+    def test_daily_agenda_no_n1_growth(self):
+        url = reverse('daily_agenda')
+        # Baseline: one incomplete + one completed task (with a visit log).
+        Task.objects.create(
+            date=self.today, section=self.section, assignee_type='team',
+            instructions='baseline incomplete', template=self.template,
+        )
+        completed = Task.objects.create(
+            date=self.today, section=self.section, assignee_type='team',
+            instructions='baseline completed', template=self.template, is_completed=True,
+        )
+        VisitLog.objects.create(task=completed, section=self.section, date=self.today, notes='baseline log')
+        before = self._get_count(url)
+
+        # 20 incomplete + 20 completed tasks (each completed task gets a visit log).
+        Task.objects.bulk_create([
+            self._task(self.today, f'growth incomplete {i}')
+            for i in range(20)
+        ])
+        for i in range(20):
+            t = Task.objects.create(
+                date=self.today, section=self.section, assignee_type='team',
+                instructions=f'growth completed {i}', template=self.template, is_completed=True,
+            )
+            VisitLog.objects.create(task=t, section=self.section, date=self.today, notes=f'growth log {i}')
+
+        after = self._get_count(url)
+        self.assert_no_query_growth('Daily Agenda', before, after)
+
     def test_section_list_no_n1_growth(self):
         url = reverse('section_list')
         before = self._get_count(url)
