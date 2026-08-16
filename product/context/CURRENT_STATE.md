@@ -1,4 +1,4 @@
-**Generated on:** 2026-08-16 12:19:39
+**Generated on:** 2026-08-16 20:23:29
 
 ### File Structure
 ```
@@ -30,6 +30,7 @@
     └── models.py
     └── services
         └── task_services.py
+        └── visit_log_services.py
     └── templates
         └── core
             └── daily_agenda.html
@@ -62,6 +63,7 @@
         └── __init__.py
         └── performance
             └── base.py
+            └── test_budgets.py
             └── test_discovery.py
         └── test_chairperson.py
         └── test_dashboard.py
@@ -75,6 +77,7 @@
         └── test_task_series.py
         └── test_todo_kanban.py
         └── test_urls.py
+        └── test_visit_log_filters.py
         └── test_visit_log_form.py
         └── test_weeding.py
     └── urls.py
@@ -138,6 +141,7 @@
         └── all_logs_view.md
         └── chairperson_role.md
         └── context_aware_logging.md
+        └── dashboard-metric-drilldown.md
         └── dashboard.md
         └── data_export_excel.md
         └── detailed_planting_metrics.md
@@ -175,7 +179,6 @@
         └── po.md
     └── ready
     └── refinement
-        └── dashboard-metric-drilldown.md
         └── dynamic-kanban-columns.md
         └── performance-testing-backlog.md
         └── playwright_e2e_testing.md
@@ -212,6 +215,8 @@
 └── test_db.sqlite3
 └── tests
     └── uat
+        └── dashboard_metric_drilldown-uat-results.json
+        └── dashboard_metric_drilldown_uat.md
         └── form_validation_error_display-uat-results.json
         └── form_validation_error_display_uat.md
         └── participants-typeable_uat.md
@@ -495,6 +500,10 @@ class DataExportView(LoginRequiredMixin, View):
     """View to generate a comprehensive multi-sheet Excel export."""
     # ... implementation hidden ...
 
+class VisitLogExportView(LoginRequiredMixin, View):
+    """Single-sheet Excel export of the filtered Master Activity Log."""
+    # ... implementation hidden ...
+
 class PlannerExportView(LoginRequiredMixin, View):
     """Export the weekly or monthly planner view to Excel."""
     # ... implementation hidden ...
@@ -574,6 +583,7 @@ urlpatterns = [
     # Data Export URLs
     path('export/', views.DataExportView.as_view(), name='data_export'),
     path('export/planner/', views.PlannerExportView.as_view(), name='planner_export'),
+    path('export/visit-logs/', views.VisitLogExportView.as_view(), name='visit_log_export'),
 
     # Insights page (temporary, for Sarah review)
     path('insights/', views.planner_insights_view, name='planner_insights'),

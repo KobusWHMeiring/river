@@ -1,13 +1,13 @@
 {
-  "last_checkpoint": "2026-08-16T10:55:00+02:00",
-  "summary": "Shipped Planner Search / Jump-to. Implemented search_planner_tasks service (icontains over instructions/section/task type/template, non-rolling only, newest first, cap 8, null-fallback labels), task_search_view JSON endpoint at /core/tasks/search/, and search box + date-jump + debounced dropdown + click-to-jump highlight in both planner templates (with data-task-id on all cards/badges). TDD: 12 tests (service + view) green, full suite 101 OK. UAT 9/9 passed. Moved planner-search.md ready -> Done. Regenerated backlog.md + CURRENT_STATE.md, refreshed progress_log.json, appended a learning about get_or_create for data-migration-seeded fixtures.",
+  "last_checkpoint": "2026-08-16T20:23:54+02:00",
+  "summary": "Shipped the Dashboard Metric Drill-Down feature end-to-end (TDD). Reviewed and finalized the PRD (service extraction, exact species match, total header, section sort null-handling), then implemented: new core/services/visit_log_services.py (base_visit_log_queryset, build_visit_log_queryset with metric/species/sort + .distinct(), visit_log_total, metric_total_display); VisitLogListView now delegates to the service and exposes total_summary; new VisitLogExportView + /export/visit-logs/ endpoint (openpyxl, respects filters+sort); visit_log_list.html gains metric/sort filters, total header and Export button; dashboard.html gains 'View source' links on 4 metric cards and clickable plant/weed species rows. 125 tests pass (full suite). UAT: 9/9 verified. Moved PRD refinement→Done, regenerated backlog.md + CURRENT_STATE.md, refreshed progress_log.json.",
   "moved": [
-    { "planner-search.md": "ready -> Done (UAT 9/9)" }
+    "product/refinement/dashboard-metric-drilldown.md → product/Done/dashboard-metric-drilldown.md"
   ],
   "up_next": [
+    "Performance N+1 growth tests (BL-4, P1)",
     "Dynamic Kanban Columns (refinement)",
-    "Dashboard Metric Drill-Down (refinement)",
     "Playwright E2E testing (refinement)"
   ],
-  "learnings_added": true
+  "learnings_added": false
 }

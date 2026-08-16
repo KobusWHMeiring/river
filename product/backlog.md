@@ -3,22 +3,21 @@
 > **Auto-generated** — do not edit by hand. The directories are the source of truth.
 > Regenerate with: `python product/backlog.py`
 
-**Generated:** 2026-08-16 12:19
+**Generated:** 2026-08-16 20:23
 
 ## Ready — approved, ready to build (0)
 
 _None._
 
-## Refinement — in design / needs a decision (4)
+## Refinement — in design / needs a decision (3)
 
 | File | Summary |
 |------|---------|
-| `dashboard-metric-drilldown.md` | PRD: Dashboard Metric Drill-Down ("Where does this number come from?") |
 | `dynamic-kanban-columns.md` | PRD: Dynamic Kanban Columns (Add / Rename / Reorder / Delete) |
 | `performance-testing-backlog.md` | Performance Regression Testing — River Backlog |
 | `playwright_e2e_testing.md` | PRD: Playwright E2E Testing Implementation |
 
-## Done — shipped (34)
+## Done — shipped (35)
 
 | File | Summary |
 |------|---------|
@@ -26,6 +25,7 @@ _None._
 | `all_logs_view.md` | PRD: Master Activity Log ("View All Logs") |
 | `chairperson_role.md` | PRD: Chairperson Assignee Type & Planner Integration |
 | `context_aware_logging.md` | PRD: Context-Aware Visit Logging |
+| `dashboard-metric-drilldown.md` | PRD: Dashboard Metric Drill-Down ("Where does this number come from?") |
 | `dashboard.md` | PRD: Global Activity Dashboard ("All Activities") |
 | `data_export_excel.md` | PRD: Data Export for Reporting (Excel) |
 | `detailed_planting_metrics.md` | PRD: Detailed Planting Metrics on Dashboard |

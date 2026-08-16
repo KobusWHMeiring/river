@@ -23,19 +23,21 @@
     "Planner Activity Indicators on Dashboard (weekly task-type tags on Active Sections & Lifecycle bars)",
     "Section Days Worked Metric (distinct planned dates; removed Total Litter Bags card)",
     "Re-open Completed Tasks + Participant Count (success toast on complete/re-open)",
-    "Planner Search / Jump-to (keyword + date jump, both planners)"
+    "Planner Search / Jump-to (keyword + date jump, both planners)",
+    "Performance regression testing — query budgets + N+1 fixes (BL-1/2/3)",
+    "Dashboard Metric Drill-Down (metric/species filters, sort, total header, filtered Excel export)"
   ],
   "stalled_tasks": [],
   "next_three_steps": [
+    "Performance N+1 growth tests (BL-4, P1)",
     "Dynamic Kanban Columns (refinement)",
-    "Dashboard Metric Drill-Down (refinement)",
     "Playwright E2E testing (refinement)"
   ],
   "architectural_concerns": [
     "Preserving redirect context (next parameter) across form validation cycles.",
     "Handling high-density data in Monthly Planner without UI clutter.",
     "Lite GIS approach using JSONField instead of PostGIS for simplicity.",
-    "Decided on Playwright for future integration testing.",
+    "Playwright E2E blocked on adopting pytest (project uses unittest runner — no pytest/pytest-django/pytest-playwright installed).",
     "Integer-based todo_position re-indexing for Kanban drag-and-drop.",
     "Form validation errors can reference hidden/absent fields (e.g. admin-task metrics) — needs a systematic error-display audit.",
     "Dashboard Lifecycle Progress bars are section-stage based (Section.current_stage), not task-type/activity based — task type ≠ section stage."
