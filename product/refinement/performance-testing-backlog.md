@@ -1,8 +1,9 @@
 # Performance Regression Testing — River Backlog
 
 > **Inspired by:** Homtini `tests/performance/` suite & Abseil Performance Hints  
-> **Date:** 2026-08-11  
-> **Goal:** Per-endpoint query budgets with CI enforcement, N+1 growth detection, and a documented budget-adjustment process
+> **Date:** 2026-08-11 (updated 2026-08-16)  
+> **Goal:** Per-endpoint query budgets with CI enforcement, N+1 growth detection, and a documented budget-adjustment process  
+> **Status:** ✅ BL-1/BL-2/BL-3 done (Django `TestCase`, not pytest) · N+1 fixes applied · BL-4→BL-7 remaining
 
 ---
 
@@ -22,9 +23,10 @@ Homtini's performance suite has 4 key concepts. Here's how they map:
 
 ---
 
-## Critical Endpoints (12)
+## Critical Endpoints (12 endpoints / 13 measurements)
 
-Ordered by traffic × complexity × risk of N+1 regression:
+Ordered by traffic × complexity × risk of N+1 regression. The Visit Log Create
+endpoint is measured twice (GET and POST), giving 13 measurements across 12 URLs.
 
 | # | Endpoint | View | Why Critical |
 |---|----------|------|-------------|
@@ -43,26 +45,41 @@ Ordered by traffic × complexity × risk of N+1 regression:
 
 ---
 
-## Proposed Query Budgets
+## Query Budgets (Measured)
 
-These are **initial estimates** based on codebase knowledge. Discovery runs will refine them.  
-Budgets assume proper `.select_related()` is in place. If not, Discovery will reveal the real numbers.
+Budgets below are the **measured baseline + headroom** from the Discovery run
+(`core/tests/performance/test_discovery.py`), captured 2026-08-16 *after* the N+1
+fixes below were applied. They are enforced by `core/tests/performance/test_budgets.py`.
+Raise a budget only with a documented reason (see BL-7).
 
-| # | Endpoint | Method | Est. Budget | Notes |
-|---|----------|--------|-------------|-------|
-| 1 | `/core/dashboard/` | GET | 8 | 1× sections + 1× visit_logs + 1× metrics agg + 1× tasks + 1× stage dist + 3× misc |
-| 2 | `/core/planner/weekly/` | GET | 10 | 1× week tasks + 1× sections (FK) + 1× templates + 1× task types + session/auth queries |
-| 3 | `/core/planner/monthly/` | GET | 10 | Same shape as weekly, but over 30-day range. Should scale without extra queries. |
-| 4 | `/core/daily-agenda/` | GET | 6 | 1× day tasks + 1× sections (FK) + session/auth |
-| 5 | `/core/sections/` | GET | 5 | 1× sections + 1× statuses (FK) + session/auth |
-| 6 | `/core/sections/<pk>/` | GET | 8 | 1× section + 1× visit_logs + 1× photos + 1× stage_history + 1× status |
-| 7 | `/core/visit-logs/` | GET | 7 | 1× visit_logs (paginated) + 1× sections + 1× tasks + 1× metrics (prefetch) + session/auth |
-| 8 | `/core/visit-logs/create/` | GET | 5 | 1× task (if ?task=) + 1× sections + 1× templates + session/auth |
-| 8b | `/core/visit-logs/create/` | POST | 8 | Form save + metrics save + photos save. atomic block should batch. |
-| 9 | `/core/tasks/create/` | GET | 4 | 1× sections + 1× templates + session/auth |
-| 10 | `/core/templates/` | GET | 3 | 1× templates + session/auth |
-| 11 | `/core/task-types/` | GET | 3 | 1× task_types + session/auth |
-| 12 | `/core/export/` | GET | 20 | Multi-sheet. High count is acceptable — just prevent runaway. |
+| # | Endpoint | Method | Budget | Notes |
+|---|----------|--------|--------|-------|
+| 1 | `/core/dashboard/` | GET | 17 | Many aggregate widgets — fixed count, not per-row. |
+| 2 | `/core/planner/weekly/` | GET | 9 | Scales flat with task count (verify via BL-4). |
+| 3 | `/core/planner/monthly/` | GET | 9 | Same shape as weekly over 30 days. |
+| 4 | `/core/daily-agenda/` | GET | 5 | |
+| 5 | `/core/sections/` | GET | 5 | `.select_related('status')` applied. |
+| 6 | `/core/sections/<pk>/` | GET | 14 | Many widgets; fixed count. |
+| 7 | `/core/visit-logs/` | GET | 6 | Paginated + prefetch. |
+| 8 | `/core/visit-logs/create/` | GET | 8 | |
+| 8b | `/core/visit-logs/create/` | POST | 9 | Form + metrics + photos save. |
+| 9 | `/core/tasks/create/` | GET | 9 | Template dropdown `.select_related('task_type')` applied. |
+| 10 | `/core/templates/` | GET | 5 | `.select_related('task_type')` applied. |
+| 11 | `/core/task-types/` | GET | 5 | `Count('templates')` annotation applied. |
+| 12 | `/core/export/` | GET | 45 | Multi-sheet Excel — inherently data-proportional; cap prevents runaway. |
+
+---
+
+## N+1 Fixes Applied (2026-08-16)
+
+The Discovery run surfaced four N+1 hotspots. All fixed:
+
+| Endpoint | Fix | Before → After |
+|----------|-----|----------------|
+| Section List | `SectionListView.get_queryset()` → `.select_related('status')` | 12 → 3 |
+| Task Templates | `TaskTemplateListView.get_queryset()` → `.select_related('task_type')` | 19 → 3 |
+| Task Types | `TaskTypeListView.get_queryset()` → `.annotate(template_count=Count('templates'))` + template uses `task_type.template_count` | 6 → 3 |
+| Task Create | `TaskForm` template field queryset → `.select_related('task_type')` (fixes `__str__` N+1 in dropdown) | 23 → 7 |
 
 ---
 
@@ -82,7 +99,16 @@ For endpoints that scale with data volume, add a growth assertion: create N reco
 
 ## Implementation Plan (Backlog Items)
 
-### BL-1: Create Test Infrastructure (P0 — prerequisite)
+> **Note:** The actual implementation uses Django's unittest `TestCase` (via
+> `manage.py test`), not pytest. Remaining items (BL-4+) should be written as
+> `PerformanceTestCase` subclasses to match `core/tests/performance/base.py`.
+
+### BL-1: Create Test Infrastructure (P0) — ✅ DONE
+
+> **Implemented** (commit `75d3fd0`) as `core/tests/performance/base.py` — a Django
+> `TestCase` base class (`PerformanceTestCase`) with an authenticated client,
+> `count_queries()` and `assert_query_count()`. Uses unittest (via `manage.py test`),
+> not the pytest fixtures sketched below (retained for reference only).
 
 **File:** `core/tests/performance/conftest.py`
 
@@ -127,7 +153,11 @@ def assert_query_count(actual, budget, endpoint):
 
 ---
 
-### BL-2: Discovery Phase — Measure Current Query Counts (P0)
+### BL-2: Discovery Phase — Measure Current Query Counts (P0) — ✅ DONE
+
+> **Implemented** as `core/tests/performance/test_discovery.py` (unittest). Ran
+> 2026-08-16 — results captured in "Query Budgets (Measured)" and "N+1 Fixes Applied"
+> above. No assertions; measurement only.
 
 **File:** `core/tests/performance/test_discovery.py`
 
@@ -164,7 +194,11 @@ def test_discovery(perf_client):
 
 ---
 
-### BL-3: Budget Assertion Tests for All Endpoints (P0)
+### BL-3: Budget Assertion Tests for All Endpoints (P0) — ✅ DONE
+
+> **Implemented** as `core/tests/performance/test_budgets.py` (unittest). Budgets are
+> the shared `BUDGETS` dict in `core/tests/performance/base.py`, enforced with
+> `assert_query_count()`. One test per endpoint.
 
 **File:** `core/tests/performance/test_budgets.py`
 
@@ -284,16 +318,16 @@ Add to `DEVELOPER_HANDOVER.md` or create `docs/performance-budgets.md`:
 
 ## Total Effort Estimate
 
-| Item | Effort | Priority |
-|------|--------|----------|
-| BL-1: conftest.py infrastructure | 15 min | P0 |
-| BL-2: Discovery run | 20 min | P0 |
-| BL-3: Budget tests (12 endpoints) | 30 min | P0 |
-| BL-4: N+1 growth tests (5 endpoints) | 1–2 hr | P1 |
-| BL-5: Known issues suppression | 10 min | P1 |
-| BL-6: CI integration | 15 min | P1 |
-| BL-7: Budget adjustment docs | 10 min | P2 |
-| **Total** | **~3–4 hours** | |
+| Item | Effort | Priority | Status |
+|------|--------|----------|--------|
+| BL-1: Test infrastructure | 15 min | P0 | ✅ DONE |
+| BL-2: Discovery run | 20 min | P0 | ✅ DONE |
+| BL-3: Budget tests (12 endpoints) | 30 min | P0 | ✅ DONE |
+| BL-4: N+1 growth tests (5 endpoints) | 1–2 hr | P1 | |
+| BL-5: Known issues suppression | 10 min | P1 | |
+| BL-6: CI integration | 15 min | P1 | |
+| BL-7: Budget adjustment docs | 10 min | P2 | |
+| **Remaining** | **~1.5–2.5 hours** | | |
 
 ---
 
@@ -306,7 +340,11 @@ Add to `DEVELOPER_HANDOVER.md` or create `docs/performance-budgets.md`:
 Homtini has to test HTMX partial endpoints (returning HTML fragments). River does full page loads. Fewer endpoints, less complexity. The budgets above assume standard Django CBV patterns.
 
 ### Auth
-River uses Django Admin login (`/admin/login/`). Performance tests need an authenticated client. Add a `perf_client` fixture that logs in:
+River uses Django Admin login (`/admin/login/`). Performance tests need an authenticated client.
+
+> **Implemented:** `PerformanceTestCase` creates a superuser in `setUpClass` and logs in
+> via `self.perf_client.login()` in `setUp`. The pytest fixture sketch below is retained
+> for reference only.
 
 ```python
 @pytest.fixture

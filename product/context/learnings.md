@@ -1659,3 +1659,22 @@ Switched setUp to `get_or_create(code=..., defaults={...})` / `get_or_create(nam
 
 ### Key Learnings
 1. **Use `get_or_create` for any model seeded by a data migration.** `create()` collides with the seeded rows' unique constraints (name/code) in the test DB. Grep the migrations before writing fixtures, or just default to `get_or_create` for shared lookup tables (TaskType, Section).
+
+---
+
+## Date: 2026-08-16
+
+## Issue: ModelChoiceField dropdown rendering caused N+1 via `__str__`
+
+### Problem Description
+Query-count discovery showed Task Create at 23 queries and the Task Templates list at 19. The `TaskForm.template` dropdown (`ModelChoiceField`) and the templates list both hit one query per row, because `TaskTemplate.__str__` renders `str(self.task_type)`, so every `str(template)` traversed the `task_type` FK. `TaskType.templates.count` in the task-type list did the same per row.
+
+### Solution Implemented
+- Added `.select_related('task_type')` to the `TaskForm.template` queryset and `TaskTemplateListView.get_queryset()`.
+- Replaced per-row `task_type.templates.count` with a `Count('templates')` annotation + `task_type.template_count` in the template.
+- Added `.select_related('status')` to `SectionListView.get_queryset()` (same pattern for the status badge).
+- Result: Task Create 23→7, Task Templates 19→3, Task Types 6→3, Section List 12→3.
+
+### Key Learnings
+1. **Form dropdowns are N+1 traps too.** A `ModelChoiceField` calls `str()` on every choice when the `<select>` renders; if `__str__` touches a FK, add `.select_related()` to the *field's* queryset, not just list-view querysets.
+2. **Never call `.count` on a related manager inside a template loop.** Annotate with `Count('related_name')` and read the annotated field instead.

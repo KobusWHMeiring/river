@@ -12,6 +12,26 @@ from django.contrib.auth.models import User
 from contextlib import contextmanager
 
 
+# Query budgets per endpoint. Budget = measured baseline + headroom.
+# Measured 2026-08-16 (after N+1 fixes in views/forms). Raise only with
+# justification documented in product/refinement/performance-testing-backlog.md.
+BUDGETS = {
+    'Dashboard': 17,
+    'Weekly Planner': 9,
+    'Monthly Planner': 9,
+    'Daily Agenda': 5,
+    'Section List': 5,
+    'Section Detail': 14,
+    'Visit Log List': 6,
+    'Visit Log Create (GET)': 8,
+    'Visit Log Create (POST)': 9,
+    'Task Create': 9,
+    'Task Templates': 5,
+    'Task Types': 5,
+    'Data Export': 45,
+}
+
+
 class PerformanceTestCase(TestCase):
     """Base class for performance tests. Provides authenticated client + query counting."""
 
@@ -28,11 +48,12 @@ class PerformanceTestCase(TestCase):
 
     @contextmanager
     def count_queries(self):
-        """Context manager that yields query count after block executes."""
+        """Context manager that yields a counter dict whose 'count' key is
+        populated with the number of queries after the measured block exits."""
+        counter = {'count': 0}
         with CaptureQueriesContext(connections['default']) as ctx:
-            yield ctx
-        # Access ctx.captured_queries after the context exits
-        # but we return ctx so caller can check len(ctx.captured_queries)
+            yield counter
+        counter['count'] = len(ctx.captured_queries)
 
     def assert_query_count(self, actual, budget, endpoint):
         """Assert query count is within budget, with a helpful failure message."""

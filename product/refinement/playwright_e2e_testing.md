@@ -84,6 +84,12 @@ pytest-django>=4.7.0
 pytest-xdist>=3.5.0  # Parallel test execution
 ```
 
+> ⚠️ **Not yet installed.** `requirements.txt` has only runtime deps (Django,
+> psycopg2, Pillow, …) — no pytest, pytest-django, pytest-playwright, or
+> pytest-xdist, and no `requirements-dev.txt` exists. The project currently runs
+> tests via Django's unittest runner (`manage.py test`). Adopting Playwright means
+> adopting pytest. **Decision needed:** confirm pytest as the E2E runner first.
+
 ### Browser Installation:
 ```bash
 playwright install chromium firefox webkit
@@ -133,7 +139,16 @@ def django_db_setup(django_db_setup, django_db_blocker):
     pass
 
 @pytest.fixture
-def authenticated_page(page: Page, django_db_blocker) -> Page:
+def base_url(live_server):
+    """Django test server base URL (random port) — never hardcode localhost:8000.
+
+    Note: app URLs are namespaced under `/core/` (e.g. `/core/todo/`, not `/todo/`),
+    except `/admin/...`.
+    """
+    return live_server.url
+
+@pytest.fixture
+def authenticated_page(page: Page, django_db_blocker, base_url) -> Page:
     """Fixture that logs in a test user and returns authenticated page."""
     with django_db_blocker.unblock():
         user = User.objects.create_superuser(
@@ -143,7 +158,7 @@ def authenticated_page(page: Page, django_db_blocker) -> Page:
         )
     
     # Navigate to login page
-    page.goto('/admin/login/')
+    page.goto(f'{base_url}/admin/login/')
     
     # Fill in credentials
     page.fill('input[name="username"]', 'testadmin')
@@ -187,11 +202,10 @@ class BasePage:
     
     def __init__(self, page: Page):
         self.page = page
-        self.base_url = 'http://localhost:8000'
     
     def navigate(self, path: str):
         """Navigate to a specific path."""
-        self.page.goto(f"{self.base_url}{path}")
+        self.page.goto(path)  # relative — resolved against the base_url fixture (live_server.url)
         self.page.wait_for_load_state('networkidle')
     
     def click_link(self, text: str):
@@ -222,7 +236,7 @@ class TaskKanbanPage(BasePage):
     
     def __init__(self, page: Page):
         super().__init__(page)
-        self.path = '/todo/'
+        self.path = '/core/todo/'
     
     def navigate(self):
         """Navigate to Kanban board."""
@@ -383,7 +397,7 @@ from playwright.sync_api import Page, expect
 def test_no_horizontal_scroll_on_mobile(authenticated_page: Page, viewport):
     """Test that pages don't have horizontal scroll on mobile devices."""
     authenticated_page.set_viewport_size(viewport)
-    authenticated_page.goto('/todo/')
+    authenticated_page.goto('/core/todo/')
     
     # Check scroll width equals client width (no horizontal overflow)
     body = authenticated_page.locator('body')
@@ -395,7 +409,7 @@ def test_no_horizontal_scroll_on_mobile(authenticated_page: Page, viewport):
 def test_mobile_bottom_navigation_visible(authenticated_page: Page):
     """Test mobile bottom navigation is visible on small screens."""
     authenticated_page.set_viewport_size({"width": 375, "height": 812})
-    authenticated_page.goto('/daily-agenda/')
+    authenticated_page.goto('/core/daily-agenda/')
     
     # Mobile nav should be visible
     expect(authenticated_page.locator('[data-testid="mobile-nav"]')).to_be_visible()
@@ -406,7 +420,7 @@ def test_mobile_bottom_navigation_visible(authenticated_page: Page):
 def test_touch_targets_minimum_size(authenticated_page: Page):
     """Test all interactive elements meet minimum touch target size (44px)."""
     authenticated_page.set_viewport_size({"width": 375, "height": 812})
-    authenticated_page.goto('/todo/')
+    authenticated_page.goto('/core/todo/')
     
     # Get all interactive elements
     elements = authenticated_page.locator('button, a, [role="button"], input[type="checkbox"]').all()
@@ -486,7 +500,7 @@ def sample_section(db):
     """Create a sample section for testing."""
     return Section.objects.create(
         name="Test Section",
-        current_stage="preparation",
+        current_stage="mitigation",
         position=1
     )
 

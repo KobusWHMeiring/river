@@ -121,7 +121,9 @@ class TaskForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Set the queryset for template field - only show active templates
-        self.fields['template'].queryset = TaskTemplate.objects.filter(is_active=True)
+        # select_related('task_type') avoids N+1 queries when the template
+        # dropdown renders each template's __str__ (which touches task_type).
+        self.fields['template'].queryset = TaskTemplate.objects.filter(is_active=True).select_related('task_type')
         self.fields['date'].required = False  # Set at runtime to bypass ModelForm default
         self.fields['todo_status'].required = False
 

@@ -12,7 +12,7 @@ from django.test.utils import CaptureQueriesContext
 from django.db import connections
 from django.urls import reverse
 from core.models import Section
-from .base import PerformanceTestCase
+from .base import PerformanceTestCase, BUDGETS
 
 
 class DiscoveryTests(PerformanceTestCase):
@@ -120,21 +120,7 @@ class DiscoveryTests(PerformanceTestCase):
         print(f"{'Endpoint':<28s} {'Queries':>8s}  {'Budget':>8s}  {'Status':>8s}")
         print("-" * 80)
 
-        proposed_budgets = {
-            'Dashboard': 8,
-            'Weekly Planner': 10,
-            'Monthly Planner': 10,
-            'Daily Agenda': 6,
-            'Section List': 5,
-            'Section Detail': 8,
-            'Visit Log List': 7,
-            'Visit Log Create (GET)': 5,
-            'Visit Log Create (POST)': 8,
-            'Task Create': 4,
-            'Task Templates': 3,
-            'Task Types': 3,
-            'Data Export': 20,
-        }
+        proposed_budgets = BUDGETS
 
         total_under = 0
         total_over = 0

@@ -3,7 +3,7 @@
 > **Auto-generated** — do not edit by hand. The directories are the source of truth.
 > Regenerate with: `python product/backlog.py`
 
-**Generated:** 2026-08-16 20:23
+**Generated:** 2026-08-16 20:36
 
 ## Ready — approved, ready to build (0)
 
