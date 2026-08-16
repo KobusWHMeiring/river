@@ -1261,6 +1261,62 @@ class DataExportView(LoginRequiredMixin, View):
         return response
 
 
+class VisitLogExportView(LoginRequiredMixin, View):
+    """Single-sheet Excel export of the filtered Master Activity Log."""
+
+    def get(self, request, *args, **kwargs):
+        queryset = build_visit_log_queryset(request.GET)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Visit Logs'
+
+        headers = ['Date', 'Section', 'Task', 'Task Type', 'Participants',
+                   'General Bags', 'Recyclable Bags', 'Plants', 'Weeds', 'Notes']
+        ws.append(headers)
+        header_font = Font(bold=True, color='FFFFFF')
+        header_fill = PatternFill(start_color='166534', end_color='166534', fill_type='solid')
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+
+        for visit in queryset:
+            metrics = list(visit.metrics.all())
+            general = sum(m.value for m in metrics if m.metric_type == 'litter_general')
+            recyclable = sum(m.value for m in metrics if m.metric_type == 'litter_recyclable')
+            plants = '; '.join(f"{m.label or 'Unlabeled'}: {m.value}" for m in metrics if m.metric_type == 'plant')
+            weeds = '; '.join(f"{m.label or 'Unlabeled'}: {m.value}" for m in metrics if m.metric_type == 'weed')
+            task = visit.task
+            task_name = task.template.name if (task and task.template) else 'Unplanned'
+            task_type = task.template.task_type.name if (task and task.template and task.template.task_type) else ''
+            ws.append([
+                visit.date.isoformat(),
+                visit.section.name if visit.section else 'General',
+                task_name,
+                task_type,
+                visit.participant_count,
+                general,
+                recyclable,
+                plants,
+                weeds,
+                visit.notes,
+            ])
+
+        for col in 'ABCDEFGHIJ':
+            ws.column_dimensions[col].width = 20
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        filename = f"visit_logs_{timezone.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
+
+
 class PlannerExportView(LoginRequiredMixin, View):
     """Export the weekly or monthly planner view to Excel."""
 

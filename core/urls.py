@@ -39,6 +39,7 @@ urlpatterns = [
     # Data Export URLs
     path('export/', views.DataExportView.as_view(), name='data_export'),
     path('export/planner/', views.PlannerExportView.as_view(), name='planner_export'),
+    path('export/visit-logs/', views.VisitLogExportView.as_view(), name='visit_log_export'),
 
     # Insights page (temporary, for Sarah review)
     path('insights/', views.planner_insights_view, name='planner_insights'),

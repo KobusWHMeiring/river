@@ -1,5 +1,7 @@
+import io
 from datetime import date
 
+import openpyxl
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -122,3 +124,29 @@ class VisitLogListViewTests(TestCase):
     def test_unfiltered_has_no_summary(self):
         resp = self.client.get(reverse('visit_log_list'))
         self.assertIsNone(resp.context['total_summary'])
+
+
+class VisitLogExportViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(username='export', password='password', email='ex@example.com')
+        self.client = Client()
+        self.client.login(username='export', password='password')
+        self.section, _ = Section.objects.get_or_create(name='Delta', defaults={'color_code': '#444444', 'current_stage': 'clearing'})
+        v1 = VisitLog.objects.create(section=self.section, date=date(2026, 8, 1), participant_count=4, notes='export litter')
+        Metric.objects.create(visit=v1, metric_type='litter_general', value=5)
+        Metric.objects.create(visit=v1, metric_type='litter_recyclable', value=3)
+        v2 = VisitLog.objects.create(section=self.section, date=date(2026, 8, 2), participant_count=1, notes='export plant')
+        Metric.objects.create(visit=v2, metric_type='plant', label='Restio', value=10)
+
+    def test_export_respects_metric_filter(self):
+        resp = self.client.get(reverse('visit_log_export'), {'metric': 'litter'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        wb = openpyxl.load_workbook(io.BytesIO(resp.content))
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        self.assertEqual(rows[0][0], 'Date')
+        self.assertEqual(rows[0][5], 'General Bags')
+        self.assertEqual(len(rows) - 1, 1)  # only the litter log
+        self.assertEqual(rows[1][5], 5)     # general bags
+        self.assertEqual(rows[1][6], 3)     # recyclable bags
