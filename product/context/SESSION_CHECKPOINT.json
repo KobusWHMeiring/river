@@ -1,11 +1,10 @@
 {
-  "last_checkpoint": "2026-08-16T20:23:54+02:00",
-  "summary": "Shipped the Dashboard Metric Drill-Down feature end-to-end (TDD). Reviewed and finalized the PRD (service extraction, exact species match, total header, section sort null-handling), then implemented: new core/services/visit_log_services.py (base_visit_log_queryset, build_visit_log_queryset with metric/species/sort + .distinct(), visit_log_total, metric_total_display); VisitLogListView now delegates to the service and exposes total_summary; new VisitLogExportView + /export/visit-logs/ endpoint (openpyxl, respects filters+sort); visit_log_list.html gains metric/sort filters, total header and Export button; dashboard.html gains 'View source' links on 4 metric cards and clickable plant/weed species rows. 125 tests pass (full suite). UAT: 9/9 verified. Moved PRD refinement→Done, regenerated backlog.md + CURRENT_STATE.md, refreshed progress_log.json.",
+  "last_checkpoint": "2026-08-17T15:05:31+02:00",
+  "summary": "Finished the performance testing backlog: BL-5 (known-issues suppression — core/tests/performance/known_issues.py with KNOWN_ISSUES + effective_cap(), wired into PerformanceTestCase.assert_endpoint_budget()) and BL-7 (docs/performance-budgets.md covering run commands, budget-adjustment process, and known-issues usage). BL-6 (CI integration) deferred by explicit decision — no CI pipeline exists in the repo and lint.py is an AI audit tool, not a test runner; perf tests already gate via manage.py test. Added 3 tests for the known-issues mechanism (SimpleTestCase). Full suite: 151 tests pass. Moved performance-testing-backlog.md refinement→Done, updated progress_log.json, regenerated backlog.md + CURRENT_STATE.md.",
   "moved": [
-    "product/refinement/dashboard-metric-drilldown.md → product/Done/dashboard-metric-drilldown.md"
+    "product/refinement/performance-testing-backlog.md → product/Done/performance-testing-backlog.md"
   ],
   "up_next": [
-    "Performance N+1 growth tests (BL-4, P1)",
     "Dynamic Kanban Columns (refinement)",
     "Playwright E2E testing (refinement)"
   ],

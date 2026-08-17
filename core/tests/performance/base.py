@@ -11,6 +11,8 @@ from django.db import connections
 from django.contrib.auth.models import User
 from contextlib import contextmanager
 
+from .known_issues import effective_cap
+
 
 # Query budgets per endpoint. Budget = measured baseline + headroom.
 # Measured 2026-08-16 (after N+1 fixes in views/forms). Raise only with
@@ -65,6 +67,21 @@ class PerformanceTestCase(TestCase):
             f"If this is intentional, raise the budget in test_budgets.py "
             f"and document why in product/refinement/performance-testing-backlog.md."
         )
+
+    def assert_endpoint_budget(self, actual, endpoint):
+        """Assert an endpoint is within budget, honoring KNOWN_ISSUES suppression."""
+        cap, issue = effective_cap(endpoint, BUDGETS)
+        if issue is not None:
+            self.assertLessEqual(
+                actual,
+                cap,
+                f"\n{endpoint}: {actual} queries exceeds known-issue cap of {cap}.\n"
+                f"Ticket: {issue['ticket']} — {issue['note']}"
+            )
+            print(f"\n[known-issue] {endpoint}: {actual} <= cap {cap} "
+                  f"(suppressed; see {issue['ticket']})")
+            return
+        self.assert_query_count(actual, cap, endpoint)
 
     def assert_no_query_growth(self, endpoint, before, after):
         """Assert adding data did not increase the query count (N+1 guard)."""

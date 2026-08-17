@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.urls import reverse
 
 from core.models import Section, Task, TaskTemplate, TaskType, VisitLog
+from core.forms import VisitLogForm
 
 
 class AdminTaskVisitLogEditTests(TestCase):
@@ -120,3 +121,25 @@ class AdminTaskVisitLogEditTests(TestCase):
         html = response.content.decode()
         self.assertIn('Please correct the errors below', html)
         self.assertIn('Metric type', html)
+
+
+class VisitLogFormParticipantCountTests(TestCase):
+    """Regression: participant_count must reject negative values at the form level."""
+
+    def test_negative_participant_count_rejected(self):
+        form = VisitLogForm(data={
+            'date': '2026-08-17',
+            'notes': 'test',
+            'participant_count': '-5',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('participant_count', form.errors)
+        self.assertIn('greater than or equal to 0', form.errors['participant_count'][0])
+
+    def test_zero_participant_count_accepted(self):
+        form = VisitLogForm(data={
+            'date': '2026-08-17',
+            'notes': 'test',
+            'participant_count': '0',
+        })
+        self.assertTrue(form.is_valid(), form.errors)

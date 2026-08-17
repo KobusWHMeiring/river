@@ -24,12 +24,13 @@
     "Section Days Worked Metric (distinct planned dates; removed Total Litter Bags card)",
     "Re-open Completed Tasks + Participant Count (success toast on complete/re-open)",
     "Planner Search / Jump-to (keyword + date jump, both planners)",
-    "Performance regression testing — query budgets + N+1 fixes (BL-1/2/3)",
-    "Dashboard Metric Drill-Down (metric/species filters, sort, total header, filtered Excel export)"
+    "Performance regression testing — query budgets + N+1 fixes + growth tests (BL-1/2/3/4)",
+    "Dashboard Metric Drill-Down (metric/species filters, sort, total header, filtered Excel export)",
+    "Automated participant_count negative-value regression tests + test-suite speedup (MD5 hasher under test runner)",
+    "Performance known-issues suppression (BL-5) + budget-adjustment docs (BL-7); CI integration deferred (no CI in repo)"
   ],
   "stalled_tasks": [],
   "next_three_steps": [
-    "Performance N+1 growth tests (BL-4, P1)",
     "Dynamic Kanban Columns (refinement)",
     "Playwright E2E testing (refinement)"
   ],

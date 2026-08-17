@@ -3,21 +3,20 @@
 > **Auto-generated** — do not edit by hand. The directories are the source of truth.
 > Regenerate with: `python product/backlog.py`
 
-**Generated:** 2026-08-16 20:36
+**Generated:** 2026-08-17 15:05
 
 ## Ready — approved, ready to build (0)
 
 _None._
 
-## Refinement — in design / needs a decision (3)
+## Refinement — in design / needs a decision (2)
 
 | File | Summary |
 |------|---------|
 | `dynamic-kanban-columns.md` | PRD: Dynamic Kanban Columns (Add / Rename / Reorder / Delete) |
-| `performance-testing-backlog.md` | Performance Regression Testing — River Backlog |
 | `playwright_e2e_testing.md` | PRD: Playwright E2E Testing Implementation |
 
-## Done — shipped (35)
+## Done — shipped (36)
 
 | File | Summary |
 |------|---------|
@@ -39,6 +38,7 @@ _None._
 | `mobile_responsive_implementation.md` | Mobile Responsiveness Implementation Plan |
 | `monthly_view.md` | PRD: Monthly Planning View |
 | `multi_day_tasks.md` | PRD: Multi-Day Task Series (Refined v2) |
+| `performance-testing-backlog.md` | Performance Regression Testing — River Backlog |
 | `planner-activity-indicators.md` | PRD: Planner Activity → Section/Lifecycle Indicators |
 | `planner-search.md` | PRD: Planner Search / Jump-to |
 | `planner_interaction_update.md` | PRD: Planner Interaction Update (Context-Aware Navigation) |

@@ -13,7 +13,7 @@ from django.urls import reverse
 
 from core.models import Section
 
-from .base import PerformanceTestCase, BUDGETS
+from .base import PerformanceTestCase
 
 
 class BudgetTests(PerformanceTestCase):
@@ -30,7 +30,7 @@ class BudgetTests(PerformanceTestCase):
         with self.count_queries() as counter:
             response = self.perf_client.get(url)
             self.assertEqual(response.status_code, 200, f"{name} returned {response.status_code}")
-        self.assert_query_count(counter['count'], BUDGETS[name], name)
+        self.assert_endpoint_budget(counter['count'], name)
 
     def test_dashboard_budget(self):
         self._assert_get('Dashboard', reverse('dashboard'))
@@ -86,9 +86,7 @@ class BudgetTests(PerformanceTestCase):
                 [200, 302],
                 f"Visit Log Create (POST) returned {response.status_code}",
             )
-        self.assert_query_count(
-            counter['count'], BUDGETS['Visit Log Create (POST)'], 'Visit Log Create (POST)'
-        )
+        self.assert_endpoint_budget(counter['count'], 'Visit Log Create (POST)')
 
     def test_task_create_budget(self):
         self._assert_get('Task Create', reverse('task_create'))

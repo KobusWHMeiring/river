@@ -1,4 +1,4 @@
-**Generated on:** 2026-08-16 20:36:23
+**Generated on:** 2026-08-17 15:05:21
 
 ### File Structure
 ```
@@ -62,9 +62,13 @@
     └── tests
         └── __init__.py
         └── performance
+            └── __init__.py
             └── base.py
+            └── known_issues.py
             └── test_budgets.py
             └── test_discovery.py
+            └── test_known_issues.py
+            └── test_n1_growth.py
         └── test_chairperson.py
         └── test_dashboard.py
         └── test_form_errors.py
@@ -89,6 +93,7 @@
 └── DEVELOPER_HANDOVER.md
 └── docs
     └── MEDIA_SETUP.md
+    └── performance-budgets.md
     └── PRODUCTION_CHECKLIST.md
 └── feature-status.sh
 └── icon-usage-report.txt
@@ -96,6 +101,7 @@
 └── lint.py
 └── manage.py
 └── new-feature.sh
+└── plot_home.html
 └── Prep_Sheets_2026-02-18.pdf
 └── product
     └── backlog.md
@@ -155,6 +161,7 @@
         └── mobile_responsive_implementation.md
         └── monthly_view.md
         └── multi_day_tasks.md
+        └── performance-testing-backlog.md
         └── planner-activity-indicators.md
         └── planner-search.md
         └── planner_interaction_update.md
@@ -172,6 +179,9 @@
         └── tick-to-complete-planner.md
         └── weeding_data.md
         └── weekly_planner_navigation.md
+    └── marketing
+        └── farm-context-prompt.md
+        └── handover-plot.md
     └── prompts
         └── arch.md
         └── DEV.md
@@ -180,7 +190,6 @@
     └── ready
     └── refinement
         └── dynamic-kanban-columns.md
-        └── performance-testing-backlog.md
         └── playwright_e2e_testing.md
     └── technical
 └── progress_log.json
@@ -219,6 +228,7 @@
         └── dashboard_metric_drilldown_uat.md
         └── form_validation_error_display-uat-results.json
         └── form_validation_error_display_uat.md
+        └── participants-typeable-uat-results.json
         └── participants-typeable_uat.md
         └── planner_activity_indicators-uat-results.json
         └── planner_activity_indicators_uat.md
@@ -537,7 +547,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
 FILE_UPLOAD_PERMISSIONS = 0o644
 LOGIN_URL = '/admin/login/'
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/admin/login/'```
+LOGOUT_REDIRECT_URL = '/admin/login/'
+PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']```
 
 ### Full Content of Critical Files
 #### `FULL: core/urls.py`

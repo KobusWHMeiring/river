@@ -1678,3 +1678,25 @@ Query-count discovery showed Task Create at 23 queries and the Task Templates li
 ### Key Learnings
 1. **Form dropdowns are N+1 traps too.** A `ModelChoiceField` calls `str()` on every choice when the `<select>` renders; if `__str__` touches a FK, add `.select_related()` to the *field's* queryset, not just list-view querysets.
 2. **Never call `.count` on a related manager inside a template loop.** Annotate with `Count('related_name')` and read the annotated field instead.
+
+---
+
+## Date: 2026-08-17
+
+## Issue: Test suite ~100x slower than expected due to PBKDF2 in setUp
+
+### Problem Description
+14 tests took 77s (~5.5s/test) and the full 148-test suite ran for minutes before being aborted. Timing a single `make_password`/`check_password` call showed PBKDF2 (the production default hasher) costs ~1.1s to hash and ~1.2s to verify on this machine. Since almost every TestCase `setUp()` calls `create_user()` (hash) + `client.login()` (verify), each test paid ~2.4s in password hashing before any test logic ran.
+
+### Solution Implemented
+Added a test-only fast hasher in `river/settings.py`:
+```python
+if 'test' in sys.argv:
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+```
+Result: 14 tests 77s → 0.49s; full suite (148 tests) now ~5.9s. Production is unaffected (PBKDF2 stays when not running under `manage.py test`).
+
+### Key Learnings
+1. **PBKDF2 (or Argon2) in test setUp is the #1 hidden test slowdown.** Every `create_user` + `login` re-runs an intentionally-slow hash. Override `PASSWORD_HASHERS` to `MD5PasswordHasher` under the test runner.
+2. **Scope the override with `if 'test' in sys.argv`** — no separate settings module needed for `manage.py test`.
+3. **Diagnose before optimizing.** Django's `--timing` flag (5.1+) plus timing a single `make_password`/`check_password` isolated the cause in minutes.

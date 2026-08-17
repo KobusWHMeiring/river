@@ -1,0 +1,78 @@
+{
+  "feature": "participants-typeable",
+  "timestamp": "2026-08-17T12:30:08.649Z",
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "pending": 0
+  },
+  "items": [
+    {
+      "id": "1",
+      "category": "Happy path",
+      "description": "Navigate to a planner view (Weekly or Monthly), open 'Add Task', create a Litter Run task, open 'Add Log', enter 5 in 'Number of Participants', 3 in General Litter Bags, 2 in Recyclable Bags (typed directly), submit.",
+      "expected_result": "Form submits without errors; Dashboard Participants card shows 5 People; 3 General / 2 Recyclable bags.",
+      "result": "pass"
+    },
+    {
+      "id": "2",
+      "category": "Aggregation",
+      "description": "Create a second visit log with 3 participants, and a third with 0 (leave at default).",
+      "expected_result": "Dashboard Participants card shows 8 People (5+3+0) — a Sum(), not a Count() of visits.",
+      "result": "pass"
+    },
+    {
+      "id": "3",
+      "category": "Edit",
+      "description": "Edit the first visit log: change Participants 5→10, General Litter Bags 3→7 (typed directly), submit.",
+      "expected_result": "Dashboard shows 13 People (10+3+0); General bags reflect 7 for that visit.",
+      "result": "pass"
+    },
+    {
+      "id": "4",
+      "category": "Zero default",
+      "description": "Create a new visit log without touching the Participants field, submit.",
+      "expected_result": "Form submits without errors; Dashboard total unchanged (includes implicit 0).",
+      "result": "pass"
+    },
+    {
+      "id": "5",
+      "category": "Large numbers",
+      "description": "Create a new visit log and type 150 into General Litter Bags and 75 into Recyclable Bags directly, submit.",
+      "expected_result": "Values persist in dashboard totals; no validation errors.",
+      "result": "pass"
+    },
+    {
+      "id": "6",
+      "category": "Negative blocked",
+      "description": "Create a new visit log and try to set -5 in Participants via the browser down-arrow.",
+      "expected_result": "Browser blocks it (HTML min=0); Django PositiveIntegerField rejects any negative value.",
+      "result": "pass",
+      "comment": "the form submitted with the in-planned submission of -5 participants, but looking at the details"
+    },
+    {
+      "id": "7",
+      "category": "Existing logs",
+      "description": "Verify pre-feature visit logs still display; edit an old log.",
+      "expected_result": "Old logs show Participants = 0 (migration default); aggregation works with mixed old (0) and new (N) values.",
+      "result": "pass"
+    },
+    {
+      "id": "8",
+      "category": "Data integrity",
+      "description": "Run the 3 shell checks: participant_count column exists, no rows with NULL participant_count, and Sum() returns a non-None total.",
+      "expected_result": "All three assertions pass.",
+      "result": "pass"
+    },
+    {
+      "id": "9",
+      "category": "Navigation & integration",
+      "description": "Verify participant input shows in create AND edit; hidden for Admin tasks (no crash); litter inputs work in both modes; Weeding/Planting +/- unaffected; Participants card renders on mobile.",
+      "expected_result": "All integration checks pass.",
+      "result": "pass"
+    }
+  ],
+  "cancelled": false
+}

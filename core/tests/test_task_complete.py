@@ -184,6 +184,21 @@ class TaskCompleteViewTests(TestCase):
         existing.refresh_from_db()
         self.assertEqual(existing.participant_count, 7)
 
+    def test_task_complete_negative_participant_clamped_to_zero(self):
+        """A negative participant_count on complete is clamped to 0, never persisted."""
+        url = f'/core/tasks/{self.task.id}/complete/'
+        response = self.client.post(
+            url,
+            {'participant_count': '-5'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+
+        visit_log = VisitLog.objects.get(task=self.task)
+        self.assertEqual(visit_log.participant_count, 0)
+
     def test_task_complete_creates_history_event(self):
         """Completing a task records a 'completed' audit event."""
         url = f'/core/tasks/{self.task.id}/complete/'

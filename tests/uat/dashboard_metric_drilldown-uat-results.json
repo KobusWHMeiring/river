@@ -1,77 +1,20 @@
 {
   "feature": "dashboard_metric_drilldown",
-  "timestamp": "2026-08-16T18:21:18.347Z",
+  "timestamp": "2026-08-17T12:19:06.089Z",
   "summary": {
-    "total": 9,
-    "passed": 8,
+    "total": 1,
+    "passed": 1,
     "failed": 0,
     "skipped": 0,
-    "pending": 1
+    "pending": 0
   },
   "items": [
-    {
-      "id": "1",
-      "category": "Drill-down happy path",
-      "description": "On the Impact Dashboard, click 'View source' on the Litter Removed card.",
-      "expected_result": "Lands on the Master Activity Log with ?metric=litter; only logs with litter_general or litter_recyclable metrics show; a green total header reads 'Litter — N bags' matching the card total.",
-      "result": "pass",
-      "comment": ":\\Users\\Kobus Meiring\\Documents\\Dev\\river\\venv\\Scripts\\activate\""
-    },
-    {
-      "id": "2",
-      "category": "Drill-down",
-      "description": "Click 'View source' on the Participation card.",
-      "expected_result": "Lands on ?metric=participants; only logs with participant_count > 0 appear; header reads 'Participation — N people' matching the card.",
-      "result": "pass"
-    },
-    {
-      "id": "3",
-      "category": "Species drill-down (exact match)",
-      "description": "On the Re-Planting card, click a species row (e.g. Restio).",
-      "expected_result": "Lands on ?metric=plant&species=<label>; only logs with that EXACT species label appear (substring variants excluded); header total equals the species row count.",
-      "result": "pass"
-    },
-    {
-      "id": "4",
-      "category": "Empty state",
-      "description": "Click 'View source' on the Invasives Removed card (when no weed data exists).",
-      "expected_result": "List shows the 'No logs found' empty state and header reads 'Weeds — 0' (no crash).",
-      "result": "pass"
-    },
-    {
-      "id": "5",
-      "category": "Sorting",
-      "description": "On the Master Activity Log, try all four sort options: Newest, Oldest, Section A–Z, Participants high→low.",
-      "expected_result": "Each reorders correctly; Section A–Z sorts by section name with the no-section log LAST; Participants high→low puts highest participant_count first.",
-      "result": "pass"
-    },
-    {
-      "id": "6",
-      "category": "Filtered export",
-      "description": "On the log list, set metric=litter plus a date range, then click Export.",
-      "expected_result": "Downloads a .xlsx with one row per matching log and columns Date, Section, Task, Task Type, Participants, General Bags, Recyclable Bags, Plants, Weeds, Notes; row count matches the filtered list.",
-      "result": "pass"
-    },
-    {
-      "id": "7",
-      "category": "Reconciliation",
-      "description": "For each of the 4 cards, drill down with no date filter applied.",
-      "expected_result": "The total header equals the dashboard card number exactly.",
-      "result": "pass"
-    },
-    {
-      "id": "8",
-      "category": "Filter composition",
-      "description": "On the litter drill-down, add a Section filter and a Start Date.",
-      "expected_result": "The list and the total header both narrow to the filtered subset.",
-      "result": "pass"
-    },
     {
       "id": "9",
       "category": "Error handling",
       "description": "Navigate directly to visit_log_list?metric=bogus.",
       "expected_result": "No crash; behaves like an unfiltered list (unknown metric ignored).",
-      "result": "pending"
+      "result": "pass"
     }
   ],
   "cancelled": false

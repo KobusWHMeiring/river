@@ -3,7 +3,7 @@
 > **Inspired by:** Homtini `tests/performance/` suite & Abseil Performance Hints  
 > **Date:** 2026-08-11 (updated 2026-08-16)  
 > **Goal:** Per-endpoint query budgets with CI enforcement, N+1 growth detection, and a documented budget-adjustment process  
-> **Status:** ✅ BL-1/BL-2/BL-3/BL-4 done (Django `TestCase`, not pytest) · N+1 fixes applied · BL-5→BL-7 remaining
+> **Status:** ✅ BL-1→BL-5 + BL-7 done (Django `TestCase`, not pytest) · N+1 fixes applied · BL-6 deferred (no CI in repo)
 
 ---
 
@@ -270,7 +270,9 @@ def test_weekly_planner_n1_growth(perf_client, count_queries):
 
 ---
 
-### BL-5: Known Issues Suppression (P1)
+### BL-5: Known Issues Suppression (P1) — ✅ DONE
+
+> Implemented as `core/tests/performance/known_issues.py` (`KNOWN_ISSUES` + `effective_cap()`), wired into `assert_endpoint_budget()` in `base.py` and used by `test_budgets.py`. Currently empty (no over-budget endpoints). See `docs/performance-budgets.md`.
 
 **File:** `core/tests/performance/known_issues.py`
 
@@ -293,7 +295,9 @@ KNOWN_ISSUES = {
 
 ---
 
-### BL-6: CI Integration (P1)
+### BL-6: CI Integration (P1) — ⏸️ DEFERRED
+
+> Deferred: there is no CI pipeline in the repo (and `lint.py` is an AI audit tool, not a test runner). Perf tests already run via `manage.py test`; revisit if/when CI is set up.
 
 Add to CI pipeline (or `lint.py` pre-commit hook):
 
@@ -309,7 +313,9 @@ python -m pytest core/tests/performance/ --reuse-db -v --tb=short -x
 
 ---
 
-### BL-7: Budget Adjustment Documentation (P2)
+### BL-7: Budget Adjustment Documentation (P2) — ✅ DONE
+
+> Implemented as `docs/performance-budgets.md` (also documents how to run the perf suite and the known-issues process).
 
 Add to `DEVELOPER_HANDOVER.md` or create `docs/performance-budgets.md`:
 
@@ -338,10 +344,10 @@ Add to `DEVELOPER_HANDOVER.md` or create `docs/performance-budgets.md`:
 | BL-2: Discovery run | 20 min | P0 | ✅ DONE |
 | BL-3: Budget tests (12 endpoints) | 30 min | P0 | ✅ DONE |
 | BL-4: N+1 growth tests (5 endpoints) | 1–2 hr | P1 | ✅ DONE |
-| BL-5: Known issues suppression | 10 min | P1 | |
-| BL-6: CI integration | 15 min | P1 | |
-| BL-7: Budget adjustment docs | 10 min | P2 | |
-| **Remaining** | **~35 minutes** | | |
+| BL-5: Known issues suppression | 10 min | P1 | ✅ DONE |
+| BL-6: CI integration | 15 min | P1 | ⏸️ DEFERRED (no CI) |
+| BL-7: Budget adjustment docs | 10 min | P2 | ✅ DONE |
+| **Remaining** | **0 minutes** | | |
 
 ---
 

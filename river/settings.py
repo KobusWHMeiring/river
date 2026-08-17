@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 import environ
 import sentry_sdk
 
@@ -169,3 +170,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/admin/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/admin/login/'
+
+
+# --- Test-runner speedup: fast password hashing under tests only ---
+# PBKDF2 (the production default) is deliberately slow (~1.1s/hash on this
+# machine) to resist brute-force attacks. But tests call create_user() +
+# client.login() in almost every setUp(), so each test pays ~2.4s just for
+# hashing. MD5PasswordHasher is salted and fast; safe here because tests use
+# throwaway credentials. Production is unaffected (sys.argv has no 'test').
+if 'test' in sys.argv:
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
